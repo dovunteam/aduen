@@ -43,5 +43,4 @@ The Tuntiva product proposition is not yet validated. There is no evidence in th
 
 ## Product status
 
-Documentation and validation design only. No production service, regulator integration, legal review, or payment handling is implied by this folder.
-
+An early local-first web prototype is available in [`app`](app/README.md). It implements product-boundary acknowledgement, urgent-risk triage, and a saveable transaction draft. It is not a production service and has no regulator integration, legal review, account system, evidence storage, or payment handling.
