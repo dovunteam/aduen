@@ -1,0 +1,102 @@
+import type { EvidenceInput, EvidenceMetadata } from '../domain/evidence'
+import { validateEvidenceFile } from '../domain/evidence'
+
+const DATABASE_NAME = 'tuntiva-prototype'
+const DATABASE_VERSION = 1
+const METADATA_STORE = 'evidence-metadata'
+const ORIGINAL_STORE = 'evidence-originals'
+
+function openDatabase(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION)
+    request.onupgradeneeded = () => {
+      const database = request.result
+      if (!database.objectStoreNames.contains(METADATA_STORE)) database.createObjectStore(METADATA_STORE, { keyPath: 'id' })
+      if (!database.objectStoreNames.contains(ORIGINAL_STORE)) database.createObjectStore(ORIGINAL_STORE)
+    }
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error ?? new Error('Could not open evidence storage.'))
+  })
+}
+
+function transactionDone(transaction: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve()
+    transaction.onerror = () => reject(transaction.error ?? new Error('Evidence storage failed.'))
+    transaction.onabort = () => reject(transaction.error ?? new Error('Evidence storage was cancelled.'))
+  })
+}
+
+async function sha256(file: File): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+export async function addEvidence(file: File, input: EvidenceInput): Promise<EvidenceMetadata> {
+  const validationError = validateEvidenceFile(file)
+  if (validationError) throw new Error(validationError)
+
+  const metadata: EvidenceMetadata = {
+    id: crypto.randomUUID(),
+    fileName: file.name,
+    mimeType: file.type,
+    size: file.size,
+    sha256: await sha256(file),
+    sourceType: input.sourceType,
+    eventDate: input.eventDate || null,
+    description: input.description.trim(),
+    includeInPack: true,
+    uploadedAt: new Date().toISOString(),
+  }
+
+  const database = await openDatabase()
+  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE], 'readwrite')
+  transaction.objectStore(METADATA_STORE).add(metadata)
+  transaction.objectStore(ORIGINAL_STORE).add(file, metadata.id)
+  await transactionDone(transaction)
+  database.close()
+  return metadata
+}
+
+export async function listEvidence(): Promise<EvidenceMetadata[]> {
+  const database = await openDatabase()
+  const transaction = database.transaction(METADATA_STORE, 'readonly')
+  const request = transaction.objectStore(METADATA_STORE).getAll()
+  const records = await new Promise<EvidenceMetadata[]>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+  database.close()
+  return records.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
+}
+
+export async function updateEvidenceInclusion(id: string, includeInPack: boolean): Promise<void> {
+  const database = await openDatabase()
+  const transaction = database.transaction(METADATA_STORE, 'readwrite')
+  const store = transaction.objectStore(METADATA_STORE)
+  const request = store.get(id)
+  request.onsuccess = () => {
+    const existing = request.result as EvidenceMetadata | undefined
+    if (existing) store.put({ ...existing, includeInPack })
+  }
+  await transactionDone(transaction)
+  database.close()
+}
+
+export async function deleteEvidence(id: string): Promise<void> {
+  const database = await openDatabase()
+  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE], 'readwrite')
+  transaction.objectStore(METADATA_STORE).delete(id)
+  transaction.objectStore(ORIGINAL_STORE).delete(id)
+  await transactionDone(transaction)
+  database.close()
+}
+
+export async function clearEvidence(): Promise<void> {
+  const database = await openDatabase()
+  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE], 'readwrite')
+  transaction.objectStore(METADATA_STORE).clear()
+  transaction.objectStore(ORIGINAL_STORE).clear()
+  await transactionDone(transaction)
+  database.close()
+}
