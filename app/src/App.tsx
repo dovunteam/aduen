@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { EvidenceStep } from './components/EvidenceStep'
+import { clearEvidence } from './data/evidenceRepository'
 import './App.css'
 
-type Step = 'welcome' | 'triage' | 'case' | 'saved'
+type Step = 'welcome' | 'triage' | 'case' | 'saved' | 'evidence'
 type CaseDraft = {
   seller: string; platform: string; purchaseDate: string; amount: string
   paymentMethod: string; orderReference: string
@@ -26,7 +28,7 @@ function App() {
   const [draft, setDraft] = useState<CaseDraft>(readDraft)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const isUrgent = urgentReasons.length > 0
-  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, saved: 3 }[step]), [step])
+  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, saved: 3, evidence: 4 }[step]), [step])
 
   useEffect(() => {
     if (step !== 'case') return
@@ -37,12 +39,12 @@ function App() {
   const toggleUrgent = (reason: string) => setUrgentReasons((current) => current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason])
   const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
   function saveCase(event: FormEvent) { event.preventDefault(); localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); setLastSaved(new Date()); setStep('saved') }
-  function startOver() { localStorage.removeItem(STORAGE_KEY); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setStep('welcome') }
+  async function startOver() { localStorage.removeItem(STORAGE_KEY); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setStep('welcome') }
 
   return <div className="app-shell">
     <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label="Tuntiva home">TUNTIVA<span aria-hidden="true">/</span></button><div className="pilot-label"><span /> Private prototype</div></header>
     <main>
-      <nav className="progress" aria-label="Case setup progress">{['Understand', 'Safety check', 'Case details'].map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
+      <nav className="progress" aria-label="Case setup progress">{['Understand', 'Safety check', 'Case details', 'Evidence'].map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
 
       {step === 'welcome' && <section className="page welcome-page">
         <div className="eyebrow">A clearer recovery path</div><h1>Put a failed purchase<br />into order.</h1>
@@ -71,7 +73,8 @@ function App() {
         </form>
       </section>}
 
-      {step === 'saved' && <section className="page narrow-page saved-page"><div className="success-mark">✓</div><div className="eyebrow">Draft saved</div><h1>Your case record<br />has started.</h1><p className="lede">The draft is stored only in this browser. Evidence upload, timeline checks, and routing will be added in later increments.</p><dl className="summary"><div><dt>Seller</dt><dd>{draft.seller}</dd></div><div><dt>Amount</dt><dd>RM {Number(draft.amount).toFixed(2)}</dd></div><div><dt>Issue</dt><dd>{draft.issue.replaceAll('_', ' ')}</dd></div><div><dt>Remedy</dt><dd>{draft.remedy}</dd></div></dl><div className="actions split"><button className="secondary" onClick={startOver}>Delete draft</button><button className="primary" onClick={() => setStep('case')}>Edit details <span>→</span></button></div></section>}
+      {step === 'saved' && <section className="page narrow-page saved-page"><div className="success-mark">✓</div><div className="eyebrow">Draft saved</div><h1>Your case record<br />has started.</h1><p className="lede">The transaction details are stored only in this browser. Next, add the original records that support the case.</p><dl className="summary"><div><dt>Seller</dt><dd>{draft.seller}</dd></div><div><dt>Amount</dt><dd>RM {Number(draft.amount).toFixed(2)}</dd></div><div><dt>Issue</dt><dd>{draft.issue.replaceAll('_', ' ')}</dd></div><div><dt>Remedy</dt><dd>{draft.remedy}</dd></div></dl><div className="actions split"><button className="secondary" onClick={() => void startOver()}>Delete draft</button><div className="button-group"><button className="secondary" onClick={() => setStep('case')}>Edit details</button><button className="primary" onClick={() => setStep('evidence')}>Add evidence <span>→</span></button></div></div></section>}
+      {step === 'evidence' && <EvidenceStep onBack={() => setStep('case')} onContinue={() => setStep('saved')} />}
     </main>
     <footer><p>Tuntiva by DOVUN</p><p>Case organisation, not legal representation.</p></footer>
   </div>
