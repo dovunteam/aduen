@@ -1,0 +1,47 @@
+# Tuntiva
+
+> Turn a failed purchase into a clear recovery path.
+
+**Tuntiva** is a consumer case-preparation and recovery-routing product by DOVUN. It helps Malaysian consumers organise transaction evidence, understand the appropriate next step, prepare accurate complaint material, and track a case from merchant contact to an eligible external channel.
+
+Tuntiva is designed for cases such as:
+
+- goods or services not received;
+- goods or services materially different from what was advertised;
+- an agreed refund that has not arrived;
+- an unresolved cancellation or billing dispute; and
+- a merchant or platform that has stopped responding.
+
+Tuntiva does not guarantee recovery, decide legal rights, file without the user's approval, act as a lawyer, or replace KPDN, the Tribunal for Consumer Claims Malaysia (TTPM), Bank Negara Malaysia, CAAM, MCMC, the police, or another competent authority.
+
+## Core workflow
+
+**Transaction record -> evidence timeline -> missing-information check -> channel recommendation -> user-approved complaint pack -> outcome tracking**
+
+The initial product is deliberately narrow: ordinary Malaysian consumer purchases where the buyer has a receipt or payment record, can identify the seller, and seeks a concrete remedy such as delivery, replacement, repair, cancellation, or refund.
+
+## Evidence standard
+
+Tuntiva distinguishes four kinds of information:
+
+1. **Original evidence** — receipts, invoices, order confirmations, payment records, policies, screenshots, messages, delivery records, and merchant responses.
+2. **User statements** — the consumer's account of events and requested remedy.
+3. **Tuntiva-derived data** — extracted dates, amounts, entities, deadlines, and a generated chronology.
+4. **Official outcome** — a merchant response, platform decision, regulator communication, tribunal order, bank decision, or other external result.
+
+Derived data never silently replaces original evidence.
+
+## Documentation
+
+Start with [the documentation index](docs/00_PRODUCT_INDEX.md).
+
+## Research status
+
+The underlying consumer problem is documented. KPDN's national e-commerce review reports 10,488 online-transaction complaints in 2024, including 5,422 complaints for goods or services not received and 2,019 for goods or services not as advertised.
+
+The Tuntiva product proposition is not yet validated. There is no evidence in this repository that consumers will pay for Tuntiva, that its complaint packs improve recovery rates, or that a sustainable institutional payer exists. Those questions must be tested with real, consented cases.
+
+## Product status
+
+Documentation and validation design only. No production service, regulator integration, legal review, or payment handling is implied by this folder.
+
