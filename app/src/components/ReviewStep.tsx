@@ -1,6 +1,7 @@
 import type { CaseDraft } from '../domain/case'
 import { buildTimeline, checkCompleteness, findTimelineWarnings } from '../domain/caseReview'
 import type { EvidenceMetadata } from '../domain/evidence'
+import { evaluateInitialRoute } from '../domain/routing'
 
 type Props = { draft: CaseDraft; evidence: EvidenceMetadata[]; onBack: () => void }
 
@@ -9,6 +10,7 @@ export function ReviewStep({ draft, evidence, onBack }: Props) {
   const timeline = buildTimeline(draft, evidence)
   const warnings = findTimelineWarnings(draft, timeline)
   const missingRequired = checks.filter((item) => item.level === 'required' && !item.satisfied).length
+  const route = evaluateInitialRoute(draft, checks)
 
   return <section className="page form-page">
     <div className="review-heading"><div><div className="eyebrow">Tuntiva Check</div><h1>Review the record.</h1><p className="lede">This check uses the selected case type and included evidence. It identifies gaps; it does not decide whether the claim will succeed.</p></div><div className={`check-score ${missingRequired ? 'incomplete' : 'complete'}`}><strong>{missingRequired}</strong><span>required {missingRequired === 1 ? 'item' : 'items'} missing</span></div></div>
@@ -17,7 +19,7 @@ export function ReviewStep({ draft, evidence, onBack }: Props) {
 
     <section className="review-section" aria-labelledby="timeline-title"><div className="section-title"><span>02</span><div><h2 id="timeline-title">Tuntiva Timeline</h2><p>Dates come only from confirmed case details or your evidence descriptions.</p></div></div><div>{warnings.length > 0 && <div className="timeline-warnings">{warnings.map((warning) => <p key={warning}>! {warning}</p>)}</div>}<ol className="timeline">{timeline.map((item) => <li className={!item.date ? 'uncertain' : ''} key={item.id}><time>{item.date ? new Date(`${item.date}T00:00:00`).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Date unknown'}</time><div><strong>{item.label}</strong><p>{item.detail}</p><small>{item.source}</small></div></li>)}</ol></div></section>
 
-    <section className="route-preview"><div className="eyebrow">Next route</div><h2>Routing is paused for review.</h2><p>The case does not yet record whether a clear written request has reached the merchant. Tuntiva will not guess. Add that fact before a route or complaint pack is prepared.</p><small>Rule considered: R-010 Merchant-first · Confidence: uncertain</small></section>
-    <div className="actions split"><button className="secondary" onClick={onBack}>← Evidence</button><button className="primary" disabled>Routing not ready</button></div>
+    <section className={`route-preview ${route.confidence}`}><div className="eyebrow">Next route · {route.confidence}</div><h2>{route.routeName}</h2><p>{route.recommendedAction}</p><div className="route-details"><div><strong>Why this result</strong><ul>{route.matchingFacts.map((fact) => <li key={fact}>{fact}</li>)}</ul></div><div><strong>Still needed</strong>{route.unmetPrerequisites.length ? <ul>{route.unmetPrerequisites.map((item) => <li key={item}>{item}</li>)}</ul> : <p>Nothing for this initial route.</p>}</div></div><small>{route.source} · Version {route.ruleVersion} · Checked {route.sourceChecked}. The receiving body determines acceptance.</small></section>
+    <div className="actions split"><button className="secondary" onClick={onBack}>← Evidence</button><button className="primary" disabled={route.confidence !== 'supported' || missingRequired > 0}>{missingRequired > 0 ? 'Complete required items' : route.confidence === 'supported' ? 'Prepare merchant request' : 'Manual review needed'}</button></div>
   </section>
 }
