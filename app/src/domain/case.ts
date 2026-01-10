@@ -9,9 +9,12 @@ export type CaseDraft = {
   issue: 'non_delivery' | 'mismatch' | 'missing_refund' | 'cancellation' | 'uncertain' | ''
   remedy: 'delivery' | 'replacement' | 'repair' | 'cancellation' | 'refund' | ''
   remedyAmount: string
+  promisedDate: string
+  contactHistory: 'none' | 'contacted' | 'responded' | ''
+  contactDate: string
 }
 
 export const EMPTY_DRAFT: CaseDraft = {
   seller: '', platform: '', purchaseDate: '', amount: '', paymentMethod: '', orderReference: '',
-  purpose: '', issue: '', remedy: '', remedyAmount: '',
+  purpose: '', issue: '', remedy: '', remedyAmount: '', promisedDate: '', contactHistory: '', contactDate: '',
 }
