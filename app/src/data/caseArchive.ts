@@ -3,6 +3,7 @@ import type { CaseDraft } from '../domain/case'
 import type { SubmissionRecord } from '../domain/status'
 import { getEvidenceOriginal, listEvidence } from './evidenceRepository'
 import { readConsent } from './consentRepository'
+import { readCase } from './caseRepository'
 
 export async function downloadCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<void> {
   const evidence = await listEvidence()
@@ -12,6 +13,7 @@ export async function downloadCaseArchive(draft: CaseDraft, submission: Submissi
     exportedAt: new Date().toISOString(),
     notice: 'User-controlled Tuntiva prototype export. Evidence originals have not been altered.',
     case: draft,
+    caseRecord: readCase(),
     consent: readConsent(),
     submission,
     evidence,
