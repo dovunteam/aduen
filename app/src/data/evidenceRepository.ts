@@ -70,6 +70,18 @@ export async function listEvidence(): Promise<EvidenceMetadata[]> {
   return records.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
 }
 
+export async function getEvidenceOriginal(id: string): Promise<Blob | null> {
+  const database = await openDatabase()
+  const transaction = database.transaction(ORIGINAL_STORE, 'readonly')
+  const request = transaction.objectStore(ORIGINAL_STORE).get(id)
+  const original = await new Promise<Blob | null>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result ?? null)
+    request.onerror = () => reject(request.error)
+  })
+  database.close()
+  return original
+}
+
 export async function updateEvidenceInclusion(id: string, includeInPack: boolean): Promise<void> {
   const database = await openDatabase()
   const transaction = database.transaction(METADATA_STORE, 'readwrite')
