@@ -12,6 +12,7 @@ import type { EvidenceMetadata } from './domain/evidence'
 import { createComplaintPack } from './domain/complaintPack'
 import type { ComplaintPack } from './domain/complaintPack'
 import { clearSubmission } from './data/statusRepository'
+import { acceptConsent, clearConsent } from './data/consentRepository'
 import './App.css'
 
 type Step = 'welcome' | 'triage' | 'case' | 'saved' | 'evidence' | 'review' | 'pack' | 'status' | 'data'
@@ -43,7 +44,7 @@ function App() {
   const toggleUrgent = (reason: string) => setUrgentReasons((current) => current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason])
   const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
   function saveCase(event: FormEvent) { event.preventDefault(); localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); setLastSaved(new Date()); setStep('saved') }
-  async function startOver() { localStorage.removeItem(STORAGE_KEY); clearSubmission(); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setStep('welcome') }
+  async function startOver() { localStorage.removeItem(STORAGE_KEY); clearSubmission(); clearConsent(); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setStep('welcome') }
   function openDataControls() { setReturnStep(step === 'data' ? 'welcome' : step); setStep('data') }
 
   return <div className="app-shell">
@@ -56,7 +57,7 @@ function App() {
         <p className="lede">Tuntiva helps you organise what happened, what you can prove, and what to do next. You stay in control of every detail and every submission.</p>
         <div className="boundary-grid"><article><span className="card-number">01</span><h2>Build the record</h2><p>Keep transaction details, dates, messages, and evidence together.</p></article><article><span className="card-number">02</span><h2>Check what is missing</h2><p>See gaps and uncertainties before approaching a merchant or official channel.</p></article><article><span className="card-number">03</span><h2>Choose the next step</h2><p>Review a reasoned route. Nothing is sent without your approval.</p></article></div>
         <aside className="notice" aria-labelledby="before-title"><div><span className="notice-mark">i</span><div><h2 id="before-title">Before you begin</h2><p>Tuntiva provides case organisation and general routing information. It does not guarantee recovery or provide legal representation.</p></div></div><label className="check-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I understand Tuntiva's role and confirm that I am authorised to provide the information in this case.</span></label></aside>
-        <div className="actions"><button className="primary" disabled={!consent} onClick={() => setStep('triage')}>Begin safety check <span>→</span></button></div>
+        <div className="actions"><button className="primary" disabled={!consent} onClick={() => { acceptConsent(); setStep('triage') }}>Begin safety check <span>→</span></button></div>
       </section>}
 
       {step === 'triage' && <section className="page narrow-page">
