@@ -4,6 +4,7 @@ import { EvidenceStep } from './components/EvidenceStep'
 import { ReviewStep } from './components/ReviewStep'
 import { PackStep } from './components/PackStep'
 import { StatusStep } from './components/StatusStep'
+import { DataControls } from './components/DataControls'
 import { clearEvidence } from './data/evidenceRepository'
 import { EMPTY_DRAFT } from './domain/case'
 import type { CaseDraft } from './domain/case'
@@ -13,7 +14,7 @@ import type { ComplaintPack } from './domain/complaintPack'
 import { clearSubmission } from './data/statusRepository'
 import './App.css'
 
-type Step = 'welcome' | 'triage' | 'case' | 'saved' | 'evidence' | 'review' | 'pack' | 'status'
+type Step = 'welcome' | 'triage' | 'case' | 'saved' | 'evidence' | 'review' | 'pack' | 'status' | 'data'
 const STORAGE_KEY = 'tuntiva.case-draft.v1'
 
 function readDraft(): CaseDraft {
@@ -29,8 +30,9 @@ function App() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [reviewEvidence, setReviewEvidence] = useState<EvidenceMetadata[]>([])
   const [complaintPack, setComplaintPack] = useState<ComplaintPack | null>(null)
+  const [returnStep, setReturnStep] = useState<Step>('welcome')
   const isUrgent = urgentReasons.length > 0
-  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, saved: 3, evidence: 4, review: 5, pack: 6, status: 7 }[step]), [step])
+  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, saved: 3, evidence: 4, review: 5, pack: 6, status: 7, data: 0 }[step]), [step])
 
   useEffect(() => {
     if (step !== 'case') return
@@ -42,9 +44,10 @@ function App() {
   const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
   function saveCase(event: FormEvent) { event.preventDefault(); localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); setLastSaved(new Date()); setStep('saved') }
   async function startOver() { localStorage.removeItem(STORAGE_KEY); clearSubmission(); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setStep('welcome') }
+  function openDataControls() { setReturnStep(step === 'data' ? 'welcome' : step); setStep('data') }
 
   return <div className="app-shell">
-    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label="Tuntiva home">TUNTIVA<span aria-hidden="true">/</span></button><div className="pilot-label"><span /> Private prototype</div></header>
+    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label="Tuntiva home">TUNTIVA<span aria-hidden="true">/</span></button><div className="header-actions"><button className="data-link" type="button" onClick={openDataControls}>Data controls</button><div className="pilot-label"><span /> Private prototype</div></div></header>
     <main>
       <nav className="progress" aria-label="Case setup progress">{['Understand', 'Safety check', 'Case details', 'Evidence', 'Check', 'Pack', 'Status'].map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
 
@@ -81,6 +84,7 @@ function App() {
       {step === 'review' && <ReviewStep draft={draft} evidence={reviewEvidence} onBack={() => setStep('evidence')} onPrepare={(route) => { setComplaintPack(createComplaintPack(draft, reviewEvidence, route)); setStep('pack') }} />}
       {step === 'pack' && complaintPack && <PackStep initialPack={complaintPack} onBack={() => setStep('review')} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep onBack={() => setStep('pack')} />}
+      {step === 'data' && <DataControls draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
     </main>
     <footer><p>Tuntiva by DOVUN</p><p>Case organisation, not legal representation.</p></footer>
   </div>
