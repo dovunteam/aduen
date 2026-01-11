@@ -1,3 +1,2 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Manrope:wght@400;500;600&display=swap');
-:root { font-family: 'DM Sans', Arial, sans-serif; color: #173a36; background: #f3f0e8; font-synthesis: none; text-rendering: optimizeLegibility; --ink: #173a36; --muted: #60746f; --paper: #fbfaf5; --line: #d6d9d0; --teal: #0d5c53; --teal-light: #dcebe5; --amber: #f4b860; }
+:root { font-family: Inter, Aptos, 'Segoe UI', Arial, sans-serif; color: #173a36; background: #f3f0e8; font-synthesis: none; text-rendering: optimizeLegibility; --ink: #173a36; --muted: #60746f; --paper: #fbfaf5; --line: #d6d9d0; --teal: #0d5c53; --teal-light: #dcebe5; --amber: #f4b860; }
 * { box-sizing: border-box; } body { margin: 0; min-width: 320px; min-height: 100vh; } button, input, select { font: inherit; } button { color: inherit; } button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #f4b860; outline-offset: 2px; }

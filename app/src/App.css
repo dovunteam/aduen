@@ -1,6 +1,6 @@
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 .topbar { height: 74px; padding: 0 clamp(22px, 5vw, 72px); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; background: rgba(243,240,232,.92); }
-.wordmark { border: 0; background: transparent; padding: 0; font: 600 19px/1 'Manrope', sans-serif; letter-spacing: .17em; cursor: pointer; }
+.wordmark { border: 0; background: transparent; padding: 0; font: 600 19px/1 Inter, Aptos, 'Segoe UI', sans-serif; letter-spacing: .17em; cursor: pointer; }
 .wordmark span { color: #d5844e; margin-left: 5px; }
 .pilot-label, .save-state { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; }
 .header-actions { display: flex; align-items: center; gap: 22px; }.data-link { border: 0; border-bottom: 1px solid #99a49f; background: transparent; padding: 3px 0; color: var(--muted); cursor: pointer; font-size: 12px; }.data-link:hover { color: var(--ink); border-color: var(--ink); }
@@ -13,13 +13,13 @@ main { flex: 1; }
 .page { width: min(1160px, calc(100% - 44px)); margin: 0 auto; padding: clamp(58px, 8vw, 108px) 0 90px; }
 .narrow-page { width: min(800px, calc(100% - 44px)); }
 .eyebrow { text-transform: uppercase; font-size: 11px; font-weight: 600; letter-spacing: .15em; color: #9b6340; margin-bottom: 24px; }
-h1 { font: 500 clamp(46px, 7vw, 86px)/.98 'Manrope', sans-serif; letter-spacing: -.055em; margin: 0; max-width: 1000px; }
+h1 { font: 500 clamp(46px, 7vw, 86px)/.98 Inter, Aptos, 'Segoe UI', sans-serif; letter-spacing: -.055em; margin: 0; max-width: 1000px; }
 .narrow-page h1, .form-page h1 { font-size: clamp(42px, 5vw, 64px); }
 .lede { color: var(--muted); font-size: clamp(17px, 2vw, 20px); line-height: 1.6; max-width: 720px; margin: 30px 0 0; }
 .boundary-grid { display: grid; grid-template-columns: repeat(3, 1fr); margin: 70px 0 0; border-block: 1px solid var(--line); }
 .boundary-grid article { padding: 34px 30px 38px 0; }.boundary-grid article + article { border-left: 1px solid var(--line); padding-left: 30px; }
 .card-number { color: #a87859; font-size: 11px; letter-spacing: .1em; }
-h2 { font: 600 18px/1.25 'Manrope', sans-serif; margin: 26px 0 11px; letter-spacing: -.02em; }
+h2 { font: 600 18px/1.25 Inter, Aptos, 'Segoe UI', sans-serif; margin: 26px 0 11px; letter-spacing: -.02em; }
 .boundary-grid p, .section-title p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 14px; }
 .notice { margin-top: 48px; padding: 28px; background: var(--teal-light); border: 1px solid #c4d8d0; }.notice > div { display: flex; gap: 17px; }.notice h2 { margin: 0 0 7px; }.notice p { margin: 0; color: #48645f; line-height: 1.5; }
 .notice-mark { flex: 0 0 28px; width: 28px; height: 28px; border: 1px solid var(--teal); border-radius: 50%; display: grid; place-items: center; font: 600 14px serif; }
