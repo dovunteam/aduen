@@ -7,7 +7,10 @@ const LEGACY_DRAFT_KEY = 'tuntiva.case-draft.v1'
 export function readCase(): CaseRecord | null {
   try {
     const current = localStorage.getItem(CASE_KEY)
-    if (current) return JSON.parse(current)
+    if (current) {
+      const parsed = JSON.parse(current) as CaseRecord
+      return { ...parsed, draft: { ...EMPTY_DRAFT, ...parsed.draft } }
+    }
     const legacy = localStorage.getItem(LEGACY_DRAFT_KEY)
     if (!legacy) return null
     const migrated = createCaseRecord({ ...EMPTY_DRAFT, ...JSON.parse(legacy) })

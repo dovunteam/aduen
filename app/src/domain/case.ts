@@ -1,12 +1,17 @@
 export type CaseDraft = {
+  consumerName: string
+  consumerLocation: 'malaysia' | 'outside' | ''
   seller: string
+  sellerLocation: 'malaysia' | 'outside' | 'unknown' | ''
   platform: string
   purchaseDate: string
   amount: string
+  currency: 'MYR'
   paymentMethod: string
   orderReference: string
   purpose: 'personal' | 'business' | ''
   issue: 'non_delivery' | 'mismatch' | 'missing_refund' | 'cancellation' | 'uncertain' | ''
+  category: 'general_goods' | 'general_services' | 'aviation' | 'financial_service' | 'healthcare' | 'professional_service' | 'land' | 'other' | ''
   remedy: 'delivery' | 'replacement' | 'repair' | 'cancellation' | 'refund' | ''
   remedyAmount: string
   promisedDate: string
@@ -15,8 +20,8 @@ export type CaseDraft = {
 }
 
 export const EMPTY_DRAFT: CaseDraft = {
-  seller: '', platform: '', purchaseDate: '', amount: '', paymentMethod: '', orderReference: '',
-  purpose: '', issue: '', remedy: '', remedyAmount: '', promisedDate: '', contactHistory: '', contactDate: '',
+  consumerName: '', consumerLocation: '', seller: '', sellerLocation: '', platform: '', purchaseDate: '', amount: '', currency: 'MYR', paymentMethod: '', orderReference: '',
+  purpose: '', issue: '', category: '', remedy: '', remedyAmount: '', promisedDate: '', contactHistory: '', contactDate: '',
 }
 
 export type CaseRecordStatus = 'draft' | 'evidence_collection' | 'review' | 'ready_for_pack' | 'approved' | 'handed_off' | 'awaiting_response' | 'resolved' | 'closed'
