@@ -20,10 +20,10 @@ export type ComplaintPack = {
   declaration: string
 }
 
-export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata[], route: RouteEvaluation, now = new Date()): ComplaintPack {
+export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata[], route: RouteEvaluation, now = new Date(), version = 1): ComplaintPack {
   const included = evidence.filter((item) => item.includeInPack)
   return {
-    id: crypto.randomUUID(), version: 1, createdAt: now.toISOString(), approvedAt: null,
+    id: crypto.randomUUID(), version, createdAt: now.toISOString(), approvedAt: null,
     consumerName: draft.consumerName,
     transaction: { seller: draft.seller, sellerLocation: draft.sellerLocation, platform: draft.platform, purchaseDate: draft.purchaseDate, amount: draft.amount, currency: draft.currency, paymentMethod: draft.paymentMethod, orderReference: draft.orderReference, category: draft.category.replaceAll('_', ' ') },
     issue: draft.issue.replaceAll('_', ' '), remedy: draft.remedy, remedyAmount: draft.remedy === 'refund' ? draft.remedyAmount : null,

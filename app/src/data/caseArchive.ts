@@ -4,6 +4,7 @@ import type { SubmissionRecord } from '../domain/status'
 import { getEvidenceOriginal, listEvidence } from './evidenceRepository'
 import { readConsent } from './consentRepository'
 import { readCase } from './caseRepository'
+import { listPacks } from './packRepository'
 
 export async function downloadCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<void> {
   const evidence = await listEvidence()
@@ -14,6 +15,7 @@ export async function downloadCaseArchive(draft: CaseDraft, submission: Submissi
     notice: 'User-controlled Tuntiva prototype export. Evidence originals have not been altered.',
     case: draft,
     caseRecord: readCase(),
+    packVersions: listPacks(),
     consent: readConsent(),
     submission,
     evidence,
