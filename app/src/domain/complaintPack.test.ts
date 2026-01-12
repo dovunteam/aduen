@@ -24,4 +24,8 @@ describe('complaint pack', () => {
     expect(pack.approvedAt).toBeNull()
     expect(approved.approvedAt).toBe('2026-05-10T10:00:00.000Z')
   })
+
+  it('accepts an explicit immutable version number', () => {
+    expect(createComplaintPack(EMPTY_DRAFT, [], route, new Date(), 3).version).toBe(3)
+  })
 })
