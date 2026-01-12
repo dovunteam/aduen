@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { approveComplaintPack } from '../domain/complaintPack'
 import type { ComplaintPack } from '../domain/complaintPack'
 
-type Props = { initialPack: ComplaintPack; onBack: () => void; onContinue: () => void }
+type Props = { initialPack: ComplaintPack; onBack: () => void; onContinue: () => void; onApproved: () => void }
 
-export function PackStep({ initialPack, onBack, onContinue }: Props) {
+export function PackStep({ initialPack, onBack, onContinue, onApproved }: Props) {
   const [pack, setPack] = useState(initialPack)
   const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState('')
@@ -13,7 +13,7 @@ export function PackStep({ initialPack, onBack, onContinue }: Props) {
     setError('')
     try {
       const approved = pack.approvedAt ? pack : approveComplaintPack(pack)
-      setPack(approved)
+      setPack(approved); onApproved()
       const { downloadComplaintPackPdf } = await import('../data/packPdf')
       downloadComplaintPackPdf(approved)
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'The PDF could not be generated.') }
