@@ -3,6 +3,8 @@ import type { FormEvent } from 'react'
 import { addEvidence, deleteEvidence, listEvidence, updateEvidenceInclusion } from '../data/evidenceRepository'
 import { EVIDENCE_TYPES, evidenceTypeLabel, formatFileSize } from '../domain/evidence'
 import type { EvidenceMetadata, EvidenceType } from '../domain/evidence'
+import { scanEvidenceFile } from '../domain/evidenceSafety'
+import type { EvidenceRisk } from '../domain/evidenceSafety'
 
 type Props = { onBack: () => void; onContinue: (evidence: EvidenceMetadata[]) => void }
 
@@ -15,6 +17,8 @@ export function EvidenceStep({ onBack, onContinue }: Props) {
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [risks, setRisks] = useState<EvidenceRisk[]>([])
+  const [riskAccepted, setRiskAccepted] = useState(false)
 
   useEffect(() => { listEvidence().then(setItems).catch(() => setError('Stored evidence could not be read on this device.')) }, [])
 
@@ -23,8 +27,10 @@ export function EvidenceStep({ onBack, onContinue }: Props) {
     if (!file) { setError('Choose an evidence file first.'); return }
     setBusy(true); setError('')
     try {
+      const detected = await scanEvidenceFile(file)
+      if (detected.length && !riskAccepted) { setRisks(detected); return }
       const saved = await addEvidence(file, { sourceType, eventDate: eventDate || null, description })
-      setItems((current) => [saved, ...current]); setFile(null); setEventDate(''); setDescription('')
+      setItems((current) => [saved, ...current]); setFile(null); setEventDate(''); setDescription(''); setRisks([]); setRiskAccepted(false)
       if (fileInput.current) fileInput.current.value = ''
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'The evidence could not be saved.') }
     finally { setBusy(false) }
@@ -50,13 +56,14 @@ export function EvidenceStep({ onBack, onContinue }: Props) {
     <form className="evidence-form" onSubmit={submit}>
       <SectionHeading number="01" title="Add one record" copy="PDF, JPG, PNG, WebP, or text — up to 10 MB." />
       <div className="fields two-col">
-        <label className="file-field">Original file<input ref={fileInput} required type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><span>{file ? `${file.name} · ${formatFileSize(file.size)}` : 'Choose a file from this device'}</span></label>
+        <label className="file-field">Original file<input ref={fileInput} required type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setRisks([]); setRiskAccepted(false) }} /><span>{file ? `${file.name} · ${formatFileSize(file.size)}` : 'Choose a file from this device'}</span></label>
         <label>What kind of record?<select value={sourceType} onChange={(event) => setSourceType(event.target.value as EvidenceType)}>{EVIDENCE_TYPES.map((type) => <option value={type} key={type}>{evidenceTypeLabel(type)}</option>)}</select></label>
         <label>Event date <span className="optional">If known</span><input type="date" value={eventDate} onChange={(event) => setEventDate(event.target.value)} /></label>
         <label>Description <span className="optional">Optional</span><input value={description} maxLength={240} onChange={(event) => setDescription(event.target.value)} placeholder="What this file shows" /></label>
       </div>
+      {risks.length > 0 && <div className="risk-review" role="alert"><strong>Review sensitive content before saving.</strong><ul>{risks.map((risk) => <li key={risk.code}>{risk.message}</li>)}</ul><p>Tuntiva does not remove or alter content automatically. Redact the original outside Tuntiva where appropriate, or confirm that this file is necessary.</p><label><input type="checkbox" checked={riskAccepted} onChange={(event) => setRiskAccepted(event.target.checked)} /> I reviewed these warnings and still need to include this original.</label></div>}
       {error && <p className="form-error" role="alert">{error}</p>}
-      <div className="actions"><button className="primary" type="submit" disabled={busy}>{busy ? 'Checking and saving…' : 'Add evidence'} <span>+</span></button></div>
+      <div className="actions"><button className="primary" type="submit" disabled={busy || (risks.length > 0 && !riskAccepted)}>{busy ? 'Checking and saving…' : 'Add evidence'} <span>+</span></button></div>
     </form>
 
     <div className="evidence-register">
