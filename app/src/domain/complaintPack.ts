@@ -8,7 +8,8 @@ export type ComplaintPack = {
   version: number
   createdAt: string
   approvedAt: string | null
-  transaction: { seller: string; platform: string; purchaseDate: string; amount: string; paymentMethod: string; orderReference: string }
+  consumerName: string
+  transaction: { seller: string; sellerLocation: string; platform: string; purchaseDate: string; amount: string; currency: string; paymentMethod: string; orderReference: string; category: string }
   issue: string
   remedy: string
   remedyAmount: string | null
@@ -16,18 +17,21 @@ export type ComplaintPack = {
   timeline: ReturnType<typeof buildTimeline>
   evidence: Array<Pick<EvidenceMetadata, 'id' | 'fileName' | 'sourceType' | 'eventDate' | 'description' | 'sha256'>>
   disclaimer: string
+  declaration: string
 }
 
 export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata[], route: RouteEvaluation, now = new Date()): ComplaintPack {
   const included = evidence.filter((item) => item.includeInPack)
   return {
     id: crypto.randomUUID(), version: 1, createdAt: now.toISOString(), approvedAt: null,
-    transaction: { seller: draft.seller, platform: draft.platform, purchaseDate: draft.purchaseDate, amount: draft.amount, paymentMethod: draft.paymentMethod, orderReference: draft.orderReference },
+    consumerName: draft.consumerName,
+    transaction: { seller: draft.seller, sellerLocation: draft.sellerLocation, platform: draft.platform, purchaseDate: draft.purchaseDate, amount: draft.amount, currency: draft.currency, paymentMethod: draft.paymentMethod, orderReference: draft.orderReference, category: draft.category.replaceAll('_', ' ') },
     issue: draft.issue.replaceAll('_', ' '), remedy: draft.remedy, remedyAmount: draft.remedy === 'refund' ? draft.remedyAmount : null,
     route: { routeName: route.routeName, ruleVersion: route.ruleVersion, sourceChecked: route.sourceChecked },
     timeline: buildTimeline(draft, included),
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
     disclaimer: 'Prepared from user-confirmed details and selected evidence. Tuntiva provides case organisation and general routing information; it does not guarantee recovery or provide legal representation.',
+    declaration: `I, ${draft.consumerName || 'the consumer'}, confirm that the information in this pack is accurate to the best of my knowledge and that I am authorised to provide it.`,
   }
 }
 
