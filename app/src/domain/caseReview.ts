@@ -40,6 +40,8 @@ export function checkCompleteness(draft: CaseDraft, evidence: EvidenceMetadata[]
 export function buildTimeline(draft: CaseDraft, evidence: EvidenceMetadata[]): TimelineItem[] {
   const items: TimelineItem[] = [
     { id: 'purchase', date: draft.purchaseDate || null, label: 'Purchase made', detail: `${draft.seller} · RM ${Number(draft.amount || 0).toFixed(2)}`, source: 'confirmed case detail' },
+    ...(draft.promisedDate ? [{ id: 'promised', date: draft.promisedDate, label: 'Promised performance date', detail: 'Date recorded by the consumer', source: 'confirmed case detail' as const }] : []),
+    ...(draft.contactHistory && draft.contactHistory !== 'none' ? [{ id: 'merchant-contact', date: draft.contactDate || null, label: 'Merchant contacted', detail: draft.contactHistory === 'responded' ? 'Merchant response recorded' : 'No response recorded', source: 'confirmed case detail' as const }] : []),
     ...evidence.map((item) => ({ id: item.id, date: item.eventDate, label: item.description || item.fileName, detail: item.sourceType.replaceAll('_', ' '), source: 'user-described evidence' as const })),
   ]
   return items.sort((a, b) => {

@@ -9,6 +9,7 @@ describe('case status', () => {
 
   it('separates successful and unsuccessful terminal outcomes', () => {
     expect(nextStatus({ ...EMPTY_SUBMISSION, outcome: 'refund' })).toBe('resolved')
+    expect(nextStatus({ ...EMPTY_SUBMISSION, outcome: 'partial' })).toBe('resolved')
     expect(nextStatus({ ...EMPTY_SUBMISSION, outcome: 'rejected' })).toBe('closed')
   })
 
