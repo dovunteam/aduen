@@ -6,16 +6,16 @@ import { PackStep } from './components/PackStep'
 import { StatusStep } from './components/StatusStep'
 import { DataControls } from './components/DataControls'
 import { OutOfScopeStep } from './components/OutOfScopeStep'
-import { clearEvidence } from './data/evidenceRepository'
+import { clearEvidence, listEvidence } from './data/evidenceRepository'
 import { EMPTY_DRAFT } from './domain/case'
 import type { CaseDraft } from './domain/case'
 import type { EvidenceMetadata } from './domain/evidence'
 import { createComplaintPack } from './domain/complaintPack'
 import type { ComplaintPack } from './domain/complaintPack'
 import { clearSubmission } from './data/statusRepository'
-import { acceptConsent, clearConsent } from './data/consentRepository'
+import { acceptConsent, clearConsent, readConsent } from './data/consentRepository'
 import { clearCase, readCase, recordCaseTransition, saveCaseDraft } from './data/caseRepository'
-import { clearPacks, nextPackVersion, savePack } from './data/packRepository'
+import { clearPacks, listPacks, nextPackVersion, savePack } from './data/packRepository'
 import { assessScope } from './domain/scope'
 import type { ScopeAssessment } from './domain/scope'
 import './App.css'
@@ -23,7 +23,7 @@ import './App.css'
 type Step = 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'review' | 'pack' | 'status' | 'data'
 function App() {
   const [step, setStep] = useState<Step>('welcome')
-  const [consent, setConsent] = useState(false)
+  const [consent, setConsent] = useState(() => Boolean(readConsent()))
   const [urgentReasons, setUrgentReasons] = useState<string[]>([])
   const [draft, setDraft] = useState<CaseDraft>(() => readCase()?.draft ?? EMPTY_DRAFT)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
@@ -45,6 +45,22 @@ function App() {
   function saveCase(event: FormEvent) { event.preventDefault(); const assessment = assessScope(draft); setScopeAssessment(assessment); setLastSaved(new Date()); if (assessment.result === 'unsupported') { recordCaseTransition(draft, 'out_of_scope', 'scope_exclusion_identified'); setStep('scope') } else { recordCaseTransition(draft, 'evidence_collection', assessment.result === 'uncertain' ? 'manual_scope_review_needed' : 'case_details_confirmed'); setStep('saved') } }
   async function startOver() { clearCase(); clearSubmission(); clearConsent(); clearPacks(); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setStep('welcome') }
   function openDataControls() { setReturnStep(step === 'data' ? 'welcome' : step); setStep('data') }
+  async function resumeCase() {
+    const record = readCase()
+    if (!record) return
+    if (!readConsent()) { if (!consent) return; acceptConsent() }
+    setDraft(record.draft)
+    if (record.status === 'out_of_scope') { setScopeAssessment(assessScope(record.draft)); setStep('scope'); return }
+    if (record.status === 'draft') { setStep('case'); return }
+    if (record.status === 'evidence_collection') { setStep('evidence'); return }
+    if (record.status === 'review' || record.status === 'ready_for_pack') { setReviewEvidence(await listEvidence()); setStep('review'); return }
+    if (record.status === 'approved') {
+      const latest = listPacks().sort((a, b) => b.version - a.version)[0]
+      if (latest) { setComplaintPack(latest); setStep('pack'); return }
+    }
+    if (['handed_off', 'awaiting_response', 'resolved', 'closed'].includes(record.status)) { setStep('status'); return }
+    setStep('saved')
+  }
 
   return <div className="app-shell">
     <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label="Tuntiva home">TUNTIVA<span aria-hidden="true">/</span></button><div className="header-actions"><button className="data-link" type="button" onClick={openDataControls}>Data controls</button><div className="pilot-label"><span /> Private prototype</div></div></header>
@@ -56,7 +72,7 @@ function App() {
         <p className="lede">Tuntiva helps you organise what happened, what you can prove, and what to do next. You stay in control of every detail and every submission.</p>
         <div className="boundary-grid"><article><span className="card-number">01</span><h2>Build the record</h2><p>Keep transaction details, dates, messages, and evidence together.</p></article><article><span className="card-number">02</span><h2>Check what is missing</h2><p>See gaps and uncertainties before approaching a merchant or official channel.</p></article><article><span className="card-number">03</span><h2>Choose the next step</h2><p>Review a reasoned route. Nothing is sent without your approval.</p></article></div>
         <aside className="notice" aria-labelledby="before-title"><div><span className="notice-mark">i</span><div><h2 id="before-title">Before you begin</h2><p>Tuntiva provides case organisation and general routing information. It does not guarantee recovery or provide legal representation.</p></div></div><label className="check-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I understand Tuntiva's role and confirm that I am authorised to provide the information in this case.</span></label></aside>
-        <div className="actions"><button className="primary" disabled={!consent} onClick={() => { acceptConsent(); setStep('triage') }}>Begin safety check <span>→</span></button></div>
+        <div className="actions">{readCase() ? <button className="primary" disabled={!consent} onClick={() => void resumeCase()}>Resume saved case <span>→</span></button> : <button className="primary" disabled={!consent} onClick={() => { acceptConsent(); setStep('triage') }}>Begin safety check <span>→</span></button>}</div>
       </section>}
 
       {step === 'triage' && <section className="page narrow-page">
