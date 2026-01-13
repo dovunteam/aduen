@@ -24,7 +24,7 @@ export const EMPTY_DRAFT: CaseDraft = {
   purpose: '', issue: '', category: '', remedy: '', remedyAmount: '', promisedDate: '', contactHistory: '', contactDate: '',
 }
 
-export type CaseRecordStatus = 'draft' | 'out_of_scope' | 'evidence_collection' | 'review' | 'ready_for_pack' | 'approved' | 'handed_off' | 'awaiting_response' | 'resolved' | 'closed'
+export type CaseRecordStatus = 'draft' | 'out_of_scope' | 'evidence_collection' | 'confirmation' | 'review' | 'ready_for_pack' | 'approved' | 'handed_off' | 'awaiting_response' | 'resolved' | 'closed'
 export type CaseAuditEvent = { at: string; actor: 'user' | 'system'; action: string; status: CaseRecordStatus }
 export type CaseRecord = { id: string; createdAt: string; updatedAt: string; status: CaseRecordStatus; draft: CaseDraft; history: CaseAuditEvent[] }
 
