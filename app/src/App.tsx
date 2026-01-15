@@ -57,7 +57,7 @@ function App() {
     if (record.status === 'draft') { setStep('case'); return }
     if (record.status === 'evidence_collection') { setStep('evidence'); return }
     if (record.status === 'confirmation') { setReviewEvidence(await listEvidence()); setExtractions(await listExtractions()); setStep('extraction'); return }
-    if (record.status === 'review' || record.status === 'ready_for_pack') { setReviewEvidence(await listEvidence()); setStep('review'); return }
+    if (record.status === 'review' || record.status === 'ready_for_pack') { setReviewEvidence(await listEvidence()); setExtractions(await listExtractions()); setStep('review'); return }
     if (record.status === 'approved') {
       const latest = listPacks().sort((a, b) => b.version - a.version)[0]
       if (latest) { setComplaintPack(latest); setStep('pack'); return }
@@ -103,7 +103,7 @@ function App() {
       {step === 'scope' && scopeAssessment && <OutOfScopeStep assessment={scopeAssessment} onEdit={() => setStep('case')} onDelete={startOver} />}
       {step === 'evidence' && <EvidenceStep onBack={() => setStep('case')} onContinue={(items) => { void listExtractions().then((records) => { setReviewEvidence(items); setExtractions(records); if (records.some((record) => record.candidates.some((item) => item.status === 'unconfirmed'))) { recordCaseTransition(draft, 'confirmation', 'extracted_facts_require_confirmation'); setStep('extraction') } else { recordCaseTransition(draft, 'review', 'evidence_review_requested'); setStep('review') } }) }} />}
       {step === 'extraction' && <ExtractionStep initialExtractions={extractions} evidence={reviewEvidence} onBack={() => setStep('evidence')} onContinue={(records) => { setExtractions(records); recordCaseTransition(draft, 'review', 'extracted_facts_reviewed'); setStep('review') }} />}
-      {step === 'review' && <ReviewStep draft={draft} evidence={reviewEvidence} onBack={() => setStep('evidence')} onPrepare={(route) => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion()); savePack(pack); setComplaintPack(pack); setStep('pack') }} />}
+      {step === 'review' && <ReviewStep draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions); savePack(pack); setComplaintPack(pack); setStep('pack') }} />}
       {step === 'pack' && complaintPack && <PackStep initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`) }} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep onBack={() => setStep('pack')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
       {step === 'data' && <DataControls draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}

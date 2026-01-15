@@ -3,7 +3,7 @@ import type { ComplaintPack } from '../domain/complaintPack'
 const PACKS_KEY = 'tuntiva.pack-versions.v1'
 
 export function listPacks(): ComplaintPack[] {
-  try { const value = localStorage.getItem(PACKS_KEY); return value ? JSON.parse(value) : [] }
+  try { const value = localStorage.getItem(PACKS_KEY); return value ? (JSON.parse(value) as ComplaintPack[]).map((pack) => ({ ...pack, confirmedDerivedFacts: pack.confirmedDerivedFacts ?? [] })) : [] }
   catch { return [] }
 }
 
