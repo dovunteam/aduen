@@ -1,32 +1,33 @@
-# React + TypeScript + Vite
+# Tuntiva web prototype
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This directory contains the first interactive Tuntiva prototype. It currently supports:
 
-Currently, two official plugins are available:
+- product-boundary acknowledgement;
+- urgent-risk triage that stops the ordinary flow;
+- transaction, issue, and remedy capture;
+- automatic draft saving in the current browser; and
+- explicit draft deletion.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The prototype has no server or account system. Case data is stored in browser `localStorage` under `tuntiva.case-draft.v1`. Do not use it for real consumer evidence.
 
-## React Compiler
+## Run locally
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Requires Node.js 24 or a compatible current Node.js release.
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open the local URL printed by Vite.
+
+## Verify
+
+```sh
+npm run lint
+npm run build
+```
+
+## Current boundary
+
+Evidence upload, extraction, completeness checks, routing, complaint packs, accounts, and external submission are not implemented. The governing requirements remain in [`../docs`](../docs/00_PRODUCT_INDEX.md).
