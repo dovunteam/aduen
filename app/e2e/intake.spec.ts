@@ -96,3 +96,29 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await expect(page.getByRole('status')).toContainText('Status saved')
   await expect(page.getByText('handed off', { exact: true })).toBeVisible()
 })
+
+test('extracted candidates require explicit confirmation, correction, or rejection', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await page.getByLabel('Original file').setInputFiles({
+    name: 'extractable-order.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Order no. SYN-2048 placed on 2026-08-01. Total RM 130.00.'),
+  })
+  await page.getByLabel('What kind of record?').selectOption('receipt')
+  await page.getByLabel('Description').fill('Extractable synthetic order')
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
+  await expect(page.getByText('3', { exact: true }).first()).toBeVisible()
+  const cards = page.locator('article.candidate')
+  await cards.nth(0).getByLabel('Candidate value').fill('125.50')
+  await cards.nth(0).getByRole('button', { name: 'Confirm correction' }).click()
+  await cards.nth(1).getByRole('button', { name: 'Confirm' }).click()
+  await cards.nth(2).getByRole('button', { name: 'Reject' }).click()
+  await expect(page.getByText('Confirmed as 125.50')).toBeVisible()
+  await expect(page.getByText('Rejected — not used as a fact')).toBeVisible()
+  await page.getByRole('button', { name: /Continue to Tuntiva Check/ }).click()
+  await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
+})
