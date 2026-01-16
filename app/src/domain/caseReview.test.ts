@@ -19,6 +19,13 @@ describe('Tuntiva Check', () => {
     const checks = checkCompleteness({ ...EMPTY_DRAFT, issue: 'cancellation' }, [evidence({ sourceType: 'payment', includeInPack: false })])
     expect(checks.find((item) => item.id === 'payment')?.satisfied).toBe(false)
   })
+
+  it('does not require proof of contact before preparing the first merchant request', () => {
+    const firstRequest = checkCompleteness({ ...EMPTY_DRAFT, issue: 'non_delivery', contactHistory: 'none' }, [])
+    expect(firstRequest.find((item) => item.id === 'non_delivery-message')?.level).toBe('useful')
+    const priorContact = checkCompleteness({ ...EMPTY_DRAFT, issue: 'non_delivery', contactHistory: 'contacted' }, [])
+    expect(priorContact.find((item) => item.id === 'non_delivery-message')?.level).toBe('required')
+  })
 })
 
 describe('fact conflicts', () => {
