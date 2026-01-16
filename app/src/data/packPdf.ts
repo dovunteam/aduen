@@ -34,7 +34,7 @@ export function downloadComplaintPackPdf(pack: ComplaintPack): void {
     pack.confirmedDerivedFacts.forEach((item) => line(`${item.field}: ${item.value}\nExtracted value: ${item.extractedValue} | Evidence ID: ${item.evidenceId} | ${item.extractorVersion}`))
   }
   heading('Route record')
-  line(`${pack.route.routeName}\nRule version: ${pack.route.ruleVersion}\nSource checked: ${pack.route.sourceChecked}`)
+  line(`${pack.route.routeName}\nRule version: ${pack.route.ruleVersion}\nSource checked: ${pack.route.sourceChecked}\nSource: ${pack.route.sourceUrl}`)
   heading('User declaration')
   line(pack.declaration)
   heading('Important notice')

@@ -29,7 +29,7 @@ export function PackStep({ initialPack, onBack, onContinue, onApproved }: Props)
       <PackSection title="Chronology"><ol>{pack.timeline.map((item) => <li key={item.id}><time>{item.date || 'Date unknown'}</time><span><strong>{item.label}</strong><small>{item.detail} · {item.source}</small></span></li>)}</ol></PackSection>
       <PackSection title={`Evidence index · ${pack.evidence.length}`}><ol className="pack-evidence">{pack.evidence.map((item) => <li key={item.id}><strong>{item.fileName}</strong><small>{item.sourceType.replaceAll('_', ' ')} · {item.eventDate || 'Date unknown'} · SHA-256 {item.sha256.slice(0, 16)}…</small></li>)}</ol></PackSection>
       {pack.confirmedDerivedFacts.length > 0 && <PackSection title={`Confirmed derived facts · ${pack.confirmedDerivedFacts.length}`}><ol className="pack-evidence">{pack.confirmedDerivedFacts.map((item) => <li key={`${item.evidenceId}-${item.field}`}><strong>{item.field}: {item.value}</strong><small>Extracted as {item.extractedValue} · Evidence {item.evidenceId} · {item.extractorVersion}</small></li>)}</ol></PackSection>}
-      <PackSection title="Route record"><p><strong>{pack.route.routeName}</strong></p><small>Rule {pack.route.ruleVersion} · Source checked {pack.route.sourceChecked}</small></PackSection>
+      <PackSection title="Route record"><p><strong>{pack.route.routeName}</strong></p><small>Rule {pack.route.ruleVersion} · Source checked {pack.route.sourceChecked} · <a href={pack.route.sourceUrl} target="_blank" rel="noreferrer">Source</a></small></PackSection>
       <PackSection title="User declaration"><p>{pack.declaration}</p></PackSection>
       <footer>{pack.disclaimer}</footer>
     </article>
