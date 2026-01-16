@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { addEvidence, deleteEvidence, listEvidence, updateEvidenceInclusion } from '../data/evidenceRepository'
+import { addEvidence, deleteEvidence, getEvidenceOriginal, listEvidence, updateEvidenceInclusion } from '../data/evidenceRepository'
 import { EVIDENCE_TYPES, evidenceTypeLabel, formatFileSize } from '../domain/evidence'
 import type { EvidenceMetadata, EvidenceType } from '../domain/evidence'
 import { scanEvidenceFile } from '../domain/evidenceSafety'
@@ -48,6 +48,15 @@ export function EvidenceStep({ onBack, onContinue }: Props) {
     setItems((current) => current.filter((entry) => entry.id !== item.id))
   }
 
+  async function downloadOriginal(item: EvidenceMetadata) {
+    const original = await getEvidenceOriginal(item.id)
+    if (!original) { setError(`The original for “${item.fileName}” could not be found.`); return }
+    const url = URL.createObjectURL(original)
+    const anchor = document.createElement('a')
+    anchor.href = url; anchor.download = item.fileName.replace(/[\\/]/g, '_'); anchor.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
   return <section className="page form-page">
     <div className="eyebrow">Evidence</div><h1>Keep the originals.</h1>
     <p className="lede">Add the records that show the transaction, promise, problem, and your attempts to resolve it. Every original stays separate from its description.</p>
@@ -70,7 +79,7 @@ export function EvidenceStep({ onBack, onContinue }: Props) {
       <SectionHeading number="02" title="Evidence register" copy={`${items.length} ${items.length === 1 ? 'record' : 'records'} stored on this device.`} />
       {items.length === 0 ? <div className="empty-state"><strong>No evidence added yet.</strong><p>Add at least the order or payment record before continuing.</p></div> : <div className="evidence-list">{items.map((item) => <article className="evidence-item" key={item.id}>
         <div className="file-icon" aria-hidden="true">DOC</div><div className="evidence-copy"><strong>{item.fileName}</strong><p>{evidenceTypeLabel(item.sourceType)} · {formatFileSize(item.size)}{item.eventDate ? ` · ${item.eventDate}` : ' · Date unknown'}</p>{item.description && <p className="evidence-description">{item.description}</p>}<code title={item.sha256}>SHA-256 {item.sha256.slice(0, 12)}…</code></div>
-        <div className="evidence-controls"><label><input type="checkbox" checked={item.includeInPack} onChange={() => toggleInclusion(item)} /> Include in pack</label><button type="button" onClick={() => remove(item)}>Delete</button></div>
+        <div className="evidence-controls"><label><input type="checkbox" checked={item.includeInPack} onChange={() => toggleInclusion(item)} /> Include in pack</label><button className="download-link" type="button" onClick={() => void downloadOriginal(item)}>Download original</button><button type="button" onClick={() => remove(item)}>Delete</button></div>
       </article>)}</div>}
     </div>
     <div className="actions split"><button className="secondary" onClick={onBack}>← Case details</button><button className="primary" disabled={items.length === 0} onClick={() => onContinue(items)}>Review case <span>→</span></button></div>
