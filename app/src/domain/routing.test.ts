@@ -8,6 +8,7 @@ describe('initial routing', () => {
     expect(route.routeName).toBe('Merchant or platform first')
     expect(route.confidence).toBe('supported')
     expect(route.ruleVersion).toMatch('R010')
+    expect(route.sourceUrl).toMatch(/^https:\/\//)
   })
 
   it('does not force a business purchase into a consumer route', () => {
