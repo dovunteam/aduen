@@ -14,6 +14,7 @@ describe('complaint pack', () => {
     const pack = createComplaintPack(draft, [item, excluded], route, new Date('2026-05-10T00:00:00Z'))
     expect(pack.evidence.map((entry) => entry.id)).toEqual(['e1'])
     expect(pack.route.ruleVersion).toBe('MY-R010-2026.09.20')
+    expect(pack.merchantRequest.body).toContain('Example Store')
     expect(pack.approvedAt).toBeNull()
     expect(packFileName(pack)).toBe('tuntiva-example-store-v1.pdf')
   })
