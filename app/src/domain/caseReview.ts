@@ -1,5 +1,6 @@
 import type { CaseDraft } from './case'
 import type { EvidenceMetadata, EvidenceType } from './evidence'
+import type { EvidenceExtraction } from './extraction'
 
 export type CheckItem = { id: string; level: 'required' | 'useful'; label: string; reason: string; source: string; satisfied: boolean }
 export type TimelineItem = { id: string; date: string | null; label: string; detail: string; source: 'confirmed case detail' | 'user-described evidence' }
@@ -57,4 +58,17 @@ export function findTimelineWarnings(draft: CaseDraft, timeline: TimelineItem[])
   if (uncertainCount) warnings.push(`${uncertainCount} ${uncertainCount === 1 ? 'record has' : 'records have'} an unknown event date.`)
   if (draft.purchaseDate && timeline.some((item) => item.id !== 'purchase' && item.date && item.date < draft.purchaseDate)) warnings.push('At least one evidence date is earlier than the recorded purchase date. Check the chronology.')
   return warnings
+}
+
+export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtraction[]): string[] {
+  const confirmed = extractions.flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed').map((item) => ({ ...item, evidenceId: record.evidenceId })))
+  const conflicts: string[] = []
+  const enteredAmount = Number(draft.amount)
+  const extractedAmounts = [...new Set(confirmed.filter((item) => item.field === 'amount').map((item) => Number(item.confirmedValue)))]
+  if (enteredAmount > 0 && extractedAmounts.some((amount) => Number.isFinite(amount) && Math.abs(amount - enteredAmount) >= 0.01)) conflicts.push(`A confirmed extracted amount differs from the entered transaction amount of MYR ${enteredAmount.toFixed(2)}.`)
+  const extractedReferences = [...new Set(confirmed.filter((item) => item.field === 'reference').map((item) => item.confirmedValue).filter(Boolean))]
+  if (draft.orderReference && extractedReferences.some((reference) => reference?.toLowerCase() !== draft.orderReference.toLowerCase())) conflicts.push('A confirmed extracted reference differs from the entered order or reference number.')
+  const extractedDates = [...new Set(confirmed.filter((item) => item.field === 'date').map((item) => item.confirmedValue).filter(Boolean))]
+  if (extractedDates.length > 1) conflicts.push('Confirmed evidence contains multiple extracted dates. Check which event each date describes.')
+  return conflicts
 }

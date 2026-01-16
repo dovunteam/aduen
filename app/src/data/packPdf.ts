@@ -29,6 +29,10 @@ export function downloadComplaintPackPdf(pack: ComplaintPack): void {
   pack.timeline.forEach((item) => line(`${item.date || 'Date unknown'} | ${item.label}\n${item.detail} (${item.source})`))
   heading('Evidence index')
   pack.evidence.forEach((item, index) => line(`${index + 1}. ${item.fileName} | ${item.sourceType.replaceAll('_', ' ')} | ${item.eventDate || 'Date unknown'}\nSHA-256: ${item.sha256}`))
+  if (pack.confirmedDerivedFacts.length) {
+    heading('Confirmed derived facts')
+    pack.confirmedDerivedFacts.forEach((item) => line(`${item.field}: ${item.value}\nExtracted value: ${item.extractedValue} | Evidence ID: ${item.evidenceId} | ${item.extractorVersion}`))
+  }
   heading('Route record')
   line(`${pack.route.routeName}\nRule version: ${pack.route.ruleVersion}\nSource checked: ${pack.route.sourceChecked}`)
   heading('User declaration')

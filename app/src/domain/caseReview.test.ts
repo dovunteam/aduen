@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_DRAFT } from './case'
-import { buildTimeline, checkCompleteness, findTimelineWarnings } from './caseReview'
+import { buildTimeline, checkCompleteness, findFactConflicts, findTimelineWarnings } from './caseReview'
 import type { EvidenceMetadata } from './evidence'
+import { createEvidenceExtraction, reviewCandidate } from './extraction'
 
 const evidence = (overrides: Partial<EvidenceMetadata>): EvidenceMetadata => ({ id: crypto.randomUUID(), fileName: 'record.pdf', mimeType: 'application/pdf', size: 100, sha256: 'abc', sourceType: 'receipt', eventDate: null, description: '', includeInPack: true, uploadedAt: '2026-09-20T00:00:00.000Z', ...overrides })
 
@@ -17,6 +18,17 @@ describe('Tuntiva Check', () => {
   it('ignores records excluded from the pack', () => {
     const checks = checkCompleteness({ ...EMPTY_DRAFT, issue: 'cancellation' }, [evidence({ sourceType: 'payment', includeInPack: false })])
     expect(checks.find((item) => item.id === 'payment')?.satisfied).toBe(false)
+  })
+})
+
+describe('fact conflicts', () => {
+  it('flags confirmed derived values that differ from entered case facts', () => {
+    const amountExtraction = createEvidenceExtraction('e1', 'Total RM 130.00')
+    amountExtraction.candidates[0] = reviewCandidate(amountExtraction.candidates[0], 'confirmed')
+    expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '125.50' }, [amountExtraction])[0]).toContain('differs')
+  })
+  it('ignores unconfirmed derived values', () => {
+    expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '125.50' }, [createEvidenceExtraction('e1', 'Total RM 130.00')])).toEqual([])
   })
 })
 
