@@ -1,5 +1,5 @@
 import type { EvidenceInput, EvidenceMetadata } from '../domain/evidence'
-import { validateEvidenceFile } from '../domain/evidence'
+import { validateEvidenceFile, validateEvidenceSignature } from '../domain/evidence'
 import { createEvidenceExtraction, reviewCandidate } from '../domain/extraction'
 import type { EvidenceExtraction } from '../domain/extraction'
 
@@ -42,6 +42,8 @@ async function sha256(file: File): Promise<string> {
 export async function addEvidence(file: File, input: EvidenceInput): Promise<EvidenceMetadata> {
   const validationError = validateEvidenceFile(file)
   if (validationError) throw new Error(validationError)
+  const signatureError = validateEvidenceSignature(file.type, new Uint8Array(await file.slice(0, 16).arrayBuffer()))
+  if (signatureError) throw new Error(signatureError)
 
   const metadata: EvidenceMetadata = {
     id: crypto.randomUUID(),
