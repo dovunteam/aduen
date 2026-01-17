@@ -43,6 +43,17 @@ export function validateEvidenceFile(file: Pick<File, 'size' | 'type'>): string 
   return null
 }
 
+export function validateEvidenceSignature(mimeType: string, bytes: Uint8Array): string | null {
+  const startsWith = (...signature: number[]) => signature.every((value, index) => bytes[index] === value)
+  const valid = mimeType === 'application/pdf' ? startsWith(0x25, 0x50, 0x44, 0x46, 0x2d)
+    : mimeType === 'image/png' ? startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+      : mimeType === 'image/jpeg' ? startsWith(0xff, 0xd8, 0xff)
+        : mimeType === 'image/webp' ? startsWith(0x52, 0x49, 0x46, 0x46) && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+          : mimeType === 'text/plain' ? !bytes.some((value) => value === 0)
+            : false
+  return valid ? null : 'The file contents do not match the selected file type.'
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
