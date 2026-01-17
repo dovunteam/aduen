@@ -6,6 +6,7 @@ This directory contains the first interactive Tuntiva prototype. It currently su
 - urgent-risk triage that stops the ordinary flow;
 - transaction, issue, remedy, promise, and merchant-contact capture;
 - original evidence storage with SHA-256 integrity hashes;
+- bounded plain-text extraction with user confirmation or correction;
 - issue-specific completeness checks and a sourced chronology;
 - versioned merchant-first routing;
 - user-reviewed PDF complaint packs;
@@ -35,4 +36,4 @@ npm run build
 
 ## Current boundary
 
-Accounts, OCR/extraction, staff review, live official-route verification, malware scanning, external submission, notifications, and production security controls are not implemented. The governing requirements remain in [`../docs`](../docs/00_PRODUCT_INDEX.md).
+Accounts, image/PDF OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, Bahasa Malaysia, and production security controls are not implemented. See the [implementation ledger](../docs/Tuntiva_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
