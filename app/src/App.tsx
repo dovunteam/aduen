@@ -20,10 +20,13 @@ import { clearPacks, listPacks, nextPackVersion, savePack } from './data/packRep
 import { assessScope } from './domain/scope'
 import type { ScopeAssessment } from './domain/scope'
 import type { EvidenceExtraction } from './domain/extraction'
+import { messages, readLocale, saveLocale } from './i18n'
+import type { Locale } from './i18n'
 import './App.css'
 
 type Step = 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
 function App() {
+  const [locale, setLocale] = useState<Locale>(readLocale)
   const [step, setStep] = useState<Step>('welcome')
   const [consent, setConsent] = useState(() => Boolean(readConsent()))
   const [urgentReasons, setUrgentReasons] = useState<string[]>([])
@@ -35,6 +38,7 @@ function App() {
   const [scopeAssessment, setScopeAssessment] = useState<ScopeAssessment | null>(null)
   const [extractions, setExtractions] = useState<EvidenceExtraction[]>([])
   const isUrgent = urgentReasons.length > 0
+  const text = messages[locale]
   const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, scope: 3, saved: 3, evidence: 4, extraction: 5, review: 6, pack: 7, status: 8, data: 0 }[step]), [step])
 
   useEffect(() => {
@@ -42,6 +46,11 @@ function App() {
     const timer = window.setTimeout(() => { saveCaseDraft(draft); setLastSaved(new Date()) }, 400)
     return () => window.clearTimeout(timer)
   }, [draft, step])
+
+  useEffect(() => {
+    saveLocale(locale)
+    document.documentElement.lang = locale
+  }, [locale])
 
   const toggleUrgent = (reason: string) => setUrgentReasons((current) => current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason])
   const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
@@ -67,25 +76,23 @@ function App() {
   }
 
   return <div className="app-shell">
-    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label="Tuntiva home">TUNTIVA<span aria-hidden="true">/</span></button><div className="header-actions"><button className="data-link" type="button" onClick={openDataControls}>Data controls</button><div className="pilot-label"><span /> Private prototype</div></div></header>
+    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}>TUNTIVA<span aria-hidden="true">/</span></button><div className="header-actions"><div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
     <main>
-      <nav className="progress" aria-label="Case setup progress">{['Understand', 'Safety check', 'Case details', 'Evidence', 'Confirm facts', 'Check', 'Pack', 'Status'].map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
+      <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
 
       {step === 'welcome' && <section className="page welcome-page">
-        <div className="eyebrow">A clearer recovery path</div><h1>Put a failed purchase<br />into order.</h1>
-        <p className="lede">Tuntiva helps you organise what happened, what you can prove, and what to do next. You stay in control of every detail and every submission.</p>
-        <div className="boundary-grid"><article><span className="card-number">01</span><h2>Build the record</h2><p>Keep transaction details, dates, messages, and evidence together.</p></article><article><span className="card-number">02</span><h2>Check what is missing</h2><p>See gaps and uncertainties before approaching a merchant or official channel.</p></article><article><span className="card-number">03</span><h2>Choose the next step</h2><p>Review a reasoned route. Nothing is sent without your approval.</p></article></div>
-        <aside className="notice" aria-labelledby="before-title"><div><span className="notice-mark">i</span><div><h2 id="before-title">Before you begin</h2><p>Tuntiva provides case organisation and general routing information. It does not guarantee recovery or provide legal representation.</p></div></div><label className="check-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I understand Tuntiva's role and confirm that I am authorised to provide the information in this case.</span></label></aside>
-        <div className="actions">{readCase() ? <button className="primary" disabled={!consent} onClick={() => void resumeCase()}>Resume saved case <span>→</span></button> : <button className="primary" disabled={!consent} onClick={() => { acceptConsent(); setStep('triage') }}>Begin safety check <span>→</span></button>}</div>
+        <div className="eyebrow">{text.welcome.eyebrow}</div><h1>{renderLines(text.welcome.title)}</h1>
+        <p className="lede">{text.welcome.lede}</p>
+        <div className="boundary-grid">{text.welcome.cards.map(([title, copy], index) => <article key={title}><span className="card-number">{String(index + 1).padStart(2, '0')}</span><h2>{title}</h2><p>{copy}</p></article>)}</div>
+        <aside className="notice" aria-labelledby="before-title"><div><span className="notice-mark">i</span><div><h2 id="before-title">{text.welcome.before}</h2><p>{text.welcome.notice}</p></div></div><label className="check-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>{text.welcome.consent}</span></label></aside>
+        <div className="actions">{readCase() ? <button className="primary" disabled={!consent} onClick={() => void resumeCase()}>{text.welcome.resume} <span>→</span></button> : <button className="primary" disabled={!consent} onClick={() => { acceptConsent(); setStep('triage') }}>{text.welcome.begin} <span>→</span></button>}</div>
       </section>}
 
       {step === 'triage' && <section className="page narrow-page">
-        <div className="eyebrow">Safety check</div><h1>Does anything need<br />immediate action?</h1><p className="lede">Select everything that applies. Urgent issues should not wait while you prepare an ordinary complaint.</p>
-        <fieldset className="choice-list"><legend className="sr-only">Urgent issues</legend>{[
-          ['unauthorised', 'A payment or transaction was not authorised by me'], ['account', 'Someone may still have access to my account or credentials'], ['scam', 'I am being asked to send more money in an active scam'], ['safety', 'There is an immediate safety risk'], ['deadline', 'I know of an official deadline that is about to expire'],
-        ].map(([value, label]) => <label className="choice" key={value}><input type="checkbox" checked={urgentReasons.includes(value)} onChange={() => toggleUrgent(value)} /><span className="choice-box" aria-hidden="true">✓</span><span>{label}</span></label>)}</fieldset>
-        {isUrgent && <div className="urgent-panel" role="alert"><strong>Pause ordinary case preparation.</strong><p>Contact your bank through its official hotline or Malaysia's National Scam Response Centre at 997 now if money or account access may still be at risk. For immediate danger, call Malaysian emergency services at 999. Tuntiva is not an emergency service.</p><div className="official-links"><a href="https://www.bnm.gov.my/faqs/scams" target="_blank" rel="noreferrer">Bank Negara Malaysia scam guidance ↗</a><a href="https://nfcc.jpm.gov.my/index.php/en/about-nsrc" target="_blank" rel="noreferrer">Official NSRC guidance ↗</a></div><p className="source-note">Use only contact details from your bank's official app, card, or website. Do not share an OTP, PIN, password, or recovery code.</p></div>}
-        <div className="actions split"><button className="secondary" onClick={() => setStep('welcome')}>← Back</button>{!isUrgent && <button className="primary" onClick={() => setStep('case')}>No urgent issue — continue <span>→</span></button>}</div>
+        <div className="eyebrow">{text.triage.eyebrow}</div><h1>{renderLines(text.triage.title)}</h1><p className="lede">{text.triage.lede}</p>
+        <fieldset className="choice-list"><legend className="sr-only">{text.triage.legend}</legend>{text.triage.reasons.map(([value, label]) => <label className="choice" key={value}><input type="checkbox" checked={urgentReasons.includes(value)} onChange={() => toggleUrgent(value)} /><span className="choice-box" aria-hidden="true">✓</span><span>{label}</span></label>)}</fieldset>
+        {isUrgent && <div className="urgent-panel" role="alert"><strong>{text.triage.pause}</strong><p>{text.triage.urgent}</p><div className="official-links"><a href="https://www.bnm.gov.my/faqs/scams" target="_blank" rel="noreferrer">{text.triage.bnm}</a><a href="https://nfcc.jpm.gov.my/index.php/en/about-nsrc" target="_blank" rel="noreferrer">{text.triage.nsrc}</a></div><p className="source-note">{text.triage.source}</p></div>}
+        <div className="actions split"><button className="secondary" onClick={() => setStep('welcome')}>{text.triage.back}</button>{!isUrgent && <button className="primary" onClick={() => setStep('case')}>{text.triage.continue} <span>→</span></button>}</div>
       </section>}
 
       {step === 'case' && <section className="page form-page">
@@ -108,9 +115,10 @@ function App() {
       {step === 'status' && <StatusStep onBack={() => setStep('pack')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
       {step === 'data' && <DataControls draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
     </main>
-    <footer><p>Tuntiva by DOVUN</p><p>Case organisation, not legal representation.</p></footer>
+    <footer><p>Tuntiva by DOVUN</p><p>{text.footer}</p></footer>
   </div>
 }
 
 function SectionTitle({ number, title, copy }: { number: string; title: string; copy: string }) { return <div className="section-title"><span>{number}</span><div><h2>{title}</h2><p>{copy}</p></div></div> }
+function renderLines(value: string) { return value.split('\n').map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>) }
 export default App
