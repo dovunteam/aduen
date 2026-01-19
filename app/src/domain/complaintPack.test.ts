@@ -16,7 +16,7 @@ describe('complaint pack', () => {
     expect(pack.route.ruleVersion).toBe('MY-R010-2026.09.20')
     expect(pack.merchantRequest.body).toContain('Example Store')
     expect(pack.approvedAt).toBeNull()
-    expect(packFileName(pack)).toBe('tuntiva-example-store-v1.pdf')
+    expect(packFileName(pack)).toBe('buktiva-example-store-v1.pdf')
   })
 
   it('records explicit approval without altering the source pack', () => {

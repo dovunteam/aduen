@@ -30,8 +30,8 @@ export function checkCompleteness(draft: CaseDraft, evidence: EvidenceMetadata[]
   const included = evidence.filter((item) => item.includeInPack)
   const has = (type: EvidenceType) => included.some((item) => item.sourceType === type)
   const checks: CheckItem[] = [
-    { id: 'transaction', level: 'required', label: 'Order, receipt, or transaction record', reason: 'Identifies the seller and purchase.', source: 'Tuntiva MVP – supported cohort', satisfied: has('receipt') },
-    { id: 'payment', level: 'required', label: 'Payment evidence', reason: 'Supports the amount and payment method.', source: 'Tuntiva workflow – evidence capture', satisfied: has('payment') },
+    { id: 'transaction', level: 'required', label: 'Order, receipt, or transaction record', reason: 'Identifies the seller and purchase.', source: 'Buktiva MVP – supported cohort', satisfied: has('receipt') },
+    { id: 'payment', level: 'required', label: 'Payment evidence', reason: 'Supports the amount and payment method.', source: 'Buktiva workflow – evidence capture', satisfied: has('payment') },
     ...(ISSUE_RULES[draft.issue] ?? []).map((rule) => {
       const firstMerchantRequest = rule.type === 'message' && draft.contactHistory === 'none'
       return {
@@ -39,12 +39,12 @@ export function checkCompleteness(draft: CaseDraft, evidence: EvidenceMetadata[]
         level: firstMerchantRequest ? 'useful' as const : rule.level,
         reason: firstMerchantRequest ? 'Not required before the first written request; add the sent request to the record afterward.' : rule.reason,
         id: `${draft.issue}-${rule.type}`,
-        source: `Tuntiva workflow – ${draft.issue.replaceAll('_', ' ')} variant`,
+        source: `Buktiva workflow – ${draft.issue.replaceAll('_', ' ')} variant`,
         satisfied: has(rule.type),
       }
     }),
   ]
-  if (draft.remedy === 'refund') checks.push({ id: 'refund-amount', level: 'required', label: 'Exact refund amount', reason: 'A monetary remedy needs one clear amount.', source: 'Tuntiva MVP – remedy statement', satisfied: Number(draft.remedyAmount) > 0 })
+  if (draft.remedy === 'refund') checks.push({ id: 'refund-amount', level: 'required', label: 'Exact refund amount', reason: 'A monetary remedy needs one clear amount.', source: 'Buktiva MVP – remedy statement', satisfied: Number(draft.remedyAmount) > 0 })
   return checks
 }
 

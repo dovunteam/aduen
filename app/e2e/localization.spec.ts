@@ -9,7 +9,7 @@ test('Bahasa Malaysia preference persists across the safety journey', async ({ p
 
   await page.reload()
   await expect(page.getByRole('button', { name: 'BM' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByLabel(/Saya memahami peranan Tuntiva/).check()
+  await page.getByLabel(/Saya memahami peranan Buktiva/).check()
   await page.getByRole('button', { name: 'Mulakan semakan keselamatan' }).click()
   await page.getByLabel('Bayaran atau transaksi tidak dibenarkan oleh saya').check()
 
@@ -20,7 +20,7 @@ test('Bahasa Malaysia preference persists across the safety journey', async ({ p
 test('Bahasa Malaysia case details preserve stable domain values', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'BM' }).click()
-  await page.getByLabel(/Saya memahami peranan Tuntiva/).check()
+  await page.getByLabel(/Saya memahami peranan Buktiva/).check()
   await page.getByRole('button', { name: 'Mulakan semakan keselamatan' }).click()
   await page.getByRole('button', { name: /Tiada isu mendesak/ }).click()
 
