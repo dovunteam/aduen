@@ -62,6 +62,9 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await page.getByRole('button', { name: 'Semak kes' }).click()
   await expect(page.getByRole('heading', { name: 'Semak rekod.' })).toBeVisible()
   await expect(page.getByText('Garis masa Buktiva', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Sediakan permintaan peniaga' }).click()
+  await expect(page.getByRole('heading', { name: 'Semak sebelum mengeksport.' })).toBeVisible()
+  await expect(page.getByLabel(/Saya telah menyemak pek ini/)).toBeVisible()
 })
 
 test('Bahasa Malaysia privacy controls describe local data handling', async ({ page }) => {
