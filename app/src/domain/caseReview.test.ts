@@ -6,7 +6,7 @@ import { createEvidenceExtraction, reviewCandidate } from './extraction'
 
 const evidence = (overrides: Partial<EvidenceMetadata>): EvidenceMetadata => ({ id: crypto.randomUUID(), fileName: 'record.pdf', mimeType: 'application/pdf', size: 100, sha256: 'abc', sourceType: 'receipt', eventDate: null, description: '', includeInPack: true, uploadedAt: '2026-09-20T00:00:00.000Z', ...overrides })
 
-describe('Tuntiva Check', () => {
+describe('Buktiva Check', () => {
   it('uses issue-specific evidence rules without inventing evidence', () => {
     const draft = { ...EMPTY_DRAFT, issue: 'non_delivery' as const, remedy: 'refund' as const, remedyAmount: '' }
     const checks = checkCompleteness(draft, [evidence({ sourceType: 'receipt' })])

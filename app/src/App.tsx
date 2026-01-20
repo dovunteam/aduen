@@ -77,7 +77,7 @@ function App() {
   }
 
   return <div className="app-shell">
-    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}>TUNTIVA<span aria-hidden="true">/</span></button><div className="header-actions"><div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
+    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}>BUKTIVA<span aria-hidden="true">/</span></button><div className="header-actions"><div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
     <main>
       <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
 
@@ -116,7 +116,7 @@ function App() {
       {step === 'status' && <StatusStep onBack={() => setStep('pack')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
       {step === 'data' && <DataControls draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
     </main>
-    <footer><p>Tuntiva by DOVUN</p><p>{text.footer}</p></footer>
+    <footer><p>Buktiva by DOVUN</p><p>{text.footer}</p></footer>
   </div>
 }
 

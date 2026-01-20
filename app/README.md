@@ -1,6 +1,6 @@
-# Tuntiva web prototype
+# Buktiva web prototype
 
-This directory contains the first interactive Tuntiva prototype. It currently supports:
+This directory contains the first interactive Buktiva prototype. It currently supports:
 
 - product-boundary acknowledgement;
 - urgent-risk triage that stops the ordinary flow;
@@ -36,4 +36,4 @@ npm run build
 
 ## Current boundary
 
-Accounts, image/PDF OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, Bahasa Malaysia, and production security controls are not implemented. See the [implementation ledger](../docs/Tuntiva_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
+Accounts, image/PDF OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, Bahasa Malaysia, and production security controls are not implemented. See the [implementation ledger](../docs/Buktiva_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).

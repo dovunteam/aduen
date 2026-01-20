@@ -37,7 +37,7 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
     confirmedDerivedFacts: extractions.flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion }))),
     merchantRequest: createMerchantRequest(draft),
-    disclaimer: 'Prepared from user-confirmed details and selected evidence. Tuntiva provides case organisation and general routing information; it does not guarantee recovery or provide legal representation.',
+    disclaimer: 'Prepared from user-confirmed details and selected evidence. Buktiva provides case organisation and general routing information; it does not guarantee recovery or provide legal representation.',
     declaration: `I, ${draft.consumerName || 'the consumer'}, confirm that the information in this pack is accurate to the best of my knowledge and that I am authorised to provide it.`,
   }
 }
@@ -48,5 +48,5 @@ export function approveComplaintPack(pack: ComplaintPack, now = new Date()): Com
 
 export function packFileName(pack: ComplaintPack): string {
   const seller = pack.transaction.seller.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'case'
-  return `tuntiva-${seller}-v${pack.version}.pdf`
+  return `buktiva-${seller}-v${pack.version}.pdf`
 }
