@@ -113,7 +113,7 @@ function App() {
       {step === 'extraction' && <ExtractionStep locale={locale} initialExtractions={extractions} evidence={reviewEvidence} onBack={() => setStep('evidence')} onContinue={(records) => { setExtractions(records); recordCaseTransition(draft, 'review', 'extracted_facts_reviewed'); setStep('review') }} />}
       {step === 'review' && <ReviewStep draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions); savePack(pack); setComplaintPack(pack); setStep('pack') }} />}
       {step === 'pack' && complaintPack && <PackStep initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`) }} onContinue={() => setStep('status')} />}
-      {step === 'status' && <StatusStep onBack={() => setStep('pack')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
+      {step === 'status' && <StatusStep locale={locale} onBack={() => setStep('pack')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
       {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
     </main>
     <footer><p>Buktiva by DOVUN</p><p>{text.footer}</p></footer>
