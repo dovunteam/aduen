@@ -8,6 +8,7 @@ describe('follow-up calendar export', () => {
     expect(calendar).toContain('DTSTART;VALUE=DATE:20261004')
     expect(calendar).toContain('SUMMARY:Buktiva follow-up: Merchant\\, support')
     expect(calendar).toContain('Reference: SYN\\;001.')
+    expect(calendar).toContain('based on the follow-up date you entered\\, not an external deadline')
   })
 
   it('does not create a calendar file without a valid follow-up date', () => {
