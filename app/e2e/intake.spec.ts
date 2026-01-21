@@ -95,9 +95,13 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await page.getByLabel('Recipient or channel').fill('Synthetic merchant email')
   await page.getByLabel('Submission date').fill('2026-08-10')
   await page.getByLabel('External reference').fill('SYNTH-001')
+  await page.getByLabel('Next follow-up').fill('2026-08-17')
   await page.getByRole('button', { name: /Save status/ }).click()
   await expect(page.getByRole('status')).toContainText('Status saved')
   await expect(page.getByText('Handed off', { exact: true })).toBeVisible()
+  const calendarDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download calendar reminder' }).click()
+  expect((await calendarDownload).suggestedFilename()).toBe('buktiva-follow-up-2026-08-17.ics')
 })
 
 test('extracted candidates require explicit confirmation, correction, or rejection', async ({ page }) => {
