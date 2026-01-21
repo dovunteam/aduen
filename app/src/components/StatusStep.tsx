@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { readSubmission, saveSubmission } from '../data/statusRepository'
+import { downloadFollowUpCalendar } from '../data/followUpCalendar'
 import { nextStatus, validateStatusTransition } from '../domain/status'
 import type { SubmissionRecord } from '../domain/status'
 import type { CaseRecordStatus } from '../domain/case'
@@ -8,6 +9,8 @@ import type { Locale } from '../i18n'
 
 export function StatusStep({ locale, onBack, onStatusChange }: { locale: Locale; onBack: () => void; onStatusChange: (status: CaseRecordStatus) => void }) {
   const text = statusText[locale]
+  const reminderText = locale === 'ms' ? 'Muat turun peringatan kalendar' : 'Download calendar reminder'
+  const reminderError = locale === 'ms' ? 'Masukkan tarikh susulan yang sah sebelum memuat turun peringatan kalendar.' : 'Enter a valid follow-up date before downloading a calendar reminder.'
   const [record, setRecord] = useState<SubmissionRecord>(readSubmission)
   const [message, setMessage] = useState('')
   const terminal = record.status === 'resolved' || record.status === 'closed'
@@ -19,6 +22,9 @@ export function StatusStep({ locale, onBack, onStatusChange }: { locale: Locale;
     if (!validateStatusTransition(record.status, status)) { setMessage(text.closedError); return }
     const saved = saveSubmission({ ...record, status }); setRecord(saved); onStatusChange(status === 'ready' ? 'approved' : status); setMessage(text.saved)
   }
+  function downloadReminder() {
+    if (!downloadFollowUpCalendar(record)) setMessage(reminderError)
+  }
 
   return <section className="page form-page status-page">
     <div className="status-heading"><div><div className="eyebrow">{text.eyebrow}</div><h1>{text.title}</h1><p className="lede">{text.lede}</p></div><div className={`status-badge ${record.status}`}><span>{text.currentStatus}</span><strong>{statusLabel(record.status, locale)}</strong></div></div>
@@ -26,7 +32,7 @@ export function StatusStep({ locale, onBack, onStatusChange }: { locale: Locale;
       <div className="form-section"><SectionTitle number="01" title={text.handoff} copy={text.handoffCopy} /><div className="fields two-col"><label>{text.recipient}<input disabled={terminal} required value={record.channel} onChange={(event) => update('channel', event.target.value)} placeholder={text.recipientPlaceholder} /></label><label>{text.submissionDate}<input disabled={terminal} required type="date" value={record.submissionDate} onChange={(event) => update('submissionDate', event.target.value)} /></label><label>{text.reference} <span className="optional">{text.ifProvided}</span><input disabled={terminal} value={record.referenceNumber} onChange={(event) => update('referenceNumber', event.target.value)} placeholder={text.referencePlaceholder} /></label><label>{text.followUp} <span className="optional">{text.optionalReminder}</span><input disabled={terminal} type="date" min={record.submissionDate || undefined} value={record.nextFollowUpDate} onChange={(event) => update('nextFollowUpDate', event.target.value)} /></label></div></div>
       <div className="form-section"><SectionTitle number="02" title={text.responseTitle} copy={text.responseCopy} /><div className="fields"><label>{text.responseSummary} <span className="optional">{text.optional}</span><textarea disabled={terminal} value={record.response} maxLength={1200} onChange={(event) => update('response', event.target.value)} placeholder={text.responsePlaceholder} /></label></div></div>
       <div className="form-section"><SectionTitle number="03" title={text.outcomeTitle} copy={text.outcomeCopy} /><div className="fields"><label>{text.recordedOutcome}<select disabled={terminal} value={record.outcome} onChange={(event) => update('outcome', event.target.value as SubmissionRecord['outcome'])}><option value="">{text.noOutcome}</option><optgroup label={text.resolved}><option value="refund">{text.refund}</option><option value="replacement">{text.replacement}</option><option value="repair">{text.repair}</option><option value="delivery">{text.delivery}</option><option value="partial">{text.partial}</option></optgroup><optgroup label={text.closedWithout}><option value="rejected">{text.rejected}</option><option value="redirected">{text.redirected}</option><option value="withdrawn">{text.withdrawn}</option><option value="unresolved">{text.unresolved}</option></optgroup></select></label></div></div>
-      {record.nextFollowUpDate && !terminal && <div className="follow-up"><span>{text.followUp}</span><strong>{new Date(`${record.nextFollowUpDate}T00:00:00`).toLocaleDateString(locale === 'ms' ? 'ms-MY' : 'en-MY', { day: '2-digit', month: 'long', year: 'numeric' })}</strong><p>{text.followUpCopy}</p></div>}
+      {record.nextFollowUpDate && !terminal && <div className="follow-up"><span>{text.followUp}</span><strong>{new Date(`${record.nextFollowUpDate}T00:00:00`).toLocaleDateString(locale === 'ms' ? 'ms-MY' : 'en-MY', { day: '2-digit', month: 'long', year: 'numeric' })}</strong><p>{text.followUpCopy}</p><button type="button" className="copy-button" onClick={downloadReminder}>{reminderText}</button></div>}
       {message && <p className="save-message" role="status">{message}</p>}
       <div className="actions split"><button type="button" className="secondary" onClick={onBack}>{text.back}</button><button className="primary" disabled={terminal} type="submit">{terminal ? text.closed : text.save} <span>→</span></button></div>
     </form>
