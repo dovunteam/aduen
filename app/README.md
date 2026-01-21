@@ -36,4 +36,4 @@ npm run build
 
 ## Current boundary
 
-Accounts, image/PDF OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, Bahasa Malaysia, and production security controls are not implemented. See the [implementation ledger](../docs/Buktiva_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
+Accounts, image/PDF OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. English and Bahasa Malaysia are available for the prototype interface; source evidence and generated material retain their original language. See the [implementation ledger](../docs/Buktiva_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
