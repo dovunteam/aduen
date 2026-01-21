@@ -55,6 +55,15 @@ test('an unsupported sector stops before evidence collection', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Add evidence' })).toHaveCount(0)
 })
 
+test('aviation cases receive the current CAAM handoff before evidence collection', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page, { category: 'aviation' })
+  await expect(page.getByRole('heading', { name: 'Buktiva should not prepare this case.' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Open CAAM/FlySmart complaint guidance' })).toHaveAttribute('href', 'https://www.caam.gov.my/consumer/complaints/make-a-complaint/')
+  await expect(page.getByText('Contact the airline, airport, or provider first.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add evidence' })).toHaveCount(0)
+})
+
 test('a supported draft preserves original evidence and resumes at the evidence stage', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)
