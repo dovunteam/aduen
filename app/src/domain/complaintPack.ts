@@ -35,7 +35,7 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
     route: { routeName: route.routeName, ruleVersion: route.ruleVersion, sourceChecked: route.sourceChecked, sourceUrl: route.sourceUrl },
     timeline: buildTimeline(draft, included),
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
-    confirmedDerivedFacts: extractions.flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion }))),
+    confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion }))),
     merchantRequest: createMerchantRequest(draft),
     disclaimer: 'Prepared from user-confirmed details and selected evidence. Buktiva provides case organisation and general routing information; it does not guarantee recovery or provide legal representation.',
     declaration: `I, ${draft.consumerName || 'the consumer'}, confirm that the information in this pack is accurate to the best of my knowledge and that I am authorised to provide it.`,

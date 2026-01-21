@@ -4,6 +4,12 @@ import { packFileName } from '../domain/complaintPack'
 
 export function downloadComplaintPackPdf(pack: ComplaintPack): void {
   if (!pack.approvedAt) throw new Error('Approve the pack before exporting it.')
+  const pdf = createComplaintPackPdf(pack)
+  pdf.save(packFileName(pack))
+}
+
+export function createComplaintPackPdf(pack: ComplaintPack): jsPDF {
+  if (!pack.approvedAt) throw new Error('Approve the pack before exporting it.')
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   const left = 18
   const width = 174
@@ -42,5 +48,5 @@ export function downloadComplaintPackPdf(pack: ComplaintPack): void {
   line(pack.declaration)
   heading('Important notice')
   line(pack.disclaimer, 8)
-  pdf.save(packFileName(pack))
+  return pdf
 }

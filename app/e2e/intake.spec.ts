@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
+import JSZip from 'jszip'
 
 async function acceptBoundary(page: import('@playwright/test').Page) {
   await page.goto('/')
@@ -103,11 +105,23 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await expect(page.getByRole('heading', { name: 'Merchant or platform first' })).toBeVisible()
   await page.getByRole('button', { name: 'Prepare merchant request' }).click()
   await expect(page.getByText('BUKTIVA CASE PACK')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Export PDF and selected evidence (ZIP)' })).toBeDisabled()
   await page.getByLabel(/I reviewed this pack/).check()
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: /Approve and export PDF/ }).click()
   const download = await downloadPromise
   expect(download.suggestedFilename()).toBe('buktiva-synthetic-store-v1.pdf')
+  const archivePromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export PDF and selected evidence (ZIP)' }).click()
+  const archiveDownload = await archivePromise
+  expect(archiveDownload.suggestedFilename()).toBe('buktiva-synthetic-store-v1-handoff.zip')
+  const archive = await JSZip.loadAsync(await readFile((await archiveDownload.path())!))
+  const manifest = JSON.parse(await archive.file('manifest.json')!.async('string'))
+  expect(manifest.evidence).toHaveLength(4)
+  for (const entry of manifest.evidence) {
+    expect(await archive.file(entry.archivePath)!.async('string')).toContain('Synthetic')
+  }
+  expect(await archive.file('buktiva-synthetic-store-v1.pdf')!.async('string')).toMatch(/^%PDF/)
   await page.getByRole('button', { name: /Track external status/ }).click()
   await page.getByLabel('Recipient or channel').fill('Synthetic merchant email')
   await page.getByLabel('Submission date').fill('2026-08-10')

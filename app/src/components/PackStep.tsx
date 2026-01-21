@@ -11,6 +11,16 @@ export function PackStep({ locale, initialPack, onBack, onContinue, onApproved }
   const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [exportingArchive, setExportingArchive] = useState(false)
+
+  async function exportArchive() {
+    setError(''); setExportingArchive(true)
+    try {
+      const { downloadHandoffArchive } = await import('../data/handoffArchive')
+      await downloadHandoffArchive(pack)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : text.pdfError) }
+    finally { setExportingArchive(false) }
+  }
 
   async function approveAndExport() {
     setError('')
@@ -44,6 +54,7 @@ export function PackStep({ locale, initialPack, onBack, onContinue, onApproved }
       <footer>{pack.disclaimer}</footer>
     </article>
     <aside className="approval-panel"><div className="eyebrow">{text.approval}</div><h2>{text.nothingLeaves}</h2><p>{text.approvalCopy}</p><label className="check-row"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>{text.approveConsent}</span></label>{pack.approvedAt && <p className="approval-time">{text.approved} {new Date(pack.approvedAt).toLocaleString(locale === 'ms' ? 'ms-MY' : 'en-MY')}</p>}{error && <p className="form-error" role="alert">{error}</p>}<button className="primary" disabled={!confirmed} onClick={approveAndExport}>{text.approveExport} <span>↓</span></button><button className="copy-button" disabled={!pack.approvedAt} onClick={() => void copyRequest()}>{copied ? text.requestCopied : text.copyRequest}</button><small>{text.evidenceNote}</small></aside></div>
+    <div className="actions"><button className="secondary" disabled={!pack.approvedAt || exportingArchive} onClick={() => void exportArchive()}>{exportingArchive ? (locale === 'ms' ? 'Menyediakan ZIP…' : 'Preparing ZIP…') : (locale === 'ms' ? 'Eksport PDF dan bukti terpilih (ZIP)' : 'Export PDF and selected evidence (ZIP)')}</button></div>
     <div className="actions split"><button className="secondary" onClick={onBack}>{text.back}</button><button className="primary" disabled={!pack.approvedAt} onClick={onContinue}>{text.trackStatus} <span>→</span></button></div>
   </section>
 }
