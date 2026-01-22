@@ -42,6 +42,20 @@ async function addEvidence(page: import('@playwright/test').Page, type: string, 
   await expect(page.getByText(name)).toBeVisible()
 }
 
+test('uncertain scope prevents pack preparation even with complete evidence', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page, { category: 'other' })
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await addEvidence(page, 'receipt', 'receipt.txt', 'order receipt')
+  await addEvidence(page, 'payment', 'payment.txt', 'payment record')
+  await addEvidence(page, 'listing', 'listing.txt', 'delivery promise')
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByText('0', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Manual scope review' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Manual review needed' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Prepare merchant request' })).toHaveCount(0)
+})
+
 test('urgent risk blocks the ordinary intake path', async ({ page }) => {
   await acceptBoundary(page)
   await page.getByLabel('A payment or transaction was not authorised by me').check()
