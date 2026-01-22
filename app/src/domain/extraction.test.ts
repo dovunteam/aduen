@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest'
 import { createEvidenceExtraction, extractCandidateFacts, reviewCandidate } from './extraction'
 
 describe('bounded text extraction', () => {
+  it('retains each correction and rejection without mutating earlier records', () => {
+    const original = extractCandidateFacts('RM 25.00')[0]
+    const first = reviewCandidate(original, 'confirmed', '24.50', new Date('2026-09-20T10:00:00Z'))
+    const reopened = reviewCandidate(first, 'unconfirmed')
+    const second = reviewCandidate(reopened, 'confirmed', '24.00')
+    const rejected = reviewCandidate(second, 'rejected')
+    expect(first.reviewHistory).toHaveLength(1)
+    expect(rejected.reviewHistory).toHaveLength(4)
+    expect(rejected.reviewHistory?.[1].previousValue).toBe('24.50')
+    expect(rejected.reviewHistory?.[3].previousValue).toBe('24.00')
+    expect(rejected.value).toBe('25.00')
+    expect(rejected.confirmedValue).toBeNull()
+    expect(original.reviewHistory).toBeUndefined()
+  })
   it('extracts reviewable amounts, dates, and references with source positions', () => {
     const text = 'Order no. SYN-2048 was placed on 2026-08-01. Total RM 1,250.50.'
     const candidates = extractCandidateFacts(text)
