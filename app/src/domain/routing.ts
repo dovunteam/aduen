@@ -1,5 +1,6 @@
 import type { CaseDraft } from './case'
 import type { CheckItem } from './caseReview'
+import { assessScope } from './scope'
 
 export type RouteEvaluation = {
   routeName: string
@@ -22,7 +23,7 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
     sourceUrl: 'https://github.com/dovunteam/tuntiva/blob/main/docs/Buktiva_Case_Routing_Rules.md#r-010-merchant-first',
     sourceType: 'product-default' as const,
     sourceChecked: '20 September 2026',
-    ruleVersion: 'MY-R010-2026.09.20',
+    ruleVersion: 'MY-R010-2026.09.20.2',
   }
 
   if (draft.purpose === 'business') return {
@@ -44,6 +45,18 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
   if (draft.issue === 'uncertain') return {
     ...base, routeName: 'Manual review', recommendedAction: 'Clarify the main transaction failure before selecting a route.',
     matchingFacts: ['Issue type is uncertain'], unmetPrerequisites: missing, exclusionsChecked: ['Urgent-risk triage completed'], confidence: 'uncertain',
+  }
+  const scope = assessScope(draft)
+  if (scope.result === 'uncertain') return {
+    ...base, routeName: 'Manual scope review', recommendedAction: 'Clarify the category and seller jurisdiction before preparing a routed complaint.',
+    matchingFacts: scope.reasons, unmetPrerequisites: [...missing, 'Reviewed category and seller jurisdiction'],
+    exclusionsChecked: ['Prototype scope uncertainty retained'], confidence: 'uncertain',
+  }
+  const missingScope = [!draft.purpose && 'Purchase purpose', !draft.category && 'Purchase category', !draft.sellerLocation && 'Seller location', !draft.issue && 'Issue type', !draft.remedy && 'Requested remedy'].filter((item): item is string => Boolean(item))
+  if (draft.contactHistory === 'none' && missingScope.length) return {
+    ...base, routeName: 'Manual review', recommendedAction: 'Confirm the missing case facts before selecting a route.',
+    matchingFacts: ['The case record is incomplete'], unmetPrerequisites: [...missing, ...missingScope],
+    exclusionsChecked: ['Required scope facts checked'], confidence: 'uncertain',
   }
   if (draft.contactHistory === 'none') return {
     ...base, routeName: 'Merchant or platform first', recommendedAction: 'Send a clear written request with the transaction identity, failure, requested remedy, and a request for response.',
