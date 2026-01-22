@@ -16,6 +16,15 @@ export function listPacks(): ComplaintPack[] {
 
 export function savePack(pack: ComplaintPack): void {
   const existing = listPacks()
+  const previous = existing.find((item) => item.id === pack.id)
+  if (previous) {
+    const { approvedAt: previousApproval, ...previousContent } = previous
+    const { approvedAt: approval, ...content } = pack
+    if (JSON.stringify(previousContent) !== JSON.stringify(content)) throw new Error('Pack content is immutable. Generate a new version for changes.')
+    if (previousApproval && approval !== previousApproval) throw new Error('The approval of a saved pack cannot be changed.')
+  } else if (existing.some((item) => item.version === pack.version)) {
+    throw new Error('This pack version already exists. Generate a new version.')
+  }
   const next = existing.some((item) => item.id === pack.id) ? existing.map((item) => item.id === pack.id ? pack : item) : [...existing, pack]
   localStorage.setItem(PACKS_KEY, JSON.stringify(next))
 }
