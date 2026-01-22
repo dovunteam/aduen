@@ -68,11 +68,14 @@ function App() {
     if (record.status === 'evidence_collection') { setStep('evidence'); return }
     if (record.status === 'confirmation') { setReviewEvidence(await listEvidence()); setExtractions(await listExtractions()); setStep('extraction'); return }
     if (record.status === 'review' || record.status === 'ready_for_pack') { setReviewEvidence(await listEvidence()); setExtractions(await listExtractions()); setStep('review'); return }
-    if (record.status === 'approved') {
-      const latest = listPacks().sort((a, b) => b.version - a.version)[0]
-      if (latest) { setComplaintPack(latest); setStep('pack'); return }
+    if (['approved', 'handed_off', 'awaiting_response', 'resolved', 'closed'].includes(record.status)) {
+      const [evidence, records] = await Promise.all([listEvidence(), listExtractions()])
+      setReviewEvidence(evidence); setExtractions(records)
+      const latest = listPacks().filter((pack) => pack.approvedAt).sort((a, b) => b.version - a.version)[0]
+      setComplaintPack(latest ?? null)
+      setStep(record.status === 'approved' ? (latest ? 'pack' : 'review') : 'status')
+      return
     }
-    if (['handed_off', 'awaiting_response', 'resolved', 'closed'].includes(record.status)) { setStep('status'); return }
     setStep('saved')
   }
 
@@ -113,7 +116,7 @@ function App() {
       {step === 'extraction' && <ExtractionStep locale={locale} initialExtractions={extractions} evidence={reviewEvidence} onBack={() => setStep('evidence')} onContinue={(records) => { setExtractions(records); recordCaseTransition(draft, 'review', 'extracted_facts_reviewed'); setStep('review') }} />}
       {step === 'review' && <ReviewStep locale={locale} draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions); savePack(pack); setComplaintPack(pack); setStep('pack') }} />}
       {step === 'pack' && complaintPack && <PackStep locale={locale} initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`) }} onContinue={() => setStep('status')} />}
-      {step === 'status' && <StatusStep locale={locale} onBack={() => setStep('pack')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
+      {step === 'status' && <StatusStep locale={locale} onBack={() => setStep(complaintPack ? 'pack' : 'review')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
       {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
     </main>
     <footer><p>Buktiva by DOVUN</p><p>{text.footer}</p></footer>
