@@ -116,8 +116,10 @@ export async function reviewExtractionCandidate(extractionId: string, candidateI
     request.onsuccess = () => {
       const extraction = request.result as EvidenceExtraction | undefined
       if (!extraction) { reject(new Error('Extraction record not found.')); return }
-      const next = { ...extraction, candidates: extraction.candidates.map((item) => item.id === candidateId ? reviewCandidate(item, status, correctedValue) : item) }
-      store.put(next); resolve(next)
+      try {
+        const next = { ...extraction, candidates: extraction.candidates.map((item) => item.id === candidateId ? reviewCandidate(item, status, correctedValue) : item) }
+        store.put(next); resolve(next)
+      } catch (error) { database.close(); reject(error) }
     }
     request.onerror = () => reject(request.error)
   })
