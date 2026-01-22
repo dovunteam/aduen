@@ -16,7 +16,7 @@ export const EMPTY_SUBMISSION: SubmissionRecord = { status: 'ready', channel: ''
 
 export function validateStatusTransition(from: CaseStatus, to: CaseStatus): boolean {
   const allowed: Record<CaseStatus, CaseStatus[]> = {
-    ready: ['ready', 'handed_off'],
+    ready: ['ready', 'handed_off', 'awaiting_response', 'resolved', 'closed'],
     handed_off: ['handed_off', 'awaiting_response', 'resolved', 'closed'],
     awaiting_response: ['awaiting_response', 'resolved', 'closed'],
     resolved: ['resolved'],
