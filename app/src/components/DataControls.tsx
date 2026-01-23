@@ -20,7 +20,6 @@ export function DataControls({ locale, draft, onBack, onDelete }: Props) {
   }
 
   async function deleteData() {
-    if (!window.confirm(text.deleteConfirm)) return
     await onDelete()
   }
 
