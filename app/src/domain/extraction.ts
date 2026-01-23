@@ -54,6 +54,18 @@ export function createEvidenceExtraction(evidenceId: string, text: string, now =
 }
 
 export function reviewCandidate(candidateValue: ExtractionCandidate, status: ExtractionCandidate['status'], correctedValue?: string, now = new Date()): ExtractionCandidate {
-  const confirmedValue = status === 'confirmed' ? (correctedValue?.trim() || candidateValue.value) : null
+  const confirmedValue = status === 'confirmed' ? (correctedValue === undefined ? candidateValue.value : correctedValue.trim()) : null
+  if (confirmedValue !== null && !isValidCandidateValue(candidateValue.field, confirmedValue)) throw new Error('Invalid candidate value.')
   return { ...candidateValue, status, confirmedValue, reviewHistory: [...(candidateValue.reviewHistory ?? []), { at: now.toISOString(), previousStatus: candidateValue.status, previousValue: candidateValue.confirmedValue, status, value: confirmedValue }] }
+}
+
+export function isValidCandidateValue(field: ExtractedField, value: string): boolean {
+  if (!value.trim()) return false
+  if (field === 'amount') return /^\d+(?:\.\d{1,2})?$/.test(value) && Number.isFinite(Number(value))
+  if (field === 'date') {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+    const date = new Date(`${value}T00:00:00Z`)
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+  }
+  return value.length <= 200 && !Array.from(value).some((character) => character.charCodeAt(0) < 32)
 }
