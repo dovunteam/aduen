@@ -68,7 +68,7 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   await fillCase(page)
   await page.getByRole('button', { name: /Add evidence/ }).click()
   await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-pixel.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=', 'base64') })
-  await page.getByRole('button', { name: 'Add evidence', exact: true }).click()
+  await page.getByRole('button', { name: 'Add evidence' }).click()
   await page.getByRole('button', { name: 'Preview image', exact: true }).click()
   const preview = page.getByRole('img', { name: 'synthetic-pixel.png' })
   await expect(preview).toBeVisible()
