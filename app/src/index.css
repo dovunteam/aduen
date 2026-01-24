@@ -1,2 +1,4 @@
 :root { font-family: Inter, Aptos, 'Segoe UI', Arial, sans-serif; color: #173a36; background: #f3f0e8; font-synthesis: none; text-rendering: optimizeLegibility; --ink: #173a36; --muted: #536963; --paper: #fbfaf5; --line: #d6d9d0; --teal: #0d5c53; --teal-light: #dcebe5; --amber: #f4b860; }
 * { box-sizing: border-box; } body { margin: 0; min-width: 320px; min-height: 100vh; } button, input, select { font: inherit; } button { color: inherit; } button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #f4b860; outline-offset: 2px; }
+textarea, summary { font: inherit; }
+a:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid #f4b860; outline-offset: 2px; }

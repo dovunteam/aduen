@@ -12,7 +12,7 @@ export const messages = {
     progressLabel: 'Case setup progress',
     welcome: {
       eyebrow: 'A clearer recovery path',
-      title: 'Put a failed purchase\ninto order.',
+      title: 'A failed purchase.\nA clearer next step.',
       lede: 'Buktiva helps you organise what happened, what you can prove, and what to do next. You stay in control of every detail and every submission.',
       cards: [
         ['Build the record', 'Keep transaction details, dates, messages, and evidence together.'],
@@ -111,9 +111,11 @@ export const messages = {
 } as const
 
 export function readLocale(): Locale {
+  try {
   const stored = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(TUNTIVA_STORAGE_KEY)
   if (!window.localStorage.getItem(STORAGE_KEY) && stored) { window.localStorage.setItem(STORAGE_KEY, stored); window.localStorage.removeItem(TUNTIVA_STORAGE_KEY) }
   return stored === 'ms' ? 'ms' : 'en'
+  } catch { return 'en' }
 }
 
 export function saveLocale(locale: Locale) {
