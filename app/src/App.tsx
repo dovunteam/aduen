@@ -22,7 +22,10 @@ import type { ScopeAssessment } from './domain/scope'
 import type { EvidenceExtraction } from './domain/extraction'
 import { messages, readLocale, saveLocale } from './i18n'
 import type { Locale } from './i18n'
+import { CasePreview } from './components/CasePreview'
+import { FeatureIcon } from './components/FeatureIcon'
 import './App.css'
+import './visual.css'
 
 type Step = 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
 function App() {
@@ -37,29 +40,62 @@ function App() {
   const [returnStep, setReturnStep] = useState<Step>('welcome')
   const [scopeAssessment, setScopeAssessment] = useState<ScopeAssessment | null>(null)
   const [extractions, setExtractions] = useState<EvidenceExtraction[]>([])
+  const [storageError, setStorageError] = useState('')
+  const [unsaved, setUnsaved] = useState(false)
   const isUrgent = urgentReasons.length > 0
   const text = messages[locale]
   const caseText = text.caseDetails
   const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, scope: 3, saved: 3, evidence: 4, extraction: 5, review: 6, pack: 7, status: 8, data: 0 }[step]), [step])
 
   useEffect(() => {
-    if (step !== 'case') return
-    const timer = window.setTimeout(() => { saveCaseDraft(draft); setLastSaved(new Date()) }, 400)
-    return () => window.clearTimeout(timer)
-  }, [draft, step])
-
-  useEffect(() => {
-    saveLocale(locale)
+    try { saveLocale(locale) } catch { /* Language can still be changed for this session. */ }
     document.documentElement.lang = locale
   }, [locale])
 
+  useEffect(() => {
+    const heading = document.querySelector<HTMLElement>('main h1')
+    if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }) }
+    window.scrollTo(0, 0)
+  }, [step])
+
+  useEffect(() => {
+    if (!unsaved) return
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [unsaved])
+
+  function reportStorageError() {
+    setStorageError(locale === 'ms' ? 'Data tidak dapat disimpan atau dibaca. Semak ruang storan dan kebenaran pelayar, kemudian cuba lagi. Kekalkan tab ini terbuka untuk menyimpan perubahan.' : 'Data could not be saved or read. Check browser storage space and permissions, then retry. Keep this tab open to preserve your changes.')
+  }
+  async function runAction(action: () => void | Promise<void>) {
+    setStorageError('')
+    try { await action() } catch { reportStorageError() }
+  }
+  function persistDraft(next: CaseDraft) {
+    try { saveCaseDraft(next); setLastSaved(new Date()); setUnsaved(false); setStorageError('') }
+    catch { setUnsaved(true); setLastSaved(null); reportStorageError() }
+  }
+
   const toggleUrgent = (reason: string) => setUrgentReasons((current) => current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason])
-  const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
-  function saveCase(event: FormEvent) { event.preventDefault(); const assessment = assessScope(draft); setScopeAssessment(assessment); setLastSaved(new Date()); if (assessment.result === 'unsupported') { recordCaseTransition(draft, 'out_of_scope', 'scope_exclusion_identified'); setStep('scope') } else { recordCaseTransition(draft, 'evidence_collection', assessment.result === 'uncertain' ? 'manual_scope_review_needed' : 'case_details_confirmed'); setStep('saved') } }
+  const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => {
+    const next = { ...draft, [key]: value }
+    setDraft(next); persistDraft(next)
+  }
+  function saveCase(event: FormEvent) {
+    event.preventDefault()
+    void runAction(() => {
+      const assessment = assessScope(draft)
+      recordCaseTransition(draft, assessment.result === 'unsupported' ? 'out_of_scope' : 'evidence_collection', assessment.result === 'unsupported' ? 'scope_exclusion_identified' : assessment.result === 'uncertain' ? 'manual_scope_review_needed' : 'case_details_confirmed')
+      setScopeAssessment(assessment); setLastSaved(new Date()); setUnsaved(false)
+      setStep(assessment.result === 'unsupported' ? 'scope' : 'saved')
+    })
+  }
   async function startOver() {
     const prompt = locale === 'ms' ? 'Padam draf kes, setiap fail asal bukti, pek tersimpan, dan rekod status daripada pelayar ini? Tindakan ini tidak boleh dibatalkan.' : 'Delete the case draft, every evidence original, saved packs, and status record from this browser? This cannot be undone.'
     if (!window.confirm(prompt)) return
-    await clearEvidence(); clearCase(); clearSubmission(); clearConsent(); clearPacks()
+    await clearEvidence(); clearSubmission(); clearPacks(); clearConsent(); clearCase()
+    setUnsaved(false); setStorageError('')
     setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setReviewEvidence([]); setExtractions([]); setScopeAssessment(null); setStep('welcome')
   }
   function openDataControls() { setReturnStep(step === 'data' ? 'welcome' : step); setStep('data') }
@@ -84,17 +120,19 @@ function App() {
     setStep('saved')
   }
 
-  return <div className="app-shell">
-    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}>BUKTIVA<span aria-hidden="true">/</span></button><div className="header-actions"><div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
+  return <div className={`app-shell ${step === 'welcome' ? 'is-welcome' : 'is-workflow'}`}>
+    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M7 5h10l5 5v13H7V5Z" /><path d="M3 9v16m10-10h5m-5 4h5M17 5v6h5" /></svg></span>buktiva<span className="brand-period" aria-hidden="true">.</span></button><div className="header-actions"><div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
     <main>
-      <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
+      <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div aria-current={index + 1 === progress ? 'step' : undefined} className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
+      {storageError && <div className="storage-error" role="alert"><p>{storageError}</p>{unsaved && <button type="button" className="secondary" onClick={() => persistDraft(draft)}>{locale === 'ms' ? 'Cuba simpan lagi' : 'Retry saving'}</button>}</div>}
 
       {step === 'welcome' && <section className="page welcome-page">
-        <div className="eyebrow">{text.welcome.eyebrow}</div><h1>{renderLines(text.welcome.title)}</h1>
-        <p className="lede">{text.welcome.lede}</p>
-        <div className="boundary-grid">{text.welcome.cards.map(([title, copy], index) => <article key={title}><span className="card-number">{String(index + 1).padStart(2, '0')}</span><h2>{title}</h2><p>{copy}</p></article>)}</div>
-        <aside className="notice" aria-labelledby="before-title"><div><span className="notice-mark">i</span><div><h2 id="before-title">{text.welcome.before}</h2><p>{text.welcome.notice}</p></div></div><label className="check-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>{text.welcome.consent}</span></label></aside>
-        <div className="actions">{readCase() ? <button className="primary" disabled={!consent} onClick={() => void resumeCase()}>{text.welcome.resume} <span>→</span></button> : <button className="primary" disabled={!consent} onClick={() => { acceptConsent(); setStep('triage') }}>{text.welcome.begin} <span>→</span></button>}</div>
+        <div className="welcome-hero"><div className="hero-copy"><div className="eyebrow"><span />{text.welcome.eyebrow}</div><h1>{renderLines(text.welcome.title)}</h1>
+        <p className="lede">{text.welcome.lede}</p><div className="hero-actions"><a className="primary hero-start" href="#before-title">{locale === 'ms' ? 'Susun kes anda' : 'Organise your case'}<span aria-hidden="true">↗</span></a><span className="hero-reassurance">{locale === 'ms' ? 'Tiada akaun diperlukan' : 'No account needed'}<span>{locale === 'ms' ? 'Disimpan dalam pelayar anda' : 'Stored in your browser'}</span></span></div><div className="hero-footnote"><span aria-hidden="true">◎</span>{locale === 'ms' ? 'Untuk pembelian pengguna di Malaysia' : 'For consumer purchases in Malaysia'}</div></div><CasePreview locale={locale} /></div>
+        <div className="section-intro"><span>{locale === 'ms' ? 'SEDIKIT STRUKTUR. LEBIH KEJELASAN.' : 'A LITTLE STRUCTURE. A LOT MORE CLARITY.'}</span><span>{locale === 'ms' ? 'Cara Buktiva membantu' : 'How Buktiva helps'}<span aria-hidden="true">↓</span></span></div>
+        <div className="boundary-grid">{text.welcome.cards.map(([title, copy], index) => <article key={title}><div className="feature-card-top"><FeatureIcon index={index} /><span className="card-number">{String(index + 1).padStart(2, '0')}</span></div><h2>{title}</h2><p>{copy}</p></article>)}</div>
+        <div className="welcome-consent"><aside className="notice" aria-labelledby="before-title"><div><span className="notice-mark">i</span><div><h2 id="before-title">{text.welcome.before}</h2><p>{text.welcome.notice}</p></div></div><label className="check-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>{text.welcome.consent}</span></label></aside>
+        <div className="actions">{readCase() ? <button className="primary" disabled={!consent} onClick={() => void runAction(resumeCase)}>{text.welcome.resume} <span>→</span></button> : <button className="primary" disabled={!consent} onClick={() => void runAction(() => { acceptConsent(); setStep('triage') })}>{text.welcome.begin} <span>→</span></button>}<span className="consent-caption">{locale === 'ms' ? 'Semak dahulu. Kongsi apabila bersedia.' : 'Review first. Share when you’re ready.'}</span></div></div>
       </section>}
 
       {step === 'triage' && <section className="page narrow-page">
@@ -105,7 +143,7 @@ function App() {
       </section>}
 
       {step === 'case' && <section className="page form-page">
-        <div className="form-heading"><div><div className="eyebrow">{caseText.eyebrow}</div><h1>{caseText.title}</h1></div><div className="save-state"><span /> {lastSaved ? `${caseText.saved} ${lastSaved.toLocaleTimeString(locale === 'ms' ? 'ms-MY' : 'en-MY', { hour: '2-digit', minute: '2-digit' })}` : caseText.savedDevice}</div></div><p className="lede">{caseText.lede}</p>
+        <div className="form-heading"><div><div className="eyebrow">{caseText.eyebrow}</div><h1>{caseText.title}</h1></div><div className="save-state"><span /> {unsaved ? (locale === 'ms' ? 'Belum disimpan' : 'Not saved') : lastSaved ? `${caseText.saved} ${lastSaved.toLocaleTimeString(locale === 'ms' ? 'ms-MY' : 'en-MY', { hour: '2-digit', minute: '2-digit' })}` : caseText.savedDevice}</div></div><p className="lede">{caseText.lede}</p>
         <form onSubmit={saveCase}>
           <div className="form-section"><SectionTitle number="01" title={caseText.transaction} copy={caseText.transactionCopy} /><div className="fields two-col"><label>{caseText.consumerName}<input required value={draft.consumerName} onChange={(e) => updateDraft('consumerName', e.target.value)} placeholder={caseText.consumerNamePlaceholder} /></label><label>{caseText.consumerLocation}<select required value={draft.consumerLocation} onChange={(e) => updateDraft('consumerLocation', e.target.value as CaseDraft['consumerLocation'])}><option value="">{caseText.selectLocation}</option><option value="malaysia">{caseText.malaysia}</option><option value="outside">{caseText.outside}</option></select></label><label>{caseText.seller}<input required value={draft.seller} onChange={(e) => updateDraft('seller', e.target.value)} placeholder={caseText.sellerPlaceholder} /></label><label>{caseText.sellerLocation}<select required value={draft.sellerLocation} onChange={(e) => updateDraft('sellerLocation', e.target.value as CaseDraft['sellerLocation'])}><option value="">{caseText.selectKnown}</option><option value="malaysia">{caseText.malaysia}</option><option value="outside">{caseText.outside}</option><option value="unknown">{caseText.unknown}</option></select></label><label>{caseText.platform} <span className="optional">{caseText.optional}</span><input value={draft.platform} onChange={(e) => updateDraft('platform', e.target.value)} placeholder={caseText.platformPlaceholder} /></label><label>{caseText.purchaseDate}<input required type="date" value={draft.purchaseDate} onChange={(e) => updateDraft('purchaseDate', e.target.value)} /></label><label>{caseText.amount}<input required min="0" step="0.01" type="number" value={draft.amount} onChange={(e) => updateDraft('amount', e.target.value)} placeholder="0.00" /></label><label>{caseText.paymentMethod}<select required value={draft.paymentMethod} onChange={(e) => updateDraft('paymentMethod', e.target.value)}><option value="">{caseText.selectMethod}</option>{caseText.methods.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label><label>{caseText.reference} <span className="optional">{caseText.optional}</span><input value={draft.orderReference} onChange={(e) => updateDraft('orderReference', e.target.value)} placeholder={caseText.referencePlaceholder} /></label></div></div>
           <div className="form-section"><SectionTitle number="02" title={caseText.purposeProblem} copy={caseText.purposeProblemCopy} /><div className="fields two-col"><label>{caseText.purpose}<select required value={draft.purpose} onChange={(e) => updateDraft('purpose', e.target.value as CaseDraft['purpose'])}><option value="">{caseText.selectPurpose}</option><option value="personal">{caseText.personal}</option><option value="business">{caseText.business}</option></select></label><label>{caseText.category}<select required value={draft.category} onChange={(e) => updateDraft('category', e.target.value as CaseDraft['category'])}><option value="">{caseText.selectCategory}</option>{caseText.categories.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label><label>{caseText.issue}<select required value={draft.issue} onChange={(e) => updateDraft('issue', e.target.value as CaseDraft['issue'])}><option value="">{caseText.selectIssue}</option>{caseText.issues.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label></div></div>
@@ -115,12 +153,12 @@ function App() {
         </form>
       </section>}
 
-      {step === 'saved' && <section className="page narrow-page saved-page"><div className="success-mark">✓</div><div className="eyebrow">{text.draftSaved.eyebrow}</div><h1>{renderLines(text.draftSaved.title)}</h1><p className="lede">{text.draftSaved.lede}</p><dl className="summary"><div><dt>{text.draftSaved.seller}</dt><dd>{draft.seller}</dd></div><div><dt>{text.draftSaved.amount}</dt><dd>RM {Number(draft.amount).toFixed(2)}</dd></div><div><dt>{text.draftSaved.issue}</dt><dd>{labelFor(caseText.issues, draft.issue)}</dd></div><div><dt>{text.draftSaved.remedy}</dt><dd>{labelFor(caseText.remedies, draft.remedy)}</dd></div></dl><div className="actions split"><button className="secondary" onClick={() => void startOver()}>{text.draftSaved.delete}</button><div className="button-group"><button className="secondary" onClick={() => setStep('case')}>{text.draftSaved.edit}</button><button className="primary" onClick={() => setStep('evidence')}>{text.draftSaved.evidence} <span>→</span></button></div></div></section>}
-      {step === 'scope' && scopeAssessment && <OutOfScopeStep locale={locale} draft={draft} assessment={scopeAssessment} onEdit={() => setStep('case')} onDelete={startOver} />}
-      {step === 'evidence' && <EvidenceStep locale={locale} onBack={() => setStep('case')} onContinue={(items) => { void listExtractions().then((records) => { setReviewEvidence(items); setExtractions(records); if (records.some((record) => record.candidates.length > 0)) { recordCaseTransition(draft, 'confirmation', 'extracted_facts_review_requested'); setStep('extraction') } else { recordCaseTransition(draft, 'review', 'evidence_review_requested'); setStep('review') } }) }} />}
-      {step === 'extraction' && <ExtractionStep locale={locale} initialExtractions={extractions} evidence={reviewEvidence} onBack={() => setStep('evidence')} onContinue={(records) => { setExtractions(records); recordCaseTransition(draft, 'review', 'extracted_facts_reviewed'); setStep('review') }} />}
-      {step === 'review' && <ReviewStep locale={locale} draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions); savePack(pack); setComplaintPack(pack); setStep('pack') }} />}
-      {step === 'pack' && complaintPack && <PackStep locale={locale} initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`) }} onContinue={() => setStep('status')} />}
+      {step === 'saved' && <section className="page narrow-page saved-page"><div className="success-mark">✓</div><div className="eyebrow">{text.draftSaved.eyebrow}</div><h1>{renderLines(text.draftSaved.title)}</h1><p className="lede">{text.draftSaved.lede}</p><dl className="summary"><div><dt>{text.draftSaved.seller}</dt><dd>{draft.seller}</dd></div><div><dt>{text.draftSaved.amount}</dt><dd>RM {Number(draft.amount).toFixed(2)}</dd></div><div><dt>{text.draftSaved.issue}</dt><dd>{labelFor(caseText.issues, draft.issue)}</dd></div><div><dt>{text.draftSaved.remedy}</dt><dd>{labelFor(caseText.remedies, draft.remedy)}</dd></div></dl><div className="actions split"><button className="secondary" onClick={() => void runAction(startOver)}>{text.draftSaved.delete}</button><div className="button-group"><button className="secondary" onClick={() => setStep('case')}>{text.draftSaved.edit}</button><button className="primary" onClick={() => setStep('evidence')}>{text.draftSaved.evidence} <span>→</span></button></div></div></section>}
+      {step === 'scope' && scopeAssessment && <OutOfScopeStep locale={locale} draft={draft} assessment={scopeAssessment} onEdit={() => setStep('case')} onDelete={() => runAction(startOver)} />}
+      {step === 'evidence' && <EvidenceStep locale={locale} onChange={() => { recordCaseTransition(draft, 'evidence_collection', 'evidence_changed'); setComplaintPack(null) }} onBack={() => setStep('case')} onContinue={(items) => { void runAction(async () => { const records = await listExtractions(); setReviewEvidence(items); setExtractions(records); if (records.some((record) => record.candidates.length > 0)) { recordCaseTransition(draft, 'confirmation', 'extracted_facts_review_requested'); setStep('extraction') } else { recordCaseTransition(draft, 'review', 'evidence_review_requested'); setStep('review') } }) }} />}
+      {step === 'extraction' && <ExtractionStep locale={locale} initialExtractions={extractions} evidence={reviewEvidence} onBack={() => setStep('evidence')} onContinue={(records) => void runAction(() => { recordCaseTransition(draft, 'review', 'extracted_facts_reviewed'); setExtractions(records); setStep('review') })} />}
+      {step === 'review' && <ReviewStep locale={locale} draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => void runAction(() => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions); savePack(pack); setComplaintPack(pack); setStep('pack') })} />}
+      {step === 'pack' && complaintPack && <PackStep locale={locale} initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`); setComplaintPack(approved) }} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep locale={locale} onBack={() => setStep(complaintPack ? 'pack' : 'review')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
       {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
     </main>

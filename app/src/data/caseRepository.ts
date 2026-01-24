@@ -30,7 +30,11 @@ export function readCase(): CaseRecord | null {
 
 export function saveCaseDraft(draft: CaseDraft): CaseRecord {
   const current = readCase() ?? createCaseRecord(draft)
-  const saved = { ...current, draft, updatedAt: new Date().toISOString() }
+  const changed = JSON.stringify(current.draft) !== JSON.stringify(draft)
+  // A changed intake must be reviewed again; historical packs remain immutable.
+  const reviewed = changed && current.status !== 'draft'
+    ? transitionCase(current, 'draft', 'case_details_changed') : current
+  const saved = { ...reviewed, draft, updatedAt: new Date().toISOString() }
   localStorage.setItem(CASE_KEY, JSON.stringify(saved))
   return saved
 }

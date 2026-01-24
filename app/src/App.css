@@ -1,4 +1,10 @@
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.storage-error { width: min(1160px, calc(100% - 44px)); margin: 24px auto; padding: 18px; border-left: 3px solid #9b3f31; background: #f8ebe7; color: #813629; }
+.storage-error p { margin: 0 0 12px; }
+.page h1:focus { outline: none; }
+.evidence-copy, .pack-document, .pack-document dd, .pack-document li, .timeline li > div { min-width: 0; overflow-wrap: anywhere; }
+.evidence-controls { flex-wrap: wrap; }
+@media (max-width: 420px) { .topbar { padding-inline: 16px; }.header-actions { gap: 10px; }.wordmark { font-size: 16px; }.pack-document li { grid-template-columns: 1fr; }.pack-document dl div { grid-template-columns: 1fr; gap: 4px; } }
 .topbar { height: 74px; padding: 0 clamp(22px, 5vw, 72px); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; background: rgba(243,240,232,.92); }
 .wordmark { border: 0; background: transparent; padding: 0; font: 600 19px/1 Inter, Aptos, 'Segoe UI', sans-serif; letter-spacing: .17em; cursor: pointer; }
 .wordmark span { color: #d5844e; margin-left: 5px; }
