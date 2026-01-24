@@ -63,6 +63,21 @@ test('urgent risk blocks the ordinary intake path', async ({ page }) => {
   await expect(page.getByRole('button', { name: /No urgent issue/ })).toHaveCount(0)
 })
 
+test('uploaded images can be previewed and closed locally', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-pixel.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=', 'base64') })
+  await page.getByRole('button', { name: 'Add evidence', exact: true }).click()
+  await page.getByRole('button', { name: 'Preview image', exact: true }).click()
+  const preview = page.getByRole('img', { name: 'synthetic-pixel.png' })
+  await expect(preview).toBeVisible()
+  await expect.poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1)
+  await expect(preview).toHaveAttribute('src', /^blob:/)
+  await page.getByRole('button', { name: 'Close image preview' }).click()
+  await expect(preview).toHaveCount(0)
+})
+
 test('draft deletion can be cancelled and confirmed deletion removes saved case data', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)
