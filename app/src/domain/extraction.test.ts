@@ -41,6 +41,11 @@ describe('bounded text extraction', () => {
     expect(candidates.map(({ field, value }) => ({ field, value }))).toEqual([{ field: 'remedy', value: 'replacement' }])
   })
 
+  it('extracts only explicitly labelled consumer names', () => {
+    const candidates = extractCandidateFacts('Customer name: Synthetic Test Consumer. The customer bought a gift.')
+    expect(candidates.map(({ field, value }) => ({ field, value }))).toEqual([{ field: 'name', value: 'Synthetic Test Consumer' }])
+  })
+
   it('marks every extracted value unconfirmed by default', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
     expect(extraction.extractorVersion).toBe('plain-text-v1')

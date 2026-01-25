@@ -1,4 +1,4 @@
-export type ExtractedField = 'amount' | 'date' | 'reference' | 'remedy'
+export type ExtractedField = 'amount' | 'date' | 'reference' | 'remedy' | 'name'
 export type ExtractionCandidate = {
   id: string
   field: ExtractedField
@@ -49,6 +49,9 @@ export function extractCandidateFacts(text: string): ExtractionCandidate[] {
   for (const match of text.matchAll(/\b(?:request(?:ed)?|seek(?:ing)?|remedy|want|ask(?:ed)?)\s+(?:for\s+)?(?:a\s+)?(refund|replacement|repair|delivery|cancellation)\b/gi)) {
     add(candidate('remedy', match[1].toLowerCase(), 0.82, text, match.index, match.index + match[0].length))
   }
+  for (const match of text.matchAll(/\b(?:customer|buyer|consumer)\s+name\s*[:-]\s*([A-Za-z][A-Za-z '-]{1,79}?)(?=[.!?](?:\s|$)|$)/gi)) {
+    add(candidate('name', match[1].trim(), 0.78, text, match.index, match.index + match[0].length))
+  }
   return results
 }
 
@@ -71,5 +74,6 @@ export function isValidCandidateValue(field: ExtractedField, value: string): boo
     return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
   }
   if (field === 'remedy') return ['delivery', 'replacement', 'repair', 'cancellation', 'refund'].includes(value.toLowerCase())
+  if (field === 'name') return value.length <= 80 && /^[A-Za-z][A-Za-z .'-]*$/.test(value)
   return value.length <= 200 && !Array.from(value).some((character) => character.charCodeAt(0) < 32)
 }
