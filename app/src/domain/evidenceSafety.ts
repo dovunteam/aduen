@@ -1,4 +1,4 @@
-export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number'; message: string }
+export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'binary_unscanned'; message: string }
 
 function passesLuhn(value: string): boolean {
   let sum = 0; let alternate = false
@@ -26,6 +26,6 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
 }
 
 export async function scanEvidenceFile(file: File): Promise<EvidenceRisk[]> {
-  if (file.type !== 'text/plain') return []
+  if (file.type !== 'text/plain') return [{ code: 'binary_unscanned', message: 'This image or PDF was not scanned for sensitive content. Review it manually before storing or sharing.' }]
   return detectEvidenceRisks((await file.text()).slice(0, 500_000))
 }
