@@ -132,7 +132,7 @@ function evidenceLabel(type: EvidenceType, locale: Locale) {
 
 function riskLabel(risk: EvidenceRisk, locale: Locale) {
   if (locale === 'en') return risk.message
-  return ({ card_number: 'Nombor kad pembayaran penuh mungkin terdapat dalam fail ini.', authentication_secret: 'Fail ini menyebut kata laluan, PIN, OTP, kod pemulihan, atau rahsia serupa.', identity_number: 'Fail ini mungkin mengandungi nombor dokumen pengenalan.', binary_unscanned: 'Imej atau PDF ini tidak diimbas untuk kandungan sensitif. Semak secara manual sebelum menyimpan atau berkongsi.' } as const)[risk.code]
+  return ({ card_number: 'Nombor kad pembayaran penuh mungkin terdapat dalam fail ini.', authentication_secret: 'Fail ini menyebut kata laluan, PIN, OTP, kod pemulihan, atau rahsia serupa.', identity_number: 'Fail ini mungkin mengandungi nombor dokumen pengenalan.', third_party_data: 'Fail ini nampaknya menyebut maklumat orang lain. Semak sama ada ia perlu disertakan.', binary_unscanned: 'Imej atau PDF ini tidak diimbas untuk kandungan sensitif. Semak secara manual sebelum menyimpan atau berkongsi.' } as const)[risk.code]
 }
 
 function localizeEvidenceError(message: string, locale: Locale) {
