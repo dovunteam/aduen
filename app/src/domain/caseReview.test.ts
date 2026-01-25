@@ -37,6 +37,11 @@ describe('fact conflicts', () => {
   it('ignores unconfirmed derived values', () => {
     expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '125.50' }, [createEvidenceExtraction('e1', 'Total RM 130.00')])).toEqual([])
   })
+  it('flags a confirmed remedy that differs from the case record', () => {
+    const extraction = createEvidenceExtraction('e1', 'I requested a replacement.')
+    extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
+    expect(findFactConflicts({ ...EMPTY_DRAFT, remedy: 'refund' }, [extraction])[0]).toContain('requested remedy')
+  })
 })
 
 describe('timeline', () => {
