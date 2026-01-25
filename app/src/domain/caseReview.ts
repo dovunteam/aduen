@@ -82,5 +82,8 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
   if (extractedDates.length > 1) conflicts.push('Confirmed evidence contains multiple extracted dates. Check which event each date describes.')
   const extractedRemedies = [...new Set(confirmed.filter((item) => item.field === 'remedy').map((item) => item.confirmedValue?.toLowerCase()).filter(Boolean))]
   if (draft.remedy && extractedRemedies.some((remedy) => remedy !== draft.remedy)) conflicts.push(`A confirmed extracted remedy differs from the entered requested remedy of ${draft.remedy}.`)
+  const normaliseName = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase()
+  const extractedNames = [...new Set(confirmed.filter((item) => item.field === 'name').map((item) => item.confirmedValue).filter(Boolean))]
+  if (draft.consumerName && extractedNames.some((name) => normaliseName(name as string) !== normaliseName(draft.consumerName))) conflicts.push('A confirmed extracted consumer name differs from the entered case name.')
   return conflicts
 }
