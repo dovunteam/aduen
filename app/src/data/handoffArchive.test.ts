@@ -33,6 +33,7 @@ describe('approved evidence archive', () => {
     expect(manifest.evidence).toHaveLength(1)
     expect(await zip.file(manifest.evidence[0].archivePath)!.async('string')).toBe(await original.text())
     expect(manifest.evidence[0].archivePath).not.toContain('../')
+    expect(manifest.pack.route).toMatchObject({ routeName: 'Manual review', ruleVersion: 'MY-R010-2026.09.20.2' })
     expect(getEvidenceOriginal).toHaveBeenCalledExactlyOnceWith('selected')
     expect(pack.confirmedDerivedFacts).toEqual([])
     const pdf = await zip.file('buktiva-case-v1.pdf')!.async('string')
