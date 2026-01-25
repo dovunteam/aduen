@@ -14,6 +14,7 @@ export type RouteEvaluation = {
   sourceChecked: string
   ruleVersion: string
   confidence: 'supported' | 'uncertain' | 'unsupported'
+  officialLinks?: Array<{ label: string; url: string }>
 }
 
 export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
@@ -67,5 +68,9 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
     ...base, routeName: 'Manual route review', recommendedAction: 'Review the merchant contact and response before choosing any external escalation channel.',
     matchingFacts: [`Merchant contact recorded: ${draft.contactHistory}`, ...(draft.contactDate ? [`Contact date: ${draft.contactDate}`] : [])],
     unmetPrerequisites: [...missing, ...(!draft.contactDate ? ['Date of merchant contact'] : [])], exclusionsChecked: ['Merchant-first prerequisite considered'], confidence: 'uncertain',
+    officialLinks: [
+      { label: 'KPDN e-Aduan', url: 'https://eaduan.kpdn.gov.my/' },
+      { label: 'TTPM e-Tribunal', url: 'https://ttpm.kpdn.gov.my/?lang=en' },
+    ],
   }
 }
