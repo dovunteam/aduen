@@ -78,6 +78,21 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   await expect(preview).toHaveCount(0)
 })
 
+test('uploaded PDFs can be previewed locally without leaving the page', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-receipt.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% synthetic evidence\n') })
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await page.getByRole('button', { name: 'Preview PDF', exact: true }).click()
+  const preview = page.getByTitle('Evidence PDF preview')
+  await expect(preview).toBeVisible()
+  await expect(preview).toHaveAttribute('src', /^blob:/)
+  await expect(preview).toHaveAttribute('sandbox', '')
+  await page.getByRole('button', { name: 'Close PDF preview' }).click()
+  await expect(preview).toHaveCount(0)
+})
+
 test('draft deletion can be cancelled and confirmed deletion removes saved case data', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)
