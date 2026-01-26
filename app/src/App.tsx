@@ -3,15 +3,17 @@ import type { FormEvent } from 'react'
 import { EvidenceStep } from './components/EvidenceStep'
 import { ReviewStep } from './components/ReviewStep'
 import { PackStep } from './components/PackStep'
+import { StatusStep } from './components/StatusStep'
 import { clearEvidence } from './data/evidenceRepository'
 import { EMPTY_DRAFT } from './domain/case'
 import type { CaseDraft } from './domain/case'
 import type { EvidenceMetadata } from './domain/evidence'
 import { createComplaintPack } from './domain/complaintPack'
 import type { ComplaintPack } from './domain/complaintPack'
+import { clearSubmission } from './data/statusRepository'
 import './App.css'
 
-type Step = 'welcome' | 'triage' | 'case' | 'saved' | 'evidence' | 'review' | 'pack'
+type Step = 'welcome' | 'triage' | 'case' | 'saved' | 'evidence' | 'review' | 'pack' | 'status'
 const STORAGE_KEY = 'tuntiva.case-draft.v1'
 
 function readDraft(): CaseDraft {
@@ -28,7 +30,7 @@ function App() {
   const [reviewEvidence, setReviewEvidence] = useState<EvidenceMetadata[]>([])
   const [complaintPack, setComplaintPack] = useState<ComplaintPack | null>(null)
   const isUrgent = urgentReasons.length > 0
-  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, saved: 3, evidence: 4, review: 5, pack: 6 }[step]), [step])
+  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, saved: 3, evidence: 4, review: 5, pack: 6, status: 7 }[step]), [step])
 
   useEffect(() => {
     if (step !== 'case') return
@@ -39,12 +41,12 @@ function App() {
   const toggleUrgent = (reason: string) => setUrgentReasons((current) => current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason])
   const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
   function saveCase(event: FormEvent) { event.preventDefault(); localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); setLastSaved(new Date()); setStep('saved') }
-  async function startOver() { localStorage.removeItem(STORAGE_KEY); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setStep('welcome') }
+  async function startOver() { localStorage.removeItem(STORAGE_KEY); clearSubmission(); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setStep('welcome') }
 
   return <div className="app-shell">
     <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label="Tuntiva home">TUNTIVA<span aria-hidden="true">/</span></button><div className="pilot-label"><span /> Private prototype</div></header>
     <main>
-      <nav className="progress" aria-label="Case setup progress">{['Understand', 'Safety check', 'Case details', 'Evidence', 'Check', 'Pack'].map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
+      <nav className="progress" aria-label="Case setup progress">{['Understand', 'Safety check', 'Case details', 'Evidence', 'Check', 'Pack', 'Status'].map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
 
       {step === 'welcome' && <section className="page welcome-page">
         <div className="eyebrow">A clearer recovery path</div><h1>Put a failed purchase<br />into order.</h1>
@@ -77,7 +79,8 @@ function App() {
       {step === 'saved' && <section className="page narrow-page saved-page"><div className="success-mark">✓</div><div className="eyebrow">Draft saved</div><h1>Your case record<br />has started.</h1><p className="lede">The transaction details are stored only in this browser. Next, add the original records that support the case.</p><dl className="summary"><div><dt>Seller</dt><dd>{draft.seller}</dd></div><div><dt>Amount</dt><dd>RM {Number(draft.amount).toFixed(2)}</dd></div><div><dt>Issue</dt><dd>{draft.issue.replaceAll('_', ' ')}</dd></div><div><dt>Remedy</dt><dd>{draft.remedy}</dd></div></dl><div className="actions split"><button className="secondary" onClick={() => void startOver()}>Delete draft</button><div className="button-group"><button className="secondary" onClick={() => setStep('case')}>Edit details</button><button className="primary" onClick={() => setStep('evidence')}>Add evidence <span>→</span></button></div></div></section>}
       {step === 'evidence' && <EvidenceStep onBack={() => setStep('case')} onContinue={(items) => { setReviewEvidence(items); setStep('review') }} />}
       {step === 'review' && <ReviewStep draft={draft} evidence={reviewEvidence} onBack={() => setStep('evidence')} onPrepare={(route) => { setComplaintPack(createComplaintPack(draft, reviewEvidence, route)); setStep('pack') }} />}
-      {step === 'pack' && complaintPack && <PackStep initialPack={complaintPack} onBack={() => setStep('review')} />}
+      {step === 'pack' && complaintPack && <PackStep initialPack={complaintPack} onBack={() => setStep('review')} onContinue={() => setStep('status')} />}
+      {step === 'status' && <StatusStep onBack={() => setStep('pack')} />}
     </main>
     <footer><p>Tuntiva by DOVUN</p><p>Case organisation, not legal representation.</p></footer>
   </div>

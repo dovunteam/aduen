@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { approveComplaintPack } from '../domain/complaintPack'
 import type { ComplaintPack } from '../domain/complaintPack'
 
-type Props = { initialPack: ComplaintPack; onBack: () => void }
+type Props = { initialPack: ComplaintPack; onBack: () => void; onContinue: () => void }
 
-export function PackStep({ initialPack, onBack }: Props) {
+export function PackStep({ initialPack, onBack, onContinue }: Props) {
   const [pack, setPack] = useState(initialPack)
   const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState('')
@@ -32,7 +32,7 @@ export function PackStep({ initialPack, onBack }: Props) {
       <footer>{pack.disclaimer}</footer>
     </article>
     <aside className="approval-panel"><div className="eyebrow">Your approval</div><h2>Nothing leaves this device.</h2><p>Review names, dates, amounts, remedy, chronology, and the evidence index. Return to the case to correct anything that is wrong.</p><label className="check-row"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>I reviewed this pack and approve this version for export.</span></label>{pack.approvedAt && <p className="approval-time">Approved {new Date(pack.approvedAt).toLocaleString('en-MY')}</p>}{error && <p className="form-error" role="alert">{error}</p>}<button className="primary" disabled={!confirmed} onClick={approveAndExport}>Export PDF <span>↓</span></button><small>The evidence originals remain separate and are not embedded in this prototype PDF.</small></aside></div>
-    <div className="actions split"><button className="secondary" onClick={onBack}>← Tuntiva Check</button></div>
+    <div className="actions split"><button className="secondary" onClick={onBack}>← Tuntiva Check</button><button className="primary" disabled={!pack.approvedAt} onClick={onContinue}>Track external status <span>→</span></button></div>
   </section>
 }
 
