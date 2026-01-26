@@ -26,7 +26,7 @@ export async function buildHandoffArchive(pack: ComplaintPack): Promise<Uint8Arr
     exportVersion: 1,
     exportedAt: new Date().toISOString(),
     notice: 'User-approved Buktiva handoff archive. It contains the approved pack and only the evidence selected for that pack.',
-    pack: { id: pack.id, version: pack.version, approvedAt: pack.approvedAt },
+    pack: { id: pack.id, version: pack.version, approvedAt: pack.approvedAt, route: pack.route },
     evidence: manifestEvidence,
   }, null, 2))
   return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } })
