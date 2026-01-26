@@ -20,6 +20,7 @@ export type RouteEvaluation = {
 export type TtpmAssessment = { status: 'candidate' | 'excluded' | 'uncertain'; reason: string }
 
 export function assessTtpmCandidate(draft: CaseDraft, now = new Date()): TtpmAssessment {
+  if (!draft.purpose || !draft.category) return { status: 'uncertain', reason: 'TTPM candidate check: confirm the purchase purpose and category.' }
   if (draft.purpose === 'business') return { status: 'excluded', reason: 'TTPM candidate check: business or professional purchase is excluded.' }
   if (['healthcare', 'professional_service', 'land', 'aviation'].includes(draft.category)) return { status: 'excluded', reason: 'TTPM candidate check: this category is listed as excluded or sector-specific.' }
   const amount = Number(draft.amount)
