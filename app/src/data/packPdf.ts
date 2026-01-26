@@ -44,6 +44,7 @@ export function createComplaintPackPdf(pack: ComplaintPack): jsPDF {
   }
   heading('Route record')
   line(`${pack.route.routeName}\nRule version: ${pack.route.ruleVersion}\nSource checked: ${pack.route.sourceChecked}\nSource: ${pack.route.sourceUrl}`)
+  if (pack.route.officialLinks?.length) line(`Possible official destinations:\n${pack.route.officialLinks.map((link) => `${link.label}: ${link.url}`).join('\n')}`)
   heading('User declaration')
   line(pack.declaration)
   heading('Important notice')
