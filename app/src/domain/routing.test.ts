@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_DRAFT } from './case'
-import { evaluateInitialRoute } from './routing'
+import { assessTtpmCandidate, evaluateInitialRoute } from './routing'
 
 describe('initial routing', () => {
   it.each([{ sellerLocation: 'unknown' as const }, { sellerLocation: 'outside' as const }, { category: 'other' as const }])('retains uncertain scope for %j', (override) => {
@@ -43,5 +43,22 @@ describe('initial routing', () => {
   it('pauses excluded and sector-specific categories', () => {
     expect(evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', purpose: 'personal', category: 'healthcare' }, []).confidence).toBe('unsupported')
     expect(evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', purpose: 'personal', category: 'aviation' }, []).routeName).toBe('Sector route review')
+  })
+})
+
+describe('TTPM candidate check', () => {
+  const base = { ...EMPTY_DRAFT, purpose: 'personal' as const, category: 'general_goods' as const, amount: '120.00', purchaseDate: '2026-01-01' }
+
+  it('marks an in-range personal purchase as a candidate without approving it', () => {
+    expect(assessTtpmCandidate(base, new Date('2026-09-21T00:00:00Z')).status).toBe('candidate')
+  })
+
+  it.each([
+    [{ ...base, purpose: 'business' as const }, 'excluded'],
+    [{ ...base, amount: '50000.01' }, 'excluded'],
+    [{ ...base, purchaseDate: '2022-09-20' }, 'excluded'],
+    [{ ...base, amount: '' }, 'uncertain'],
+  ] as const)('retains uncertainty or exclusion for %j', (draft, status) => {
+    expect(assessTtpmCandidate(draft, new Date('2026-09-21T00:00:00Z')).status).toBe(status)
   })
 })
