@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import JSZip from 'jszip'
 import { buildHandoffArchive } from './handoffArchive'
 import { getEvidenceOriginal } from './evidenceRepository'
@@ -7,6 +7,7 @@ import { EMPTY_DRAFT } from '../domain/case'
 import { evaluateInitialRoute } from '../domain/routing'
 import { createEvidenceExtraction, reviewCandidate } from '../domain/extraction'
 import type { EvidenceMetadata } from '../domain/evidence'
+import { recordAuditEvent, clearAuditEvents } from './auditRepository'
 
 vi.mock('./evidenceRepository', () => ({ getEvidenceOriginal: vi.fn() }))
 
@@ -23,17 +24,25 @@ async function fixture() {
 }
 
 describe('approved evidence archive', () => {
-  beforeEach(() => vi.resetAllMocks())
+  beforeEach(() => {
+    vi.resetAllMocks()
+    const values = new Map<string, string>()
+    vi.stubGlobal('localStorage', { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key) })
+    clearAuditEvents()
+  })
+  afterEach(() => vi.unstubAllGlobals())
 
   it('packages verified selected originals and a PDF without excluded derived facts', async () => {
     const { original, pack } = await fixture()
     vi.mocked(getEvidenceOriginal).mockResolvedValue(original)
+    recordAuditEvent('evidence_previewed', 'selected', 'text preview')
     const zip = await JSZip.loadAsync(await buildHandoffArchive(pack))
     const manifest = JSON.parse(await zip.file('manifest.json')!.async('string'))
     expect(manifest.evidence).toHaveLength(1)
     expect(await zip.file(manifest.evidence[0].archivePath)!.async('string')).toBe(await original.text())
     expect(manifest.evidence[0].archivePath).not.toContain('../')
     expect(manifest.pack.route).toMatchObject({ routeName: 'Manual review', ruleVersion: 'MY-R010-2026.09.20.2' })
+    expect(manifest.auditLog[0].action).toBe('evidence_previewed')
     expect(getEvidenceOriginal).toHaveBeenCalledExactlyOnceWith('selected')
     expect(pack.confirmedDerivedFacts).toEqual([])
     const pdf = await zip.file('buktiva-case-v1.pdf')!.async('string')

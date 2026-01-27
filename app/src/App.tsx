@@ -16,6 +16,7 @@ import type { ComplaintPack } from './domain/complaintPack'
 import { clearSubmission } from './data/statusRepository'
 import { acceptConsent, clearConsent, readConsent } from './data/consentRepository'
 import { clearCase, readCase, recordCaseTransition, saveCaseDraft } from './data/caseRepository'
+import { clearAuditEvents } from './data/auditRepository'
 import { clearPacks, listPacks, nextPackVersion, savePack } from './data/packRepository'
 import { assessScope } from './domain/scope'
 import type { ScopeAssessment } from './domain/scope'
@@ -94,7 +95,7 @@ function App() {
   async function startOver() {
     const prompt = locale === 'ms' ? 'Padam draf kes, setiap fail asal bukti, pek tersimpan, dan rekod status daripada pelayar ini? Tindakan ini tidak boleh dibatalkan.' : 'Delete the case draft, every evidence original, saved packs, and status record from this browser? This cannot be undone.'
     if (!window.confirm(prompt)) return
-    await clearEvidence(); clearSubmission(); clearPacks(); clearConsent(); clearCase()
+    await clearEvidence(); clearSubmission(); clearPacks(); clearConsent(); clearAuditEvents(); clearCase()
     setUnsaved(false); setStorageError('')
     setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setReviewEvidence([]); setExtractions([]); setScopeAssessment(null); setStep('welcome')
   }

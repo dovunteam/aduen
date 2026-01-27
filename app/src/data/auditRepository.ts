@@ -20,10 +20,10 @@ export function listAuditEvents(): LocalAuditEvent[] {
 export function recordAuditEvent(action: LocalAuditEvent['action'], targetId: string, detail: string, now = new Date()): LocalAuditEvent {
   const event: LocalAuditEvent = { id: crypto.randomUUID(), at: now.toISOString(), action, targetId, detail }
   const events = [...listAuditEvents(), event].slice(-500)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(events))
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)) } catch { /* Audit persistence is best-effort when storage is unavailable. */ }
   return event
 }
 
 export function clearAuditEvents(): void {
-  localStorage.removeItem(STORAGE_KEY)
+  try { localStorage.removeItem(STORAGE_KEY) } catch { /* There is nothing to clear when storage is unavailable. */ }
 }
