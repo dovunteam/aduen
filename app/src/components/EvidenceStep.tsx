@@ -9,6 +9,7 @@ import type { Locale } from '../i18n'
 import { TextEvidencePreview } from './TextEvidencePreview'
 import { ImageEvidencePreview } from './ImageEvidencePreview'
 import { PdfEvidencePreview } from './PdfEvidencePreview'
+import { recordAuditEvent } from '../data/auditRepository'
 
 type Props = { locale: Locale; onBack: () => void; onChange: () => void; onContinue: (evidence: EvidenceMetadata[]) => void }
 
@@ -59,6 +60,7 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
     try {
       onChange()
       await deleteEvidence(item.id)
+      recordAuditEvent('evidence_deleted', item.id, item.fileName)
       setItems((current) => current.filter((entry) => entry.id !== item.id))
     } catch { setError(text.saveError) }
     finally { setBusy(false) }
@@ -72,6 +74,7 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
     const url = URL.createObjectURL(original)
     const anchor = document.createElement('a')
     anchor.href = url; anchor.download = item.fileName.replace(/[\\/]/g, '_'); anchor.click()
+    recordAuditEvent('evidence_downloaded', item.id, item.fileName)
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch { setError(text.readError) }
   }
