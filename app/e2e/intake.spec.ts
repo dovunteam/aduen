@@ -185,6 +185,10 @@ test('a supported draft preserves original evidence and resumes at the evidence 
   await page.getByRole('button', { name: /Resume saved case/ }).click()
   await expect(page.getByRole('heading', { name: 'Keep the originals.' })).toBeVisible()
   await expect(page.getByText('synthetic-receipt.txt')).toBeVisible()
+  await page.getByRole('button', { name: 'Data controls' }).click()
+  await expect(page.getByRole('heading', { name: 'Local activity history' })).toBeVisible()
+  await page.getByText(/View \d+ recorded actions?/).click()
+  await expect(page.getByText('Evidence previewed')).toBeVisible()
 })
 
 test('a complete merchant-first case reaches approved PDF export and outcome tracking', async ({ page }) => {
