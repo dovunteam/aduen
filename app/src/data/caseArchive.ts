@@ -5,6 +5,7 @@ import { getEvidenceOriginal, listEvidence, listExtractions } from './evidenceRe
 import { readConsent } from './consentRepository'
 import { readCase } from './caseRepository'
 import { listPacks } from './packRepository'
+import { listAuditEvents, recordAuditEvent } from './auditRepository'
 
 export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<Uint8Array> {
   const evidence = await listEvidence()
@@ -19,6 +20,7 @@ export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionR
     packVersions: listPacks(),
     consent: readConsent(),
     submission,
+    auditLog: listAuditEvents(),
     evidence,
     extractions,
   }
@@ -37,6 +39,7 @@ export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionR
 }
 
 export async function downloadCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<void> {
+  recordAuditEvent('case_exported', 'case', 'complete case archive requested')
   const bytes = await buildCaseArchive(draft, submission)
   const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }))
   const anchor = document.createElement('a')
