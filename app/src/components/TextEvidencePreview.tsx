@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getEvidenceOriginal } from '../data/evidenceRepository'
 import type { Locale } from '../i18n'
+import { recordAuditEvent } from '../data/auditRepository'
 
 const PREVIEW_BYTES = 64 * 1024
 
@@ -22,6 +23,7 @@ export function TextEvidencePreview({ evidenceId, locale }: { evidenceId: string
     try {
       const original = await getEvidenceOriginal(evidenceId)
       if (!original) throw new Error('Missing original')
+      recordAuditEvent('evidence_previewed', evidenceId, 'text preview')
       setContent(await original.slice(0, PREVIEW_BYTES).text())
       setTruncated(original.size > PREVIEW_BYTES)
     } catch { setFailed(true) }
@@ -46,6 +48,7 @@ export function TextEvidencePreview({ evidenceId, locale }: { evidenceId: string
     anchor.href = url
     anchor.download = `redacted-evidence-${evidenceId}.txt`
     anchor.click()
+    recordAuditEvent('redacted_copy_exported', evidenceId, 'text copy')
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 

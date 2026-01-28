@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getEvidenceOriginal } from '../data/evidenceRepository'
 import type { Locale } from '../i18n'
+import { recordAuditEvent } from '../data/auditRepository'
 
 export function PdfEvidencePreview({ evidenceId, locale }: { evidenceId: string; locale: Locale }) {
   const [open, setOpen] = useState(false)
@@ -15,6 +16,7 @@ export function PdfEvidencePreview({ evidenceId, locale }: { evidenceId: string;
       if (disposed) return
       if (!original) throw new Error('Missing original')
       objectUrl = URL.createObjectURL(original)
+      recordAuditEvent('evidence_previewed', evidenceId, 'PDF preview')
       setUrl(objectUrl)
     }).catch(() => { if (!disposed) setFailed(true) })
     return () => { disposed = true; if (objectUrl) URL.revokeObjectURL(objectUrl) }
