@@ -57,6 +57,7 @@ describe('TTPM candidate check', () => {
     [{ ...base, purpose: 'business' as const }, 'excluded'],
     [{ ...base, amount: '50000.01' }, 'excluded'],
     [{ ...base, purchaseDate: '2022-09-20' }, 'excluded'],
+    [{ ...base, purchaseDate: '2026-02-30' }, 'uncertain'],
     [{ ...base, amount: '' }, 'uncertain'],
     [{ ...base, purpose: '' as const }, 'uncertain'],
   ] as const)('retains uncertainty or exclusion for %j', (draft, status) => {
