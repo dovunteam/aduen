@@ -245,6 +245,10 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
   await expect(page.getByText('0', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Prepare merchant request' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Data controls' }).click()
+  await expect(page.getByRole('heading', { name: 'Local activity history' })).toBeVisible()
+  await page.getByText(/View \d+ recorded actions?/).click()
+  await expect(page.getByText('Submission edited', { exact: true }).first()).toBeVisible()
 })
 
 test('extracted candidates require explicit confirmation, correction, or rejection', async ({ page }) => {

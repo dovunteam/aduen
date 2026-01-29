@@ -56,7 +56,7 @@ const dataText = {
 
 function auditLabel(event: LocalAuditEvent, locale: Locale): string {
   const labels = locale === 'ms'
-    ? { case_edited: 'Edit kes', evidence_previewed: 'Pratonton bukti', evidence_downloaded: 'Muat turun bukti asal', redacted_copy_exported: 'Eksport salinan redaksi', evidence_deleted: 'Padam bukti', case_transitioned: 'Peralihan kes', case_exported: 'Eksport kes', pack_exported: 'Eksport pek', handoff_exported: 'Eksport serahan' }
-    : { case_edited: 'Case edited', evidence_previewed: 'Evidence previewed', evidence_downloaded: 'Original evidence downloaded', redacted_copy_exported: 'Redacted copy exported', evidence_deleted: 'Evidence deleted', case_transitioned: 'Case transitioned', case_exported: 'Case exported', pack_exported: 'Pack exported', handoff_exported: 'Handoff exported' }
+    ? { case_edited: 'Edit kes', submission_edited: 'Edit serahan', evidence_previewed: 'Pratonton bukti', evidence_downloaded: 'Muat turun bukti asal', redacted_copy_exported: 'Eksport salinan redaksi', evidence_deleted: 'Padam bukti', case_transitioned: 'Peralihan kes', case_exported: 'Eksport kes', pack_exported: 'Eksport pek', handoff_exported: 'Eksport serahan' }
+    : { case_edited: 'Case edited', submission_edited: 'Submission edited', evidence_previewed: 'Evidence previewed', evidence_downloaded: 'Original evidence downloaded', redacted_copy_exported: 'Redacted copy exported', evidence_deleted: 'Evidence deleted', case_transitioned: 'Case transitioned', case_exported: 'Case exported', pack_exported: 'Pack exported', handoff_exported: 'Handoff exported' }
   return labels[event.action]
 }
