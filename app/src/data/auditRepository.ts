@@ -1,7 +1,7 @@
 export type LocalAuditEvent = {
   id: string
   at: string
-  action: 'evidence_previewed' | 'evidence_downloaded' | 'redacted_copy_exported' | 'evidence_deleted' | 'case_exported' | 'handoff_exported'
+  action: 'evidence_previewed' | 'evidence_downloaded' | 'redacted_copy_exported' | 'evidence_deleted' | 'case_exported' | 'pack_exported' | 'handoff_exported'
   targetId: string
   detail: string
 }

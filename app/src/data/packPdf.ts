@@ -1,9 +1,11 @@
 import { jsPDF } from 'jspdf'
 import type { ComplaintPack } from '../domain/complaintPack'
 import { packFileName } from '../domain/complaintPack'
+import { recordAuditEvent } from './auditRepository'
 
 export function downloadComplaintPackPdf(pack: ComplaintPack): void {
   if (!pack.approvedAt) throw new Error('Approve the pack before exporting it.')
+  recordAuditEvent('pack_exported', pack.id, `approved pack v${pack.version} PDF requested`)
   const pdf = createComplaintPackPdf(pack)
   pdf.save(packFileName(pack))
 }
