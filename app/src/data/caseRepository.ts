@@ -37,6 +37,7 @@ export function saveCaseDraft(draft: CaseDraft): CaseRecord {
     ? transitionCase(current, 'draft', 'case_details_changed') : current
   const saved = { ...reviewed, draft, updatedAt: new Date().toISOString() }
   localStorage.setItem(CASE_KEY, JSON.stringify(saved))
+  if (changed) recordAuditEvent('case_edited', saved.id, 'case draft fields changed')
   return saved
 }
 
