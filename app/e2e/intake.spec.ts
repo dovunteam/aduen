@@ -252,6 +252,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await expect(page.getByRole('heading', { name: 'Local activity history' })).toBeVisible()
   await page.getByText(/View \d+ recorded actions?/).click()
   await expect(page.getByText('Request copied', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('Pack viewed', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Submission edited', { exact: true }).first()).toBeVisible()
 })
 
