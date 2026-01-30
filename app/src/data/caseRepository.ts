@@ -1,5 +1,6 @@
 import { createCaseRecord, EMPTY_DRAFT, transitionCase } from '../domain/case'
 import type { CaseDraft, CaseRecord, CaseRecordStatus } from '../domain/case'
+import { recordAuditEvent } from './auditRepository'
 
 const CASE_KEY = 'buktiva.case-record.v1'
 const LEGACY_DRAFT_KEY = 'buktiva.case-draft.v1'
@@ -44,6 +45,7 @@ export function recordCaseTransition(draft: CaseDraft, status: CaseRecordStatus,
   if (current.status === status && current.history.at(-1)?.action === action) return current
   const saved = transitionCase(current, status, action)
   localStorage.setItem(CASE_KEY, JSON.stringify(saved))
+  recordAuditEvent('case_transitioned', saved.id, `${status}: ${action}`)
   return saved
 }
 
