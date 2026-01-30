@@ -26,4 +26,10 @@ describe('local audit log', () => {
     expect(events).toHaveLength(500)
     expect(events[0].targetId).toBe('e5')
   })
+
+  it('ignores malformed stored records', () => {
+    localStorage.setItem('buktiva.audit-log.v1', JSON.stringify([{ action: 'unknown' }, { id: 'valid', at: '2026-09-21T00:00:00Z', action: 'case_exported', targetId: 'case', detail: 'archive' }]))
+    expect(listAuditEvents()).toHaveLength(1)
+    expect(listAuditEvents()[0].id).toBe('valid')
+  })
 })
