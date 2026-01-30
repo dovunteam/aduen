@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { approveComplaintPack } from '../domain/complaintPack'
 import type { ComplaintPack } from '../domain/complaintPack'
 import type { Locale } from '../i18n'
+import { recordAuditEvent } from '../data/auditRepository'
 
 type Props = { locale: Locale; initialPack: ComplaintPack; onBack: () => void; onContinue: () => void; onApproved: (pack: ComplaintPack) => void }
 
@@ -36,7 +37,7 @@ export function PackStep({ locale, initialPack, onBack, onContinue, onApproved }
 
   async function copyRequest() {
     setError('')
-    try { await navigator.clipboard.writeText(`Subject: ${pack.merchantRequest.subject}\n\n${pack.merchantRequest.body}`); setCopied(true) }
+    try { await navigator.clipboard.writeText(`Subject: ${pack.merchantRequest.subject}\n\n${pack.merchantRequest.body}`); recordAuditEvent('request_copied', pack.id, `approved pack v${pack.version} request copied`); setCopied(true) }
     catch { setError(text.copyError) }
   }
 
