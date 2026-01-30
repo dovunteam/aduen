@@ -288,4 +288,8 @@ test('extracted candidates require explicit confirmation, correction, or rejecti
   await expect(page.getByText('Rejected — not used as a fact')).toBeVisible()
   await page.getByRole('button', { name: /Continue to Buktiva Check/ }).click()
   await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
+  await page.getByRole('button', { name: 'Data controls' }).click()
+  await expect(page.getByRole('heading', { name: 'Local activity history' })).toBeVisible()
+  await page.getByText(/View \d+ recorded actions?/).click()
+  await expect(page.getByText('Derived fact reviewed', { exact: true }).first()).toBeVisible()
 })
