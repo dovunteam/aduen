@@ -32,5 +32,10 @@ export function clearAuditEvents(): void {
 function isAuditEvent(value: unknown): value is LocalAuditEvent {
   if (!value || typeof value !== 'object') return false
   const event = value as Partial<LocalAuditEvent>
-  return typeof event.id === 'string' && typeof event.at === 'string' && typeof event.targetId === 'string' && typeof event.detail === 'string' && typeof event.action === 'string' && ACTIONS.includes(event.action as LocalAuditEvent['action'])
+  return typeof event.id === 'string' && isIsoTimestamp(event.at) && typeof event.targetId === 'string' && typeof event.detail === 'string' && typeof event.action === 'string' && ACTIONS.includes(event.action as LocalAuditEvent['action'])
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  try { return new Date(value).toISOString() === value } catch { return false }
 }
