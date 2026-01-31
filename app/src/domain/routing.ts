@@ -30,7 +30,7 @@ export function assessTtpmCandidate(draft: CaseDraft, now = new Date()): TtpmAss
   const purchaseDate = new Date(`${draft.purchaseDate}T00:00:00Z`)
   const cutoff = new Date(now)
   cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 3)
-  if (!Number.isFinite(purchaseDate.getTime()) || purchaseDate > now) return { status: 'uncertain', reason: 'TTPM candidate check: the purchase date is invalid or in the future.' }
+  if (!Number.isFinite(purchaseDate.getTime()) || purchaseDate.toISOString().slice(0, 10) !== draft.purchaseDate || purchaseDate > now) return { status: 'uncertain', reason: 'TTPM candidate check: the purchase date is invalid or in the future.' }
   if (purchaseDate < cutoff) return { status: 'excluded', reason: 'TTPM candidate check: the purchase is outside the documented three-year period.' }
   return { status: 'candidate', reason: 'TTPM candidate check: amount, personal purpose, category, and documented three-year period appear compatible; verify the live requirements.' }
 }
