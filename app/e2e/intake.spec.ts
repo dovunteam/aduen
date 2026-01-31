@@ -193,6 +193,7 @@ test('a supported draft preserves original evidence and resumes at the evidence 
 })
 
 test('a complete merchant-first case reaches approved PDF export and outcome tracking', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   await reachCaseDetails(page)
   await fillCase(page)
   await page.getByRole('button', { name: /Add evidence/ }).click()
@@ -211,6 +212,8 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await page.getByRole('button', { name: /Approve and export PDF/ }).click()
   const download = await downloadPromise
   expect(download.suggestedFilename()).toBe('buktiva-synthetic-store-v1.pdf')
+  await page.getByRole('button', { name: 'Copy approved request' }).click()
+  await expect(page.getByRole('button', { name: 'Request copied' })).toBeVisible()
   const archivePromise = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export PDF and selected evidence (ZIP)' }).click()
   const archiveDownload = await archivePromise
@@ -248,6 +251,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await page.getByRole('button', { name: 'Data controls' }).click()
   await expect(page.getByRole('heading', { name: 'Local activity history' })).toBeVisible()
   await page.getByText(/View \d+ recorded actions?/).click()
+  await expect(page.getByText('Request copied', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Submission edited', { exact: true }).first()).toBeVisible()
 })
 
