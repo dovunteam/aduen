@@ -49,6 +49,7 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
       const next = !item.includeInPack
       onChange()
       await updateEvidenceInclusion(item.id, next)
+      recordAuditEvent('evidence_inclusion_changed', item.id, `${item.fileName}: ${next ? 'included' : 'excluded'}`)
       setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, includeInPack: next } : entry))
     } catch { setError(text.saveError) }
     finally { setBusy(false) }
