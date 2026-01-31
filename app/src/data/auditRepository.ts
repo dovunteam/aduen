@@ -1,13 +1,13 @@
 export type LocalAuditEvent = {
   id: string
   at: string
-  action: 'case_edited' | 'submission_edited' | 'derived_fact_reviewed' | 'evidence_previewed' | 'evidence_downloaded' | 'redacted_copy_exported' | 'evidence_deleted' | 'case_transitioned' | 'case_exported' | 'pack_exported' | 'handoff_exported'
+  action: 'case_edited' | 'submission_edited' | 'derived_fact_reviewed' | 'request_copied' | 'evidence_previewed' | 'evidence_downloaded' | 'redacted_copy_exported' | 'evidence_deleted' | 'case_transitioned' | 'case_exported' | 'pack_exported' | 'handoff_exported'
   targetId: string
   detail: string
 }
 
 const STORAGE_KEY = 'buktiva.audit-log.v1'
-const ACTIONS: LocalAuditEvent['action'][] = ['case_edited', 'submission_edited', 'derived_fact_reviewed', 'evidence_previewed', 'evidence_downloaded', 'redacted_copy_exported', 'evidence_deleted', 'case_transitioned', 'case_exported', 'pack_exported', 'handoff_exported']
+const ACTIONS: LocalAuditEvent['action'][] = ['case_edited', 'submission_edited', 'derived_fact_reviewed', 'request_copied', 'evidence_previewed', 'evidence_downloaded', 'redacted_copy_exported', 'evidence_deleted', 'case_transitioned', 'case_exported', 'pack_exported', 'handoff_exported']
 
 export function listAuditEvents(): LocalAuditEvent[] {
   try {
