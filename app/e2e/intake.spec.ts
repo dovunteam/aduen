@@ -260,6 +260,13 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await expect(page.getByText('Request copied', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Pack viewed', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Submission edited', { exact: true }).first()).toBeVisible()
+  const dataExportPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export ZIP' }).click()
+  const dataExport = await dataExportPromise
+  const dataArchive = await JSZip.loadAsync(await readFile((await dataExport.path())!))
+  const dataManifest = JSON.parse(await dataArchive.file('case-record.json')!.async('string'))
+  expect(dataManifest.case.consumerName).toBe('Synthetic Test Consumer')
+  expect(dataManifest.auditLog.some((event: { action: string }) => event.action === 'case_exported')).toBe(true)
 })
 
 test('extracted candidates require explicit confirmation, correction, or rejection', async ({ page }) => {
