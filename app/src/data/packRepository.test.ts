@@ -34,4 +34,11 @@ describe('immutable pack storage', () => {
     savePack(second)
     expect(listPacks()).toEqual([first, second])
   })
+
+  it('ignores malformed stored packs without discarding valid versions', () => {
+    const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
+    localStorage.setItem('buktiva.pack-versions.v1', JSON.stringify([{ id: 'broken', version: 'one' }, valid]))
+    expect(listPacks()).toEqual([valid])
+    expect(nextPackVersion()).toBe(2)
+  })
 })
