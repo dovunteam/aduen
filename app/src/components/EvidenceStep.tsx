@@ -49,7 +49,7 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
       const next = !item.includeInPack
       onChange()
       await updateEvidenceInclusion(item.id, next)
-      recordAuditEvent('evidence_inclusion_changed', item.id, `${item.fileName}: ${next ? 'included' : 'excluded'}`)
+      recordAuditEvent('evidence_inclusion_changed', item.id, next ? 'evidence included in pack' : 'evidence excluded from pack')
       setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, includeInPack: next } : entry))
     } catch { setError(text.saveError) }
     finally { setBusy(false) }
@@ -61,7 +61,7 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
     try {
       onChange()
       await deleteEvidence(item.id)
-      recordAuditEvent('evidence_deleted', item.id, item.fileName)
+      recordAuditEvent('evidence_deleted', item.id, 'evidence original deleted')
       setItems((current) => current.filter((entry) => entry.id !== item.id))
     } catch { setError(text.saveError) }
     finally { setBusy(false) }
@@ -75,7 +75,7 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
     const url = URL.createObjectURL(original)
     const anchor = document.createElement('a')
     anchor.href = url; anchor.download = item.fileName.replace(/[\\/]/g, '_'); anchor.click()
-    recordAuditEvent('evidence_downloaded', item.id, item.fileName)
+    recordAuditEvent('evidence_downloaded', item.id, 'evidence original downloaded')
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch { setError(text.readError) }
   }
