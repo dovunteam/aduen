@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { approveComplaintPack } from '../domain/complaintPack'
 import type { ComplaintPack } from '../domain/complaintPack'
 import type { Locale } from '../i18n'
@@ -14,6 +14,8 @@ export function PackStep({ locale, initialPack, onBack, onContinue, onApproved }
   const [copied, setCopied] = useState(false)
   const [exportingArchive, setExportingArchive] = useState(false)
   const [exportingPdf, setExportingPdf] = useState(false)
+
+  useEffect(() => { recordAuditEvent('pack_viewed', pack.id, `pack v${pack.version} viewed`) }, [pack.id, pack.version])
 
   async function exportArchive() {
     setError(''); setExportingArchive(true)
