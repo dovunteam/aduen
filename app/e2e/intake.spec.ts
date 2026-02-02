@@ -67,7 +67,8 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   await reachCaseDetails(page)
   await fillCase(page)
   await page.getByRole('button', { name: /Add evidence/ }).click()
-  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-pixel.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=', 'base64') })
+  const originalPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=', 'base64')
+  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-pixel.png', mimeType: 'image/png', buffer: originalPng })
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
   await page.getByRole('button', { name: 'Add evidence' }).click()
@@ -85,7 +86,9 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   await page.mouse.up()
   const redactedDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Download redacted image copy' }).click()
-  expect((await redactedDownload).suggestedFilename()).toBe('redacted-synthetic-pixel.png')
+  const redactedFile = await redactedDownload
+  expect(redactedFile.suggestedFilename()).toBe('redacted-synthetic-pixel.png')
+  expect(Buffer.compare(await readFile((await redactedFile.path())!), originalPng)).not.toBe(0)
   await page.getByRole('button', { name: 'Clear redactions' }).click()
   await page.getByRole('button', { name: 'Add central redaction' }).click()
   const keyboardRedactedDownload = page.waitForEvent('download')
@@ -93,6 +96,11 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   expect((await keyboardRedactedDownload).suggestedFilename()).toBe('redacted-synthetic-pixel.png')
   await page.getByRole('button', { name: 'Close image preview' }).click()
   await expect(preview).toHaveCount(0)
+  const originalDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download original' }).click()
+  const originalFile = await originalDownload
+  expect(originalFile.suggestedFilename()).toBe('synthetic-pixel.png')
+  expect(await readFile((await originalFile.path())!)).toEqual(originalPng)
 })
 
 test('uploaded PDFs can be previewed locally without leaving the page', async ({ page }) => {
