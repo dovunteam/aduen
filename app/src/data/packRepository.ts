@@ -9,7 +9,14 @@ export function listPacks(): ComplaintPack[] {
     const value = current ?? localStorage.getItem(TUNTIVA_PACKS_KEY)
     if (!value) return []
     if (!current) { localStorage.setItem(PACKS_KEY, value); localStorage.removeItem(TUNTIVA_PACKS_KEY) }
-    return (JSON.parse(value) as ComplaintPack[]).map((pack) => ({ ...pack, confirmedDerivedFacts: pack.confirmedDerivedFacts ?? [], merchantRequest: pack.merchantRequest ?? { subject: '', body: '', generatedFrom: [] }, route: { ...pack.route, sourceUrl: pack.route.sourceUrl ?? 'https://github.com/dovunteam/tuntiva/blob/main/docs/Buktiva_Case_Routing_Rules.md' } }))
+    const parsed = JSON.parse(value) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((pack) => {
+      if (!pack || typeof pack !== 'object') return []
+      const candidate = pack as Partial<ComplaintPack>
+      const normalised = { ...candidate, confirmedDerivedFacts: candidate.confirmedDerivedFacts ?? [], merchantRequest: candidate.merchantRequest ?? { subject: '', body: '', generatedFrom: [] }, route: candidate.route ? { ...candidate.route, sourceUrl: candidate.route.sourceUrl ?? 'https://github.com/dovunteam/tuntiva/blob/main/docs/Buktiva_Case_Routing_Rules.md' } : null }
+      return isComplaintPack(normalised) ? [normalised] : []
+    })
   }
   catch { return [] }
 }
@@ -31,3 +38,9 @@ export function savePack(pack: ComplaintPack): void {
 
 export function nextPackVersion(): number { return Math.max(0, ...listPacks().map((pack) => pack.version)) + 1 }
 export function clearPacks(): void { localStorage.removeItem(PACKS_KEY); localStorage.removeItem(TUNTIVA_PACKS_KEY) }
+
+function isComplaintPack(value: unknown): value is ComplaintPack {
+  if (!value || typeof value !== 'object') return false
+  const pack = value as Partial<ComplaintPack>
+  return typeof pack.id === 'string' && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && (pack.approvedAt === null || typeof pack.approvedAt === 'string') && typeof pack.consumerName === 'string' && typeof pack.issue === 'string' && typeof pack.remedy === 'string' && (pack.remedyAmount === null || typeof pack.remedyAmount === 'string') && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && typeof pack.disclaimer === 'string' && typeof pack.declaration === 'string'
+}
