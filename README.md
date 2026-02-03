@@ -43,4 +43,4 @@ The Buktiva product proposition is not yet validated. There is no evidence in th
 
 ## Product status
 
-An early local-first web prototype is available in [`app`](app/README.md). It now covers the core workflow from consent and urgent triage through evidence capture, completeness checks, merchant-first routing, a user-approved PDF pack, outcome tracking, and data export or deletion. It is not a production service and has no regulator integration, legal review, account system, server-side evidence storage, or payment handling.
+An early local-first web prototype is available in [`app`](app/README.md). It now covers the core workflow from consent and urgent triage through evidence capture, local previews and supported redacted copies, completeness checks, merchant-first routing, a user-approved PDF pack, outcome tracking, local audit history, and data export or deletion. It is not a production service and has no regulator integration, legal review, account system, server-side evidence storage, or payment handling.
