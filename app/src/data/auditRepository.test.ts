@@ -32,4 +32,9 @@ describe('local audit log', () => {
     expect(listAuditEvents()).toHaveLength(1)
     expect(listAuditEvents()[0].id).toBe('valid')
   })
+
+  it('normalises and bounds event details', () => {
+    const event = recordAuditEvent('case_exported', 'case', `  first\nsecond\t${'x'.repeat(300)}  `)
+    expect(event.detail).toBe(`first second ${'x'.repeat(240 - 'first second '.length)}`)
+  })
 })
