@@ -31,6 +31,7 @@ export function PackStep({ locale, initialPack, onBack, onContinue, onApproved }
     try {
       const approved = pack.approvedAt ? pack : approveComplaintPack(pack)
       onApproved(approved); setPack(approved)
+      if (!pack.approvedAt) recordAuditEvent('pack_approved', approved.id, `pack v${approved.version} approved`)
       const { downloadComplaintPackPdf } = await import('../data/packPdf')
       downloadComplaintPackPdf(approved)
     } catch (cause) { setError(cause instanceof Error ? cause.message : text.pdfError) }
