@@ -20,6 +20,7 @@ export function readSubmission(): SubmissionRecord {
 export function saveSubmission(record: SubmissionRecord): SubmissionRecord {
   const previous = readSubmission()
   const saved = { ...record, updatedAt: new Date().toISOString() }
+  if (!isSubmissionRecord(saved)) throw new Error('Invalid submission record.')
   localStorage.setItem(STATUS_KEY, JSON.stringify(saved))
   const { updatedAt: _previousUpdatedAt, ...previousContent } = previous
   const { updatedAt: _savedUpdatedAt, ...savedContent } = saved
@@ -30,5 +31,19 @@ export function saveSubmission(record: SubmissionRecord): SubmissionRecord {
 export function clearSubmission(): void { localStorage.removeItem(STATUS_KEY); localStorage.removeItem(TUNTIVA_STATUS_KEY) }
 
 function isSubmissionRecord(value: SubmissionRecord): boolean {
-  return CASE_STATUSES.includes(value.status) && OUTCOMES.includes(value.outcome) && [value.channel, value.submissionDate, value.referenceNumber, value.nextFollowUpDate, value.response, value.updatedAt].every((item) => typeof item === 'string')
+  const strings = [value.channel, value.submissionDate, value.referenceNumber, value.nextFollowUpDate, value.response, value.updatedAt]
+  const followUpOrderValid = !value.submissionDate || !value.nextFollowUpDate || value.nextFollowUpDate >= value.submissionDate
+  return CASE_STATUSES.includes(value.status) && OUTCOMES.includes(value.outcome) && strings.every((item) => typeof item === 'string') && isDateOnlyOrEmpty(value.submissionDate) && isDateOnlyOrEmpty(value.nextFollowUpDate) && isIsoTimestampOrEmpty(value.updatedAt) && followUpOrderValid
+}
+
+function isDateOnlyOrEmpty(value: string): boolean {
+  if (!value) return true
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(`${value}T00:00:00Z`)
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
+
+function isIsoTimestampOrEmpty(value: string): boolean {
+  if (!value) return true
+  try { return new Date(value).toISOString() === value } catch { return false }
 }
