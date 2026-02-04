@@ -3,8 +3,9 @@ import type { FormEvent } from 'react'
 import { readSubmission, saveSubmission } from '../data/statusRepository'
 import { nextStatus, validateStatusTransition } from '../domain/status'
 import type { SubmissionRecord } from '../domain/status'
+import type { CaseRecordStatus } from '../domain/case'
 
-export function StatusStep({ onBack }: { onBack: () => void }) {
+export function StatusStep({ onBack, onStatusChange }: { onBack: () => void; onStatusChange: (status: CaseRecordStatus) => void }) {
   const [record, setRecord] = useState<SubmissionRecord>(readSubmission)
   const [message, setMessage] = useState('')
   const terminal = record.status === 'resolved' || record.status === 'closed'
@@ -14,7 +15,7 @@ export function StatusStep({ onBack }: { onBack: () => void }) {
     event.preventDefault(); setMessage('')
     const status = nextStatus(record)
     if (!validateStatusTransition(record.status, status)) { setMessage('A closed outcome cannot return to an active state.'); return }
-    const saved = saveSubmission({ ...record, status }); setRecord(saved); setMessage('Status saved on this device.')
+    const saved = saveSubmission({ ...record, status }); setRecord(saved); onStatusChange(status === 'ready' ? 'approved' : status); setMessage('Status saved on this device.')
   }
 
   return <section className="page form-page status-page">
