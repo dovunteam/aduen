@@ -19,7 +19,7 @@ export function listAuditEvents(): LocalAuditEvent[] {
 }
 
 export function recordAuditEvent(action: LocalAuditEvent['action'], targetId: string, detail: string, now = new Date()): LocalAuditEvent {
-  const event: LocalAuditEvent = { id: crypto.randomUUID(), at: now.toISOString(), action, targetId, detail }
+  const event: LocalAuditEvent = { id: crypto.randomUUID(), at: now.toISOString(), action, targetId, detail: sanitiseDetail(detail) }
   const events = [...listAuditEvents(), event].slice(-500)
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)) } catch { /* Audit persistence is best-effort when storage is unavailable. */ }
   return event
@@ -38,4 +38,9 @@ function isAuditEvent(value: unknown): value is LocalAuditEvent {
 function isIsoTimestamp(value: unknown): value is string {
   if (typeof value !== 'string') return false
   try { return new Date(value).toISOString() === value } catch { return false }
+}
+
+function sanitiseDetail(value: string): string {
+  const withoutControls = Array.from(value, (character) => { const code = character.charCodeAt(0); return code <= 31 || code === 127 ? ' ' : character }).join('')
+  return withoutControls.replace(/\s+/g, ' ').trim().slice(0, 240)
 }
