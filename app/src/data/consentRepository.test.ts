@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readConsent } from './consentRepository'
+import { acceptConsent, readConsent } from './consentRepository'
+import { listAuditEvents } from './auditRepository'
 
 beforeEach(() => {
   const values = new Map<string, string>()
@@ -15,5 +16,11 @@ describe('consent repository', () => {
   it('rejects stale or malformed consent records', () => {
     localStorage.setItem('buktiva.consent.v1', JSON.stringify({ noticeVersion: 'old', acceptedAt: 'not-a-date', purpose: 'case-preparation-and-local-storage', withdrawalPath: 'data-controls' }))
     expect(readConsent()).toBeNull()
+  })
+
+  it('records acceptance in the local activity history', () => {
+    const record = acceptConsent()
+    expect(record.noticeVersion).toBe('prototype-privacy-and-role-v1')
+    expect(listAuditEvents()).toMatchObject([{ action: 'consent_accepted', targetId: 'consent' }])
   })
 })
