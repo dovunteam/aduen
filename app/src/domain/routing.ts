@@ -25,6 +25,18 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
     ...base, routeName: 'Manual review', recommendedAction: 'This prototype supports personal, domestic, or household purchases only.',
     matchingFacts: ['Purchase recorded as business or professional'], unmetPrerequisites: [], exclusionsChecked: ['Personal-consumer scope'], confidence: 'unsupported',
   }
+  if (draft.consumerLocation !== 'malaysia') return {
+    ...base, routeName: 'Manual review', recommendedAction: 'This prototype is scoped to consumers in Malaysia.',
+    matchingFacts: [`Consumer location: ${draft.consumerLocation || 'not confirmed'}`], unmetPrerequisites: draft.consumerLocation ? [] : ['Consumer location'], exclusionsChecked: ['Malaysian consumer scope'], confidence: draft.consumerLocation ? 'unsupported' : 'uncertain',
+  }
+  if (['healthcare', 'professional_service', 'land'].includes(draft.category)) return {
+    ...base, routeName: 'Out of supported scope', recommendedAction: 'This category needs an independent route and is not handled by the prototype.',
+    matchingFacts: [`Purchase category: ${draft.category.replaceAll('_', ' ')}`], unmetPrerequisites: [], exclusionsChecked: ['Sector exclusion'], confidence: 'unsupported',
+  }
+  if (draft.category === 'aviation' || draft.category === 'financial_service') return {
+    ...base, routeName: 'Sector route review', recommendedAction: 'A current sector-specific source must be checked before recommending the next channel.',
+    matchingFacts: [`Purchase category: ${draft.category.replaceAll('_', ' ')}`], unmetPrerequisites: ['Live official sector requirements'], exclusionsChecked: ['General consumer route paused'], confidence: 'uncertain',
+  }
   if (draft.issue === 'uncertain') return {
     ...base, routeName: 'Manual review', recommendedAction: 'Clarify the main transaction failure before selecting a route.',
     matchingFacts: ['Issue type is uncertain'], unmetPrerequisites: missing, exclusionsChecked: ['Urgent-risk triage completed'], confidence: 'uncertain',
