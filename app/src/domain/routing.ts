@@ -71,6 +71,12 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
     matchingFacts: scope.reasons, unmetPrerequisites: [...missing, 'Reviewed category and seller jurisdiction'],
     exclusionsChecked: ['Prototype scope uncertainty retained'], confidence: 'uncertain',
   }
+  const amount = Number(draft.amount)
+  if (!Number.isFinite(amount) || amount <= 0) return {
+    ...base, routeName: 'Manual review', recommendedAction: 'Confirm the transaction amount before selecting a route.',
+    matchingFacts: ['Transaction amount is missing or invalid'], unmetPrerequisites: [...missing, 'Transaction amount'],
+    exclusionsChecked: ['Required transaction facts checked'], confidence: 'uncertain',
+  }
   const missingScope = [!draft.purpose && 'Purchase purpose', !draft.category && 'Purchase category', !draft.sellerLocation && 'Seller location', !draft.issue && 'Issue type', !draft.remedy && 'Requested remedy'].filter((item): item is string => Boolean(item))
   if (draft.contactHistory === 'none' && missingScope.length) return {
     ...base, routeName: 'Manual review', recommendedAction: 'Confirm the missing case facts before selecting a route.',
