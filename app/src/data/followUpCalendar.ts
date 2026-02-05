@@ -1,4 +1,5 @@
 import type { SubmissionRecord } from '../domain/status'
+import { recordAuditEvent } from './auditRepository'
 
 export function buildFollowUpCalendar(record: SubmissionRecord, now = new Date()): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(record.nextFollowUpDate)) return null
@@ -18,6 +19,7 @@ export function downloadFollowUpCalendar(record: SubmissionRecord): boolean {
   anchor.href = url
   anchor.download = `buktiva-follow-up-${record.nextFollowUpDate}.ics`
   anchor.click()
+  recordAuditEvent('follow_up_exported', 'submission', 'follow-up calendar reminder exported')
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
   return true
 }

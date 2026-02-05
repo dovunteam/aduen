@@ -276,6 +276,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await expect(page.getByText('Pack viewed', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Pack approved', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Submission edited', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('Follow-up reminder exported', { exact: true }).first()).toBeVisible()
   const dataExportPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export ZIP' }).click()
   const dataExport = await dataExportPromise
