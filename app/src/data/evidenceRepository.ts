@@ -1,5 +1,5 @@
 import type { EvidenceInput, EvidenceMetadata } from '../domain/evidence'
-import { validateEvidenceFile, validateEvidenceSignature } from '../domain/evidence'
+import { isValidEvidenceMetadata, validateEvidenceFile, validateEvidenceSignature } from '../domain/evidence'
 import { createEvidenceExtraction, reviewCandidate } from '../domain/extraction'
 import type { EvidenceExtraction } from '../domain/extraction'
 import { recordAuditEvent } from './auditRepository'
@@ -77,7 +77,7 @@ export async function listEvidence(): Promise<EvidenceMetadata[]> {
   const transaction = database.transaction(METADATA_STORE, 'readonly')
   const request = transaction.objectStore(METADATA_STORE).getAll()
   const records = await new Promise<EvidenceMetadata[]>((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result)
+    request.onsuccess = () => resolve(request.result.filter(isValidEvidenceMetadata))
     request.onerror = () => reject(request.error)
   })
   database.close()
