@@ -41,4 +41,14 @@ describe('immutable pack storage', () => {
     expect(listPacks()).toEqual([valid])
     expect(nextPackVersion()).toBe(2)
   })
+
+  it('ignores packs with malformed creation or approval timestamps', () => {
+    const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
+    localStorage.setItem('buktiva.pack-versions.v1', JSON.stringify([
+      { ...valid, createdAt: '2026-09-21' },
+      { ...valid, id: 'approved-invalid', approvedAt: 'not-a-date' },
+      valid,
+    ]))
+    expect(listPacks()).toEqual([valid])
+  })
 })
