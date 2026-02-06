@@ -43,7 +43,16 @@ export function clearPacks(): void { localStorage.removeItem(PACKS_KEY); localSt
 function isComplaintPack(value: unknown): value is ComplaintPack {
   if (!value || typeof value !== 'object') return false
   const pack = value as Partial<ComplaintPack>
-  return typeof pack.id === 'string' && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && isIsoTimestamp(pack.createdAt) && (pack.approvedAt === null || (typeof pack.approvedAt === 'string' && isIsoTimestamp(pack.approvedAt))) && typeof pack.consumerName === 'string' && typeof pack.issue === 'string' && typeof pack.remedy === 'string' && (pack.remedyAmount === null || typeof pack.remedyAmount === 'string') && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && typeof pack.disclaimer === 'string' && typeof pack.declaration === 'string'
+  return typeof pack.id === 'string' && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && isIsoTimestamp(pack.createdAt) && (pack.approvedAt === null || (typeof pack.approvedAt === 'string' && isIsoTimestamp(pack.approvedAt))) && typeof pack.consumerName === 'string' && typeof pack.issue === 'string' && typeof pack.remedy === 'string' && (pack.remedyAmount === null || typeof pack.remedyAmount === 'string') && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && isSafeRoute(pack.route) && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && typeof pack.disclaimer === 'string' && typeof pack.declaration === 'string'
+}
+
+function isSafeRoute(route: ComplaintPack['route'] | undefined): boolean {
+  if (!route) return false
+  return isHttpsUrl(route.sourceUrl) && (!route.officialLinks || route.officialLinks.every((link) => typeof link.label === 'string' && isHttpsUrl(link.url)))
+}
+
+function isHttpsUrl(value: string): boolean {
+  try { return new URL(value).protocol === 'https:' } catch { return false }
 }
 
 function isIsoTimestamp(value: string): boolean {
