@@ -38,6 +38,7 @@ export function readCase(): CaseRecord | null {
 }
 
 export function saveCaseDraft(draft: CaseDraft): CaseRecord {
+  if (!isCaseDraft(draft)) throw new Error('Invalid case draft.')
   const current = readCase() ?? createCaseRecord(draft)
   const changed = JSON.stringify(current.draft) !== JSON.stringify(draft)
   // A changed intake must be reviewed again; historical packs remain immutable.
@@ -68,10 +69,27 @@ function normaliseCaseRecord(value: unknown): CaseRecord | null {
 }
 
 function isCaseRecord(value: CaseRecord): boolean {
-  return [value.id, value.createdAt, value.updatedAt].every((item) => typeof item === 'string') && CASE_STATUSES.includes(value.status) && isCaseDraft(value.draft) && Array.isArray(value.history) && value.history.every((event) => typeof event.at === 'string' && (event.actor === 'user' || event.actor === 'system') && typeof event.action === 'string' && CASE_STATUSES.includes(event.status))
+  return [value.id, value.createdAt, value.updatedAt].every((item) => typeof item === 'string') && isIsoTimestamp(value.createdAt) && isIsoTimestamp(value.updatedAt) && CASE_STATUSES.includes(value.status) && isCaseDraft(value.draft) && Array.isArray(value.history) && value.history.every((event) => isIsoTimestamp(event.at) && (event.actor === 'user' || event.actor === 'system') && typeof event.action === 'string' && CASE_STATUSES.includes(event.status))
 }
 
 function isCaseDraft(value: CaseDraft): boolean {
   const strings = ['consumerName', 'seller', 'platform', 'purchaseDate', 'amount', 'paymentMethod', 'orderReference', 'remedyAmount', 'promisedDate', 'contactDate'] as const
-  return strings.every((key) => typeof value[key] === 'string') && (Object.keys(ENUM_FIELDS) as Array<keyof typeof ENUM_FIELDS>).every((key) => ENUM_FIELDS[key].includes(value[key] as never))
+  return strings.every((key) => typeof value[key] === 'string') && (Object.keys(ENUM_FIELDS) as Array<keyof typeof ENUM_FIELDS>).every((key) => ENUM_FIELDS[key].includes(value[key] as never)) && isDateOnlyOrEmpty(value.purchaseDate) && isDateOnlyOrEmpty(value.promisedDate) && isDateOnlyOrEmpty(value.contactDate) && isNonNegativeAmountOrEmpty(value.amount) && isNonNegativeAmountOrEmpty(value.remedyAmount)
+}
+
+function isDateOnlyOrEmpty(value: string): boolean {
+  if (!value) return true
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(`${value}T00:00:00Z`)
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
+
+function isNonNegativeAmountOrEmpty(value: string): boolean {
+  if (!value) return true
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= 0
+}
+
+function isIsoTimestamp(value: string): boolean {
+  try { return new Date(value).toISOString() === value } catch { return false }
 }
