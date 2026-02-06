@@ -51,4 +51,10 @@ describe('immutable pack storage', () => {
     ]))
     expect(listPacks()).toEqual([valid])
   })
+
+  it('rejects malformed packs before writing them', () => {
+    const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
+    expect(() => savePack({ ...valid, createdAt: '2026-09-21' })).toThrow('Invalid pack')
+    expect(listPacks()).toEqual([])
+  })
 })
