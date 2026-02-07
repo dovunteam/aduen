@@ -14,6 +14,7 @@ import type { ComplaintPack } from './domain/complaintPack'
 import { clearSubmission } from './data/statusRepository'
 import { acceptConsent, clearConsent } from './data/consentRepository'
 import { clearCase, readCase, recordCaseTransition, saveCaseDraft } from './data/caseRepository'
+import { clearPacks, nextPackVersion, savePack } from './data/packRepository'
 import './App.css'
 
 type Step = 'welcome' | 'triage' | 'case' | 'saved' | 'evidence' | 'review' | 'pack' | 'status' | 'data'
@@ -38,7 +39,7 @@ function App() {
   const toggleUrgent = (reason: string) => setUrgentReasons((current) => current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason])
   const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
   function saveCase(event: FormEvent) { event.preventDefault(); recordCaseTransition(draft, 'evidence_collection', 'case_details_confirmed'); setLastSaved(new Date()); setStep('saved') }
-  async function startOver() { clearCase(); clearSubmission(); clearConsent(); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setStep('welcome') }
+  async function startOver() { clearCase(); clearSubmission(); clearConsent(); clearPacks(); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setStep('welcome') }
   function openDataControls() { setReturnStep(step === 'data' ? 'welcome' : step); setStep('data') }
 
   return <div className="app-shell">
@@ -76,8 +77,8 @@ function App() {
 
       {step === 'saved' && <section className="page narrow-page saved-page"><div className="success-mark">✓</div><div className="eyebrow">Draft saved</div><h1>Your case record<br />has started.</h1><p className="lede">The transaction details are stored only in this browser. Next, add the original records that support the case.</p><dl className="summary"><div><dt>Seller</dt><dd>{draft.seller}</dd></div><div><dt>Amount</dt><dd>RM {Number(draft.amount).toFixed(2)}</dd></div><div><dt>Issue</dt><dd>{draft.issue.replaceAll('_', ' ')}</dd></div><div><dt>Remedy</dt><dd>{draft.remedy}</dd></div></dl><div className="actions split"><button className="secondary" onClick={() => void startOver()}>Delete draft</button><div className="button-group"><button className="secondary" onClick={() => setStep('case')}>Edit details</button><button className="primary" onClick={() => setStep('evidence')}>Add evidence <span>→</span></button></div></div></section>}
       {step === 'evidence' && <EvidenceStep onBack={() => setStep('case')} onContinue={(items) => { recordCaseTransition(draft, 'review', 'evidence_review_requested'); setReviewEvidence(items); setStep('review') }} />}
-      {step === 'review' && <ReviewStep draft={draft} evidence={reviewEvidence} onBack={() => setStep('evidence')} onPrepare={(route) => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); setComplaintPack(createComplaintPack(draft, reviewEvidence, route)); setStep('pack') }} />}
-      {step === 'pack' && complaintPack && <PackStep initialPack={complaintPack} onBack={() => setStep('review')} onApproved={() => recordCaseTransition(draft, 'approved', 'pack_approved')} onContinue={() => setStep('status')} />}
+      {step === 'review' && <ReviewStep draft={draft} evidence={reviewEvidence} onBack={() => setStep('evidence')} onPrepare={(route) => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion()); savePack(pack); setComplaintPack(pack); setStep('pack') }} />}
+      {step === 'pack' && complaintPack && <PackStep initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`) }} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep onBack={() => setStep('pack')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
       {step === 'data' && <DataControls draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
     </main>
