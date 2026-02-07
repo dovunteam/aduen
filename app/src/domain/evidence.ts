@@ -34,6 +34,12 @@ export const ACCEPTED_EVIDENCE_TYPES = [
   'text/plain',
 ] as const
 
+export function isValidEvidenceMetadata(value: unknown): value is EvidenceMetadata {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Partial<EvidenceMetadata>
+  return typeof item.id === 'string' && item.id.length > 0 && typeof item.fileName === 'string' && item.fileName.length > 0 && typeof item.mimeType === 'string' && ACCEPTED_EVIDENCE_TYPES.includes(item.mimeType as typeof ACCEPTED_EVIDENCE_TYPES[number]) && typeof item.size === 'number' && Number.isInteger(item.size) && item.size > 0 && item.size <= MAX_EVIDENCE_BYTES && typeof item.sha256 === 'string' && /^[a-f0-9]{64}$/.test(item.sha256) && typeof item.sourceType === 'string' && EVIDENCE_TYPES.includes(item.sourceType as EvidenceType) && (item.eventDate === null || (typeof item.eventDate === 'string' && isDateOnly(item.eventDate))) && typeof item.description === 'string' && item.description.length <= 240 && typeof item.includeInPack === 'boolean' && typeof item.uploadedAt === 'string' && isIsoTimestamp(item.uploadedAt)
+}
+
 export function validateEvidenceFile(file: Pick<File, 'size' | 'type'>): string | null {
   if (file.size === 0) return 'The selected file is empty.'
   if (file.size > MAX_EVIDENCE_BYTES) return 'The file is larger than the 10 MB prototype limit.'
@@ -70,4 +76,14 @@ export function evidenceTypeLabel(type: EvidenceType): string {
     merchant_response: 'Merchant response',
     other: 'Other evidence',
   } as const)[type]
+}
+
+function isDateOnly(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(`${value}T00:00:00Z`)
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
+
+function isIsoTimestamp(value: string): boolean {
+  try { return new Date(value).toISOString() === value } catch { return false }
 }
