@@ -1,0 +1,19 @@
+import { describe, expect, it } from 'vitest'
+import { detectEvidenceRisks } from './evidenceSafety'
+
+describe('evidence safety scan', () => {
+  it('flags plausible payment-card numbers using a checksum', () => {
+    expect(detectEvidenceRisks('Card 4111 1111 1111 1111').map((risk) => risk.code)).toContain('card_number')
+    expect(detectEvidenceRisks('Reference 4111 1111 1111 1112').map((risk) => risk.code)).not.toContain('card_number')
+  })
+
+  it('flags authentication and identity-document language', () => {
+    const codes = detectEvidenceRisks('OTP 123456. MyKad number follows.').map((risk) => risk.code)
+    expect(codes).toContain('authentication_secret')
+    expect(codes).toContain('identity_number')
+  })
+
+  it('does not flag ordinary complaint text', () => {
+    expect(detectEvidenceRisks('The merchant promised delivery on 20 September.')).toEqual([])
+  })
+})
