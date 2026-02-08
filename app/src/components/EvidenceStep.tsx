@@ -61,8 +61,9 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
     if (!window.confirm(text.deleteConfirm(item.fileName))) return
     setBusy(true); setError('')
     try {
+      const deleted = await deleteEvidence(item.id)
+      if (!deleted) throw new Error('Evidence record not found.')
       onChange()
-      await deleteEvidence(item.id)
       recordAuditEvent('evidence_deleted', item.id, 'evidence original deleted')
       setItems((current) => current.filter((entry) => entry.id !== item.id))
     } catch { setError(text.saveError) }
