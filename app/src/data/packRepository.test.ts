@@ -64,4 +64,14 @@ describe('immutable pack storage', () => {
     expect(() => savePack({ ...valid, route: { ...valid.route, officialLinks: [{ label: 'Unsafe', url: 'http://example.test' }] } })).toThrow('Invalid pack')
     expect(listPacks()).toEqual([])
   })
+
+  it('ignores malformed official-link collections without discarding valid packs', () => {
+    const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
+    localStorage.setItem('buktiva.pack-versions.v1', JSON.stringify([
+      { ...valid, id: 'bad-object-links', route: { ...valid.route, officialLinks: { label: 'bad' } } },
+      { ...valid, id: 'bad-item-links', route: { ...valid.route, officialLinks: [null] } },
+      valid,
+    ]))
+    expect(listPacks()).toEqual([valid])
+  })
 })
