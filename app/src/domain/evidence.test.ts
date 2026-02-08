@@ -32,5 +32,7 @@ describe('evidence validation', () => {
     expect(isValidEvidenceMetadata({ ...valid, size: MAX_EVIDENCE_BYTES + 1 })).toBe(false)
     expect(isValidEvidenceMetadata({ ...valid, eventDate: '2026-02-30' })).toBe(false)
     expect(isValidEvidenceMetadata({ ...valid, sha256: 'not-a-hash' })).toBe(false)
+    expect(isValidEvidenceMetadata({ ...valid, fileName: '../unsafe.txt' })).toBe(false)
+    expect(isValidEvidenceMetadata({ ...valid, fileName: 'unsafe\nname.txt' })).toBe(false)
   })
 })
