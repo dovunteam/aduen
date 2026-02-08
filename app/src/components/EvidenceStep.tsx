@@ -35,8 +35,8 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
     try {
       const detected = await scanEvidenceFile(file)
       if (detected.length && !riskAccepted) { setRisks(detected); return }
-      onChange()
       const saved = await addEvidence(file, { sourceType, eventDate: eventDate || null, description })
+      onChange()
       recordAuditEvent('evidence_added', saved.id, 'evidence original added')
       setItems((current) => [saved, ...current]); setFile(null); setEventDate(''); setDescription(''); setRisks([]); setRiskAccepted(false)
       if (fileInput.current) fileInput.current.value = ''
