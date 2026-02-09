@@ -33,4 +33,9 @@ describe('timeline', () => {
     const timeline = buildTimeline(draft, [evidence({ eventDate: '2026-05-01' }), evidence({ eventDate: null })])
     expect(findTimelineWarnings(draft, timeline)).toHaveLength(2)
   })
+
+  it('includes confirmed promise and merchant-contact events', () => {
+    const draft = { ...EMPTY_DRAFT, purchaseDate: '2026-05-01', promisedDate: '2026-05-05', contactHistory: 'contacted' as const, contactDate: '2026-05-06' }
+    expect(buildTimeline(draft, []).map((item) => item.id)).toEqual(['purchase', 'promised', 'merchant-contact'])
+  })
 })

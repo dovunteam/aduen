@@ -8,7 +8,7 @@ export type SubmissionRecord = {
   referenceNumber: string
   nextFollowUpDate: string
   response: string
-  outcome: 'refund' | 'replacement' | 'repair' | 'delivery' | 'rejected' | 'redirected' | 'withdrawn' | 'unresolved' | ''
+  outcome: 'refund' | 'replacement' | 'repair' | 'delivery' | 'partial' | 'rejected' | 'redirected' | 'withdrawn' | 'unresolved' | ''
   updatedAt: string
 }
 
@@ -26,7 +26,7 @@ export function validateStatusTransition(from: CaseStatus, to: CaseStatus): bool
 }
 
 export function nextStatus(record: SubmissionRecord): CaseStatus {
-  if (record.outcome) return record.outcome === 'refund' || record.outcome === 'replacement' || record.outcome === 'repair' || record.outcome === 'delivery' ? 'resolved' : 'closed'
+  if (record.outcome) return ['refund', 'replacement', 'repair', 'delivery', 'partial'].includes(record.outcome) ? 'resolved' : 'closed'
   if (record.response.trim()) return 'awaiting_response'
   if (record.submissionDate) return 'handed_off'
   return 'ready'
