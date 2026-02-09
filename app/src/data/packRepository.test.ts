@@ -57,4 +57,11 @@ describe('immutable pack storage', () => {
     expect(() => savePack({ ...valid, createdAt: '2026-09-21' })).toThrow('Invalid pack')
     expect(listPacks()).toEqual([])
   })
+
+  it('rejects packs with unsafe route links', () => {
+    const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
+    expect(() => savePack({ ...valid, route: { ...valid.route, sourceUrl: 'javascript:alert(1)' } })).toThrow('Invalid pack')
+    expect(() => savePack({ ...valid, route: { ...valid.route, officialLinks: [{ label: 'Unsafe', url: 'http://example.test' }] } })).toThrow('Invalid pack')
+    expect(listPacks()).toEqual([])
+  })
 })
