@@ -32,7 +32,7 @@ export function clearAuditEvents(): void {
 function isAuditEvent(value: unknown): value is LocalAuditEvent {
   if (!value || typeof value !== 'object') return false
   const event = value as Partial<LocalAuditEvent>
-  return typeof event.id === 'string' && isIsoTimestamp(event.at) && typeof event.targetId === 'string' && typeof event.detail === 'string' && typeof event.action === 'string' && ACTIONS.includes(event.action as LocalAuditEvent['action'])
+  return typeof event.id === 'string' && event.id.length > 0 && event.id.length <= 100 && isIsoTimestamp(event.at) && isBoundedText(event.targetId, 160) && isBoundedText(event.detail, 240) && typeof event.action === 'string' && ACTIONS.includes(event.action as LocalAuditEvent['action'])
 }
 
 function isIsoTimestamp(value: unknown): value is string {
@@ -43,4 +43,8 @@ function isIsoTimestamp(value: unknown): value is string {
 function sanitiseDetail(value: string): string {
   const withoutControls = Array.from(value, (character) => { const code = character.charCodeAt(0); return code <= 31 || code === 127 ? ' ' : character }).join('')
   return withoutControls.replace(/\s+/g, ' ').trim().slice(0, 240)
+}
+
+function isBoundedText(value: unknown, maxLength: number): value is string {
+  return typeof value === 'string' && value.length <= maxLength && !Array.from(value).some((character) => { const code = character.charCodeAt(0); return code <= 31 || code === 127 })
 }
