@@ -48,10 +48,13 @@ function isComplaintPack(value: unknown): value is ComplaintPack {
 
 function isSafeRoute(route: ComplaintPack['route'] | undefined): boolean {
   if (!route) return false
-  return isHttpsUrl(route.sourceUrl) && (!route.officialLinks || route.officialLinks.every((link) => typeof link.label === 'string' && isHttpsUrl(link.url)))
+  if (!isHttpsUrl(route.sourceUrl)) return false
+  if (route.officialLinks === undefined) return true
+  return Array.isArray(route.officialLinks) && route.officialLinks.every((link) => Boolean(link && typeof link === 'object' && typeof link.label === 'string' && isHttpsUrl(link.url)))
 }
 
-function isHttpsUrl(value: string): boolean {
+function isHttpsUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false
   try { return new URL(value).protocol === 'https:' } catch { return false }
 }
 
