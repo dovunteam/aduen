@@ -37,7 +37,7 @@ export const ACCEPTED_EVIDENCE_TYPES = [
 export function isValidEvidenceMetadata(value: unknown): value is EvidenceMetadata {
   if (!value || typeof value !== 'object') return false
   const item = value as Partial<EvidenceMetadata>
-  return typeof item.id === 'string' && item.id.length > 0 && typeof item.fileName === 'string' && item.fileName.length > 0 && typeof item.mimeType === 'string' && ACCEPTED_EVIDENCE_TYPES.includes(item.mimeType as typeof ACCEPTED_EVIDENCE_TYPES[number]) && typeof item.size === 'number' && Number.isInteger(item.size) && item.size > 0 && item.size <= MAX_EVIDENCE_BYTES && typeof item.sha256 === 'string' && /^[a-f0-9]{64}$/.test(item.sha256) && typeof item.sourceType === 'string' && EVIDENCE_TYPES.includes(item.sourceType as EvidenceType) && (item.eventDate === null || (typeof item.eventDate === 'string' && isDateOnly(item.eventDate))) && typeof item.description === 'string' && item.description.length <= 240 && typeof item.includeInPack === 'boolean' && typeof item.uploadedAt === 'string' && isIsoTimestamp(item.uploadedAt)
+  return typeof item.id === 'string' && item.id.length > 0 && typeof item.fileName === 'string' && isSafeFileName(item.fileName) && typeof item.mimeType === 'string' && ACCEPTED_EVIDENCE_TYPES.includes(item.mimeType as typeof ACCEPTED_EVIDENCE_TYPES[number]) && typeof item.size === 'number' && Number.isInteger(item.size) && item.size > 0 && item.size <= MAX_EVIDENCE_BYTES && typeof item.sha256 === 'string' && /^[a-f0-9]{64}$/.test(item.sha256) && typeof item.sourceType === 'string' && EVIDENCE_TYPES.includes(item.sourceType as EvidenceType) && (item.eventDate === null || (typeof item.eventDate === 'string' && isDateOnly(item.eventDate))) && typeof item.description === 'string' && item.description.length <= 240 && typeof item.includeInPack === 'boolean' && typeof item.uploadedAt === 'string' && isIsoTimestamp(item.uploadedAt)
 }
 
 export function validateEvidenceFile(file: Pick<File, 'size' | 'type'>): string | null {
@@ -86,4 +86,8 @@ function isDateOnly(value: string): boolean {
 
 function isIsoTimestamp(value: string): boolean {
   try { return new Date(value).toISOString() === value } catch { return false }
+}
+
+function isSafeFileName(value: string): boolean {
+  return value.length > 0 && value.length <= 255 && !/[\\/]/.test(value) && !Array.from(value).some((character) => { const code = character.charCodeAt(0); return code <= 31 || code === 127 })
 }
