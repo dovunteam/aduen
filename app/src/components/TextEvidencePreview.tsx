@@ -23,8 +23,9 @@ export function TextEvidencePreview({ evidenceId, locale }: { evidenceId: string
     try {
       const original = await getEvidenceOriginal(evidenceId)
       if (!original) throw new Error('Missing original')
+      const preview = await original.slice(0, PREVIEW_BYTES).text()
       recordAuditEvent('evidence_previewed', evidenceId, 'text preview')
-      setContent(await original.slice(0, PREVIEW_BYTES).text())
+      setContent(preview)
       setTruncated(original.size > PREVIEW_BYTES)
     } catch { setFailed(true) }
     finally { setLoading(false) }
