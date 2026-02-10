@@ -147,15 +147,19 @@ export async function updateEvidenceInclusion(id: string, includeInPack: boolean
   return updated
 }
 
-export async function deleteEvidence(id: string): Promise<void> {
+export async function deleteEvidence(id: string): Promise<boolean> {
   const database = await openDatabase()
   const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE, EXTRACTION_STORE], 'readwrite')
-  transaction.objectStore(METADATA_STORE).delete(id)
+  const metadataStore = transaction.objectStore(METADATA_STORE)
+  const metadataRequest = metadataStore.get(id)
+  let metadataFound = false
+  metadataRequest.onsuccess = () => { metadataFound = Boolean(metadataRequest.result); metadataStore.delete(id) }
   transaction.objectStore(ORIGINAL_STORE).delete(id)
   const extractionStore = transaction.objectStore(EXTRACTION_STORE)
   const extractionKeys = extractionStore.index('evidenceId').getAllKeys(id)
   extractionKeys.onsuccess = () => extractionKeys.result.forEach((key) => extractionStore.delete(key))
   try { await transactionDone(transaction) } finally { database.close() }
+  return metadataFound
 }
 
 export async function clearEvidence(): Promise<void> {
