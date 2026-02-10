@@ -60,6 +60,7 @@ export async function addEvidence(file: File, input: EvidenceInput): Promise<Evi
     includeInPack: true,
     uploadedAt: new Date().toISOString(),
   }
+  if (!isValidEvidenceMetadata(metadata)) throw new Error('Invalid evidence metadata.')
   const extraction = file.type === 'text/plain' ? createEvidenceExtraction(metadata.id, (await file.text()).slice(0, 500_000)) : null
 
   const database = await openDatabase()
