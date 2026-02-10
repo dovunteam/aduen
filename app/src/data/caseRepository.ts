@@ -71,12 +71,20 @@ function normaliseCaseRecord(value: unknown): CaseRecord | null {
 }
 
 function isCaseRecord(value: CaseRecord): boolean {
-  return typeof value.id === 'string' && value.id.length > 0 && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string' && isIsoTimestamp(value.createdAt) && isIsoTimestamp(value.updatedAt) && CASE_STATUSES.includes(value.status) && isCaseDraft(value.draft) && Array.isArray(value.history) && value.history.length > 0 && value.history.every((event) => isIsoTimestamp(event.at) && (event.actor === 'user' || event.actor === 'system') && typeof event.action === 'string' && event.action.length > 0 && CASE_STATUSES.includes(event.status))
+  return isBoundedText(value.id, 100, true) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string' && isIsoTimestamp(value.createdAt) && isIsoTimestamp(value.updatedAt) && CASE_STATUSES.includes(value.status) && isCaseDraft(value.draft) && Array.isArray(value.history) && value.history.length > 0 && value.history.every((event) => isIsoTimestamp(event.at) && (event.actor === 'user' || event.actor === 'system') && isBoundedText(event.action, 160, true) && CASE_STATUSES.includes(event.status))
 }
 
 function isCaseDraft(value: CaseDraft): boolean {
   const strings = ['consumerName', 'seller', 'platform', 'purchaseDate', 'amount', 'paymentMethod', 'orderReference', 'remedyAmount', 'promisedDate', 'contactDate'] as const
-  return strings.every((key) => typeof value[key] === 'string') && (Object.keys(ENUM_FIELDS) as Array<keyof typeof ENUM_FIELDS>).every((key) => ENUM_FIELDS[key].includes(value[key] as never)) && isDateOnlyOrEmpty(value.purchaseDate) && isDateOnlyOrEmpty(value.promisedDate) && isDateOnlyOrEmpty(value.contactDate) && isNonNegativeAmountOrEmpty(value.amount) && isNonNegativeAmountOrEmpty(value.remedyAmount)
+  const textFields = ['consumerName', 'seller', 'platform', 'paymentMethod', 'orderReference'] as const
+  return strings.every((key) => typeof value[key] === 'string') && textFields.every((key) => isBoundedText(value[key], 500)) && (Object.keys(ENUM_FIELDS) as Array<keyof typeof ENUM_FIELDS>).every((key) => ENUM_FIELDS[key].includes(value[key] as never)) && isDateOnlyOrEmpty(value.purchaseDate) && isDateOnlyOrEmpty(value.promisedDate) && isDateOnlyOrEmpty(value.contactDate) && isNonNegativeAmountOrEmpty(value.amount) && isNonNegativeAmountOrEmpty(value.remedyAmount)
+}
+
+function isBoundedText(value: unknown, maxLength: number, requireNonEmpty = false): value is string {
+  return typeof value === 'string' && value.length <= maxLength && (!requireNonEmpty || value.length > 0) && !Array.from(value).some((character) => {
+    const code = character.charCodeAt(0)
+    return code <= 31 || code === 127
+  })
 }
 
 function isDateOnlyOrEmpty(value: string): boolean {
