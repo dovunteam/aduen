@@ -71,7 +71,7 @@ function normaliseCaseRecord(value: unknown): CaseRecord | null {
 }
 
 function isCaseRecord(value: CaseRecord): boolean {
-  return [value.id, value.createdAt, value.updatedAt].every((item) => typeof item === 'string') && isIsoTimestamp(value.createdAt) && isIsoTimestamp(value.updatedAt) && CASE_STATUSES.includes(value.status) && isCaseDraft(value.draft) && Array.isArray(value.history) && value.history.every((event) => isIsoTimestamp(event.at) && (event.actor === 'user' || event.actor === 'system') && typeof event.action === 'string' && CASE_STATUSES.includes(event.status))
+  return typeof value.id === 'string' && value.id.length > 0 && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string' && isIsoTimestamp(value.createdAt) && isIsoTimestamp(value.updatedAt) && CASE_STATUSES.includes(value.status) && isCaseDraft(value.draft) && Array.isArray(value.history) && value.history.length > 0 && value.history.every((event) => isIsoTimestamp(event.at) && (event.actor === 'user' || event.actor === 'system') && typeof event.action === 'string' && event.action.length > 0 && CASE_STATUSES.includes(event.status))
 }
 
 function isCaseDraft(value: CaseDraft): boolean {
