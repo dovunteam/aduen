@@ -22,6 +22,8 @@ describe('case repository', () => {
   it('rejects invalid draft dates and amounts before writing', () => {
     expect(() => saveCaseDraft({ ...EMPTY_DRAFT, purchaseDate: '2026-02-30' })).toThrow('Invalid case draft')
     expect(() => saveCaseDraft({ ...EMPTY_DRAFT, amount: '-1' })).toThrow('Invalid case draft')
+    expect(() => saveCaseDraft({ ...EMPTY_DRAFT, amount: '25.999' })).toThrow('Invalid case draft')
+    expect(() => saveCaseDraft({ ...EMPTY_DRAFT, amount: ' ' })).toThrow('Invalid case draft')
     expect(readCase()).toBeNull()
   })
 
