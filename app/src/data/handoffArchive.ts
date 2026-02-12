@@ -35,12 +35,12 @@ export async function buildHandoffArchive(pack: ComplaintPack): Promise<Uint8Arr
 }
 
 export async function downloadHandoffArchive(pack: ComplaintPack): Promise<void> {
-  recordAuditEvent('handoff_exported', pack.id, `approved pack v${pack.version} handoff requested`)
   const bytes = await buildHandoffArchive(pack)
   const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }))
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = packFileName(pack).replace(/\.pdf$/i, '-handoff.zip')
   anchor.click()
+  recordAuditEvent('handoff_exported', pack.id, `approved pack v${pack.version} handoff archive exported`)
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
