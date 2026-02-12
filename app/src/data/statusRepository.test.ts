@@ -43,4 +43,9 @@ describe('submission repository', () => {
     expect(() => saveSubmission({ ...EMPTY_SUBMISSION, status: 'closed', channel: 'merchant email', submissionDate: '2026-09-20', outcome: 'refund' })).toThrow('Invalid submission record')
     expect(() => saveSubmission({ ...EMPTY_SUBMISSION, status: 'resolved', channel: 'merchant email', submissionDate: '2026-09-20', outcome: 'refund' })).not.toThrow()
   })
+
+  it('rejects status text beyond the user-facing limits', () => {
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, channel: 'x'.repeat(241) })).toThrow('Invalid submission record')
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, response: 'x'.repeat(1201) })).toThrow('Invalid submission record')
+  })
 })
