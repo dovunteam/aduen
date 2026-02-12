@@ -17,7 +17,7 @@ describe('complaint pack', () => {
     expect(pack.route.officialLinks).toEqual([{ label: 'Example destination', url: 'https://example.test/destination' }])
     expect(pack.merchantRequest.body).toContain('Example Store')
     expect(pack.approvedAt).toBeNull()
-    expect(packFileName(pack)).toBe('buktiva-example-store-v1.pdf')
+    expect(packFileName(pack)).toBe('Aduen-example-store-v1.pdf')
   })
 
   it('records explicit approval without altering the source pack', () => {

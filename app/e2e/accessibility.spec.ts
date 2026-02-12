@@ -19,7 +19,7 @@ test('onboarding has no serious automated WCAG violations', async ({ page }) => 
 
 test('urgent guidance has no serious automated WCAG violations', async ({ page }) => {
   await page.goto('/')
-  await page.getByLabel(/I understand Buktiva's role/).check()
+  await page.getByLabel(/I understand Aduen's role/).check()
   await page.getByRole('button', { name: 'Begin safety check' }).click()
   await page.getByLabel('A payment or transaction was not authorised by me').check()
   await expect(page.getByRole('alert')).toBeVisible()
@@ -28,7 +28,7 @@ test('urgent guidance has no serious automated WCAG violations', async ({ page }
 
 test('case details have no serious automated WCAG violations', async ({ page }) => {
   await page.goto('/')
-  await page.getByLabel(/I understand Buktiva's role/).check()
+  await page.getByLabel(/I understand Aduen's role/).check()
   await page.getByRole('button', { name: 'Begin safety check' }).click()
   await page.getByRole('button', { name: /No urgent issue/ }).click()
   await expect(page.getByRole('heading', { name: 'Describe the purchase.' })).toBeVisible()

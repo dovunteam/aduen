@@ -14,7 +14,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe('consent repository', () => {
   it('rejects stale or malformed consent records', () => {
-    localStorage.setItem('buktiva.consent.v1', JSON.stringify({ noticeVersion: 'old', acceptedAt: 'not-a-date', purpose: 'case-preparation-and-local-storage', withdrawalPath: 'data-controls' }))
+    localStorage.setItem('Aduen.consent.v1', JSON.stringify({ noticeVersion: 'old', acceptedAt: 'not-a-date', purpose: 'case-preparation-and-local-storage', withdrawalPath: 'data-controls' }))
     expect(readConsent()).toBeNull()
   })
 

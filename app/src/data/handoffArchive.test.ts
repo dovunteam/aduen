@@ -45,7 +45,7 @@ describe('approved evidence archive', () => {
     expect(manifest.auditLog[0].action).toBe('evidence_previewed')
     expect(getEvidenceOriginal).toHaveBeenCalledExactlyOnceWith('selected')
     expect(pack.confirmedDerivedFacts).toEqual([])
-    const pdf = await zip.file('buktiva-case-v1.pdf')!.async('string')
+    const pdf = await zip.file('Aduen-case-v1.pdf')!.async('string')
     expect(pdf).toMatch(/^%PDF/)
     expect(pdf).not.toContain('999.00')
   })

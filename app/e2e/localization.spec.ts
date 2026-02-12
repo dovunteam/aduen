@@ -16,7 +16,7 @@ test('Bahasa Malaysia preference persists across the safety journey', async ({ p
 
   await page.reload()
   await expect(page.getByRole('button', { name: 'BM' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByLabel(/Saya memahami peranan Buktiva/).check()
+  await page.getByLabel(/Saya memahami peranan Aduen/).check()
   await page.getByRole('button', { name: 'Mulakan semakan keselamatan' }).click()
   await page.getByLabel('Bayaran atau transaksi tidak dibenarkan oleh saya').check()
 
@@ -27,7 +27,7 @@ test('Bahasa Malaysia preference persists across the safety journey', async ({ p
 test('Bahasa Malaysia case details preserve stable domain values', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'BM' }).click()
-  await page.getByLabel(/Saya memahami peranan Buktiva/).check()
+  await page.getByLabel(/Saya memahami peranan Aduen/).check()
   await page.getByRole('button', { name: 'Mulakan semakan keselamatan' }).click()
   await page.getByRole('button', { name: /Tiada isu mendesak/ }).click()
 
@@ -61,7 +61,7 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await addBmEvidence(page, 'message', 'mesej.txt')
   await page.getByRole('button', { name: 'Semak kes' }).click()
   await expect(page.getByRole('heading', { name: 'Semak rekod.' })).toBeVisible()
-  await expect(page.getByText('Garis masa Buktiva', { exact: true })).toBeVisible()
+  await expect(page.getByText('Garis masa Aduen', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Sediakan permintaan peniaga' }).click()
   await expect(page.getByRole('heading', { name: 'Semak sebelum mengeksport.' })).toBeVisible()
   await expect(page.getByLabel(/Saya telah menyemak pek ini/)).toBeVisible()

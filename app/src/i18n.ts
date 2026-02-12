@@ -1,11 +1,11 @@
 export type Locale = 'en' | 'ms'
 
-const STORAGE_KEY = 'buktiva-locale'
+const STORAGE_KEY = 'Aduen-locale'
 const TUNTIVA_STORAGE_KEY = 'tuntiva-locale'
 
 export const messages = {
   en: {
-    home: 'Buktiva home',
+    home: 'Aduen home',
     dataControls: 'Data controls',
     prototype: 'Private prototype',
     progress: ['Understand', 'Safety check', 'Case details', 'Evidence', 'Confirm facts', 'Check', 'Pack', 'Status'],
@@ -13,15 +13,15 @@ export const messages = {
     welcome: {
       eyebrow: 'A clearer recovery path',
       title: 'A failed purchase.\nA clearer next step.',
-      lede: 'Buktiva helps you organise what happened, what you can prove, and what to do next. You stay in control of every detail and every submission.',
+      lede: 'Aduen helps you organise what happened, what you can prove, and what to do next. You stay in control of every detail and every submission.',
       cards: [
         ['Build the record', 'Keep transaction details, dates, messages, and evidence together.'],
         ['Check what is missing', 'See gaps and uncertainties before approaching a merchant or official channel.'],
         ['Choose the next step', 'Review a reasoned route. Nothing is sent without your approval.'],
       ],
       before: 'Before you begin',
-      notice: 'Buktiva provides case organisation and general routing information. It does not guarantee recovery or provide legal representation.',
-      consent: "I understand Buktiva's role and confirm that I am authorised to provide the information in this case.",
+      notice: 'Aduen provides case organisation and general routing information. It does not guarantee recovery or provide legal representation.',
+      consent: "I understand Aduen's role and confirm that I am authorised to provide the information in this case.",
       resume: 'Resume saved case',
       begin: 'Begin safety check',
     },
@@ -38,7 +38,7 @@ export const messages = {
         ['deadline', 'I know of an official deadline that is about to expire'],
       ],
       pause: 'Pause ordinary case preparation.',
-      urgent: "Contact your bank through its official hotline or Malaysia's National Scam Response Centre at 997 now if money or account access may still be at risk. For immediate danger, call Malaysian emergency services at 999. Buktiva is not an emergency service.",
+      urgent: "Contact your bank through its official hotline or Malaysia's National Scam Response Centre at 997 now if money or account access may still be at risk. For immediate danger, call Malaysian emergency services at 999. Aduen is not an emergency service.",
       bnm: 'Bank Negara Malaysia scam guidance ↗',
       nsrc: 'Official NSRC guidance ↗',
       source: "Use only contact details from your bank's official app, card, or website. Do not share an OTP, PIN, password, or recovery code.",
@@ -57,7 +57,7 @@ export const messages = {
     footer: 'Case organisation, not legal representation.',
   },
   ms: {
-    home: 'Laman utama Buktiva',
+    home: 'Laman utama Aduen',
     dataControls: 'Kawalan data',
     prototype: 'Prototaip persendirian',
     progress: ['Fahami', 'Semakan keselamatan', 'Butiran kes', 'Bukti', 'Sahkan fakta', 'Semak', 'Pek', 'Status'],
@@ -65,15 +65,15 @@ export const messages = {
     welcome: {
       eyebrow: 'Laluan pemulihan yang lebih jelas',
       title: 'Susun semula\npembelian yang bermasalah.',
-      lede: 'Buktiva membantu anda menyusun perkara yang berlaku, bukti yang ada, dan tindakan seterusnya. Anda kekal mengawal setiap butiran dan setiap penyerahan.',
+      lede: 'Aduen membantu anda menyusun perkara yang berlaku, bukti yang ada, dan tindakan seterusnya. Anda kekal mengawal setiap butiran dan setiap penyerahan.',
       cards: [
         ['Bina rekod', 'Simpan butiran transaksi, tarikh, mesej, dan bukti bersama-sama.'],
         ['Semak perkara yang tiada', 'Lihat jurang dan ketidakpastian sebelum menghubungi peniaga atau saluran rasmi.'],
         ['Pilih langkah seterusnya', 'Semak laluan yang berasas. Tiada apa-apa dihantar tanpa kelulusan anda.'],
       ],
       before: 'Sebelum anda bermula',
-      notice: 'Buktiva menyediakan penyusunan kes dan maklumat laluan umum. Ia tidak menjamin pemulihan atau menyediakan perwakilan undang-undang.',
-      consent: 'Saya memahami peranan Buktiva dan mengesahkan bahawa saya diberi kuasa untuk memberikan maklumat dalam kes ini.',
+      notice: 'Aduen menyediakan penyusunan kes dan maklumat laluan umum. Ia tidak menjamin pemulihan atau menyediakan perwakilan undang-undang.',
+      consent: 'Saya memahami peranan Aduen dan mengesahkan bahawa saya diberi kuasa untuk memberikan maklumat dalam kes ini.',
       resume: 'Sambung kes tersimpan',
       begin: 'Mulakan semakan keselamatan',
     },
@@ -90,7 +90,7 @@ export const messages = {
         ['deadline', 'Saya tahu tentang tarikh akhir rasmi yang hampir tamat'],
       ],
       pause: 'Jeda penyediaan kes biasa.',
-      urgent: 'Hubungi bank anda melalui talian rasmi atau Pusat Respons Scam Kebangsaan Malaysia di 997 sekarang jika wang atau akses akaun masih berisiko. Untuk bahaya serta-merta, hubungi perkhidmatan kecemasan Malaysia di 999. Buktiva bukan perkhidmatan kecemasan.',
+      urgent: 'Hubungi bank anda melalui talian rasmi atau Pusat Respons Scam Kebangsaan Malaysia di 997 sekarang jika wang atau akses akaun masih berisiko. Untuk bahaya serta-merta, hubungi perkhidmatan kecemasan Malaysia di 999. Aduen bukan perkhidmatan kecemasan.',
       bnm: 'Panduan penipuan Bank Negara Malaysia ↗',
       nsrc: 'Panduan rasmi NSRC ↗',
       source: 'Gunakan hanya butiran hubungan daripada aplikasi, kad, atau laman web rasmi bank anda. Jangan kongsi OTP, PIN, kata laluan, atau kod pemulihan.',

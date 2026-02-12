@@ -1,10 +1,10 @@
-# Buktiva
+# Aduen
 
 > Turn a failed purchase into a clear recovery path.
 
-**Buktiva** is a consumer case-preparation and recovery-routing product by DOVUN. It helps Malaysian consumers organise transaction evidence, understand the appropriate next step, prepare accurate complaint material, and track a case from merchant contact to an eligible external channel.
+**Aduen** is a consumer case-preparation and recovery-routing product by DOVUN. It helps Malaysian consumers organise transaction evidence, understand the appropriate next step, prepare accurate complaint material, and track a case from merchant contact to an eligible external channel.
 
-Buktiva is designed for cases such as:
+Aduen is designed for cases such as:
 
 - goods or services not received;
 - goods or services materially different from what was advertised;
@@ -12,7 +12,7 @@ Buktiva is designed for cases such as:
 - an unresolved cancellation or billing dispute; and
 - a merchant or platform that has stopped responding.
 
-Buktiva does not guarantee recovery, decide legal rights, file without the user's approval, act as a lawyer, or replace KPDN, the Tribunal for Consumer Claims Malaysia (TTPM), Bank Negara Malaysia, CAAM, MCMC, the police, or another competent authority.
+Aduen does not guarantee recovery, decide legal rights, file without the user's approval, act as a lawyer, or replace KPDN, the Tribunal for Consumer Claims Malaysia (TTPM), Bank Negara Malaysia, CAAM, MCMC, the police, or another competent authority.
 
 ## Core workflow
 
@@ -22,11 +22,11 @@ The initial product is deliberately narrow: ordinary Malaysian consumer purchase
 
 ## Evidence standard
 
-Buktiva distinguishes four kinds of information:
+Aduen distinguishes four kinds of information:
 
 1. **Original evidence** — receipts, invoices, order confirmations, payment records, policies, screenshots, messages, delivery records, and merchant responses.
 2. **User statements** — the consumer's account of events and requested remedy.
-3. **Buktiva-derived data** — extracted dates, amounts, entities, deadlines, and a generated chronology.
+3. **Aduen-derived data** — extracted dates, amounts, entities, deadlines, and a generated chronology.
 4. **Official outcome** — a merchant response, platform decision, regulator communication, tribunal order, bank decision, or other external result.
 
 Derived data never silently replaces original evidence.
@@ -39,7 +39,7 @@ Start with [the documentation index](docs/00_PRODUCT_INDEX.md).
 
 The underlying consumer problem is documented. KPDN's national e-commerce review reports 10,488 online-transaction complaints in 2024, including 5,422 complaints for goods or services not received and 2,019 for goods or services not as advertised.
 
-The Buktiva product proposition is not yet validated. There is no evidence in this repository that consumers will pay for Buktiva, that its complaint packs improve recovery rates, or that a sustainable institutional payer exists. Those questions must be tested with real, consented cases.
+The Aduen product proposition is not yet validated. There is no evidence in this repository that consumers will pay for Aduen, that its complaint packs improve recovery rates, or that a sustainable institutional payer exists. Those questions must be tested with real, consented cases.
 
 ## Product status
 

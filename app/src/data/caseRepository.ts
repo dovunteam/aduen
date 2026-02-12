@@ -2,8 +2,8 @@ import { createCaseRecord, EMPTY_DRAFT, transitionCase } from '../domain/case'
 import type { CaseDraft, CaseRecord, CaseRecordStatus } from '../domain/case'
 import { recordAuditEvent } from './auditRepository'
 
-const CASE_KEY = 'buktiva.case-record.v1'
-const LEGACY_DRAFT_KEY = 'buktiva.case-draft.v1'
+const CASE_KEY = 'Aduen.case-record.v1'
+const LEGACY_DRAFT_KEY = 'Aduen.case-draft.v1'
 const TUNTIVA_CASE_KEY = 'tuntiva.case-record.v1'
 const TUNTIVA_DRAFT_KEY = 'tuntiva.case-draft.v1'
 const CASE_STATUSES: CaseRecordStatus[] = ['draft', 'out_of_scope', 'evidence_collection', 'confirmation', 'review', 'ready_for_pack', 'approved', 'handed_off', 'awaiting_response', 'resolved', 'closed']
