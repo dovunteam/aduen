@@ -5,9 +5,10 @@ import { getEvidenceOriginal, listEvidence, listExtractions } from './evidenceRe
 import { readConsent } from './consentRepository'
 import { readCase } from './caseRepository'
 import { listPacks } from './packRepository'
-import { listAuditEvents, recordAuditEvent } from './auditRepository'
+import { createAuditEvent, listAuditEvents, persistAuditEvent } from './auditRepository'
+import type { LocalAuditEvent } from './auditRepository'
 
-export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<Uint8Array> {
+export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionRecord, additionalAuditEvents: LocalAuditEvent[] = []): Promise<Uint8Array> {
   const evidence = await listEvidence()
   const extractions = await listExtractions()
   const zip = new JSZip()
@@ -20,7 +21,7 @@ export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionR
     packVersions: listPacks(),
     consent: readConsent(),
     submission,
-    auditLog: listAuditEvents(),
+    auditLog: [...listAuditEvents(), ...additionalAuditEvents],
     evidence,
     extractions,
   }
@@ -39,11 +40,12 @@ export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionR
 }
 
 export async function downloadCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<void> {
-  const bytes = await buildCaseArchive(draft, submission)
+  const exportEvent = createAuditEvent('case_exported', 'case', 'complete case archive exported')
+  const bytes = await buildCaseArchive(draft, submission, [exportEvent])
   const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }))
   const anchor = document.createElement('a')
   anchor.href = url; anchor.download = `buktiva-case-export-${new Date().toISOString().slice(0, 10)}.zip`; anchor.click()
-  recordAuditEvent('case_exported', 'case', 'complete case archive exported')
+  persistAuditEvent(exportEvent)
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
