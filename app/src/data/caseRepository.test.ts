@@ -32,6 +32,15 @@ describe('case repository', () => {
     expect(readCase()).toBeNull()
   })
 
+  it('rejects stored cases without identity or lifecycle history', () => {
+    const timestamp = '2026-09-21T00:00:00.000Z'
+    const base = { createdAt: timestamp, updatedAt: timestamp, status: 'draft', draft: EMPTY_DRAFT }
+    localStorage.setItem('buktiva.case-record.v1', JSON.stringify({ ...base, id: '', history: [{ at: timestamp, actor: 'system', action: 'case_created', status: 'draft' }] }))
+    expect(readCase()).toBeNull()
+    localStorage.setItem('buktiva.case-record.v1', JSON.stringify({ ...base, id: 'case-1', history: [] }))
+    expect(readCase()).toBeNull()
+  })
+
   it('audits first creation separately from later edits', () => {
     saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Synthetic seller' })
     expect(listAuditEvents().map((event) => event.action)).toEqual(['case_created'])
