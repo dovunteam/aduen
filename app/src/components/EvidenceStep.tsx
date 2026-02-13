@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { addEvidence, deleteEvidence, getEvidenceOriginal, listEvidence, updateEvidenceInclusion } from '../data/evidenceRepository'
 import { EVIDENCE_TYPES, formatFileSize } from '../domain/evidence'
@@ -8,8 +8,9 @@ import type { EvidenceRisk } from '../domain/evidenceSafety'
 import type { Locale } from '../i18n'
 import { TextEvidencePreview } from './TextEvidencePreview'
 import { ImageEvidencePreview } from './ImageEvidencePreview'
-import { PdfEvidencePreview } from './PdfEvidencePreview'
 import { recordAuditEvent } from '../data/auditRepository'
+
+const PdfEvidencePreview = lazy(() => import('./PdfEvidencePreview').then((module) => ({ default: module.PdfEvidencePreview })))
 
 type Props = { locale: Locale; onBack: () => void; onChange: () => void; onContinue: (evidence: EvidenceMetadata[]) => void }
 
@@ -108,7 +109,7 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
         <div className="evidence-controls"><label><input type="checkbox" disabled={busy} checked={item.includeInPack} onChange={() => toggleInclusion(item)} /> {text.include}</label><button className="download-link" type="button" onClick={() => void downloadOriginal(item)}>{text.download}</button><button type="button" disabled={busy} onClick={() => void remove(item)}>{text.delete}</button></div>
         {item.mimeType === 'text/plain' && <div style={{ gridColumn: '2 / -1' }}><TextEvidencePreview evidenceId={item.id} locale={locale} /></div>}
         {['image/jpeg', 'image/png', 'image/webp'].includes(item.mimeType) && <div style={{ gridColumn: '2 / -1' }}><ImageEvidencePreview evidenceId={item.id} fileName={item.fileName} locale={locale} /></div>}
-        {item.mimeType === 'application/pdf' && <div style={{ gridColumn: '2 / -1' }}><PdfEvidencePreview evidenceId={item.id} locale={locale} /></div>}
+        {item.mimeType === 'application/pdf' && <div style={{ gridColumn: '2 / -1' }}><Suspense fallback={<p role="status">{locale === 'ms' ? 'Memuatkan alat PDF…' : 'Loading PDF tools…'}</p>}><PdfEvidencePreview evidenceId={item.id} locale={locale} /></Suspense></div>}
       </article>)}</div>}
     </div>
     <div className="actions split"><button className="secondary" disabled={busy} onClick={onBack}>{text.back}</button><button className="primary" disabled={items.length === 0 || busy} onClick={() => onContinue(items)}>{text.review} <span>→</span></button></div>
