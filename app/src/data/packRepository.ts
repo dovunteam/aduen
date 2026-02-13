@@ -14,7 +14,7 @@ export function listPacks(): ComplaintPack[] {
     return parsed.flatMap((pack) => {
       if (!pack || typeof pack !== 'object') return []
       const candidate = pack as Partial<ComplaintPack>
-      const normalised = { ...candidate, confirmedDerivedFacts: candidate.confirmedDerivedFacts ?? [], merchantRequest: candidate.merchantRequest ?? { subject: '', body: '', generatedFrom: [] }, route: candidate.route ? { ...candidate.route, sourceUrl: candidate.route.sourceUrl ?? 'https://github.com/dovunteam/tuntiva/blob/main/docs/Aduen_Case_Routing_Rules.md' } : null }
+      const normalised = { ...candidate, confirmedDerivedFacts: candidate.confirmedDerivedFacts ?? [], merchantRequest: candidate.merchantRequest ?? { subject: '', body: '', generatedFrom: [] }, route: candidate.route ? { ...candidate.route, sourceUrl: candidate.route.sourceUrl ?? 'https://github.com/dovunteam/aduen/blob/main/docs/Aduen_Case_Routing_Rules.md' } : null }
       return isComplaintPack(normalised) ? [normalised] : []
     })
   }
