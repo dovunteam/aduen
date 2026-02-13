@@ -65,6 +65,14 @@ describe('immutable pack storage', () => {
     expect(listPacks()).toEqual([])
   })
 
+  it('rejects packs with unsafe generated text', () => {
+    const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
+    expect(() => savePack({ ...valid, disclaimer: 'Synthetic\ntext' })).toThrow('Invalid pack')
+    expect(() => savePack({ ...valid, consumerName: 'x'.repeat(501) })).toThrow('Invalid pack')
+    expect(() => savePack({ ...valid, route: { ...valid.route, routeName: 'x'.repeat(241) } })).toThrow('Invalid pack')
+    expect(listPacks()).toEqual([])
+  })
+
   it('ignores malformed official-link collections without discarding valid packs', () => {
     const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
     localStorage.setItem('buktiva.pack-versions.v1', JSON.stringify([

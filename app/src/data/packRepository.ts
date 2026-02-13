@@ -43,14 +43,21 @@ export function clearPacks(): void { localStorage.removeItem(PACKS_KEY); localSt
 function isComplaintPack(value: unknown): value is ComplaintPack {
   if (!value || typeof value !== 'object') return false
   const pack = value as Partial<ComplaintPack>
-  return typeof pack.id === 'string' && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && isIsoTimestamp(pack.createdAt) && (pack.approvedAt === null || (typeof pack.approvedAt === 'string' && isIsoTimestamp(pack.approvedAt))) && typeof pack.consumerName === 'string' && typeof pack.issue === 'string' && typeof pack.remedy === 'string' && (pack.remedyAmount === null || typeof pack.remedyAmount === 'string') && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && isSafeRoute(pack.route) && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && typeof pack.disclaimer === 'string' && typeof pack.declaration === 'string'
+  return isSafeText(pack.id, 100, true) && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && isIsoTimestamp(pack.createdAt) && (pack.approvedAt === null || (typeof pack.approvedAt === 'string' && isIsoTimestamp(pack.approvedAt))) && isSafeText(pack.consumerName, 500) && isSafeText(pack.issue, 120) && isSafeText(pack.remedy, 120) && (pack.remedyAmount === null || isSafeText(pack.remedyAmount, 40)) && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && isSafeRoute(pack.route) && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && isSafeText(pack.disclaimer, 2000) && isSafeText(pack.declaration, 2000)
 }
 
 function isSafeRoute(route: ComplaintPack['route'] | undefined): boolean {
   if (!route) return false
-  if (!isHttpsUrl(route.sourceUrl)) return false
+  if (!isSafeText(route.routeName, 240) || !isSafeText(route.ruleVersion, 100) || !isSafeText(route.sourceChecked, 80) || !isSafeText(route.sourceUrl, 2000) || !isHttpsUrl(route.sourceUrl)) return false
   if (route.officialLinks === undefined) return true
-  return Array.isArray(route.officialLinks) && route.officialLinks.every((link) => Boolean(link && typeof link === 'object' && typeof link.label === 'string' && isHttpsUrl(link.url)))
+  return Array.isArray(route.officialLinks) && route.officialLinks.every((link) => Boolean(link && typeof link === 'object' && isSafeText(link.label, 240, true) && isSafeText(link.url, 2000) && isHttpsUrl(link.url)))
+}
+
+function isSafeText(value: unknown, maxLength: number, requireNonEmpty = false): value is string {
+  return typeof value === 'string' && value.length <= maxLength && (!requireNonEmpty || value.length > 0) && !Array.from(value).some((character) => {
+    const code = character.charCodeAt(0)
+    return code <= 31 || code === 127
+  })
 }
 
 function isHttpsUrl(value: unknown): boolean {
