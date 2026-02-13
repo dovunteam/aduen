@@ -34,5 +34,8 @@ describe('evidence validation', () => {
     expect(isValidEvidenceMetadata({ ...valid, sha256: 'not-a-hash' })).toBe(false)
     expect(isValidEvidenceMetadata({ ...valid, fileName: '../unsafe.txt' })).toBe(false)
     expect(isValidEvidenceMetadata({ ...valid, fileName: 'unsafe\nname.txt' })).toBe(false)
+    expect(isValidEvidenceMetadata({ ...valid, id: 'x'.repeat(101) })).toBe(false)
+    expect(isValidEvidenceMetadata({ ...valid, description: 'Synthetic\tdata' })).toBe(false)
+    expect(isValidEvidenceMetadata({ ...valid, description: 'x'.repeat(241) })).toBe(false)
   })
 })
