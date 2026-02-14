@@ -39,11 +39,11 @@ export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionR
 }
 
 export async function downloadCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<void> {
-  recordAuditEvent('case_exported', 'case', 'complete case archive requested')
   const bytes = await buildCaseArchive(draft, submission)
   const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }))
   const anchor = document.createElement('a')
   anchor.href = url; anchor.download = `buktiva-case-export-${new Date().toISOString().slice(0, 10)}.zip`; anchor.click()
+  recordAuditEvent('case_exported', 'case', 'complete case archive exported')
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
