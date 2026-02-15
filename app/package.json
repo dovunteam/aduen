@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:firefox": "playwright test --project=firefox-recovery",
     "preview": "vite preview"
   },
   "dependencies": {
