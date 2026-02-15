@@ -10,6 +10,16 @@ function passesLuhn(value: string): boolean {
   return sum % 10 === 0
 }
 
+function containsPossibleMalaysianIdentityNumber(text: string): boolean {
+  const candidates = text.match(/(?<!\d)\d{6}[- ]?\d{2}[- ]?\d{4}(?!\d)/g) ?? []
+  return candidates.some((candidate) => {
+    const digits = candidate.replace(/\D/g, '')
+    const month = Number(digits.slice(2, 4))
+    const day = Number(digits.slice(4, 6))
+    return month >= 1 && month <= 12 && day >= 1 && day <= 31
+  })
+}
+
 export function detectEvidenceRisks(text: string): EvidenceRisk[] {
   const risks: EvidenceRisk[] = []
   const numberCandidates = text.match(/(?:\d[ -]?){13,19}/g) ?? []
@@ -19,7 +29,7 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
   if (/\b(?:password|passcode|pin|otp|one[ -]time password|recovery code|security answer)\b/i.test(text)) {
     risks.push({ code: 'authentication_secret', message: 'The file mentions a password, PIN, OTP, recovery code, or similar secret.' })
   }
-  if (/\b(?:mykad|passport|identity card|national registration identity card|nric)\b/i.test(text)) {
+  if (/\b(?:mykad|passport|identity card|national registration identity card|nric)\b/i.test(text) || containsPossibleMalaysianIdentityNumber(text)) {
     risks.push({ code: 'identity_number', message: 'The file may contain an identity-document number.' })
   }
   if (/\b(?:third[- ]party|someone\s+else(?:['’]s)?|another\s+person(?:['’]s)?|other\s+person(?:['’]s)?)\b/i.test(text)) {
