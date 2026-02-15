@@ -14,7 +14,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
       await checkLayout('welcome')
       await page.getByRole('link', { name: locale === 'en' ? 'Organise your case' : 'Susun kes anda' }).click()
       await expect(page.getByRole('heading', { name: locale === 'en' ? 'Before you begin' : 'Sebelum anda bermula' })).toBeInViewport()
-      await page.getByLabel(locale === 'en' ? /I understand Buktiva's role/ : /Saya memahami peranan Buktiva/).check()
+      await page.getByLabel(locale === 'en' ? /I understand Aduen's role/ : /Saya memahami peranan Aduen/).check()
       await page.getByRole('button', { name: locale === 'en' ? 'Begin safety check' : 'Mulakan semakan keselamatan' }).click()
       await checkLayout('safety')
       await page.getByRole('button', { name: locale === 'en' ? /No urgent issue/ : /Tiada isu mendesak/ }).click()

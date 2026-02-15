@@ -2,7 +2,7 @@ import { createConsentRecord, NOTICE_VERSION } from '../domain/consent'
 import type { ConsentRecord } from '../domain/consent'
 import { recordAuditEvent } from './auditRepository'
 
-const CONSENT_KEY = 'buktiva.consent.v1'
+const CONSENT_KEY = 'Aduen.consent.v1'
 const TUNTIVA_CONSENT_KEY = 'tuntiva.consent.v1'
 
 export function acceptConsent(): ConsentRecord {

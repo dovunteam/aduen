@@ -27,7 +27,7 @@ export async function buildHandoffArchive(pack: ComplaintPack, additionalAuditEv
   zip.file('manifest.json', JSON.stringify({
     exportVersion: 1,
     exportedAt: new Date().toISOString(),
-    notice: 'User-approved Buktiva handoff archive. It contains the approved pack and only the evidence selected for that pack.',
+    notice: 'User-approved Aduen handoff archive. It contains the approved pack and only the evidence selected for that pack.',
     pack: { id: pack.id, version: pack.version, approvedAt: pack.approvedAt, route: pack.route },
     auditLog: [...listAuditEvents(), ...additionalAuditEvents],
     evidence: manifestEvidence,

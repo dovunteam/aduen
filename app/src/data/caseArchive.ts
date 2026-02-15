@@ -15,7 +15,7 @@ export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionR
   const manifest = {
     exportVersion: 1,
     exportedAt: new Date().toISOString(),
-    notice: 'User-controlled Buktiva prototype export. Evidence originals have not been altered.',
+    notice: 'User-controlled Aduen prototype export. Evidence originals have not been altered.',
     case: draft,
     caseRecord: readCase(),
     packVersions: listPacks(),
@@ -44,7 +44,7 @@ export async function downloadCaseArchive(draft: CaseDraft, submission: Submissi
   const bytes = await buildCaseArchive(draft, submission, [exportEvent])
   const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }))
   const anchor = document.createElement('a')
-  anchor.href = url; anchor.download = `buktiva-case-export-${new Date().toISOString().slice(0, 10)}.zip`; anchor.click()
+  anchor.href = url; anchor.download = `Aduen-case-export-${new Date().toISOString().slice(0, 10)}.zip`; anchor.click()
   persistAuditEvent(exportEvent)
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

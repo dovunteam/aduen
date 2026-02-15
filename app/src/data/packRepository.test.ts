@@ -37,14 +37,14 @@ describe('immutable pack storage', () => {
 
   it('ignores malformed stored packs without discarding valid versions', () => {
     const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
-    localStorage.setItem('buktiva.pack-versions.v1', JSON.stringify([{ id: 'broken', version: 'one' }, valid]))
+    localStorage.setItem('Aduen.pack-versions.v1', JSON.stringify([{ id: 'broken', version: 'one' }, valid]))
     expect(listPacks()).toEqual([valid])
     expect(nextPackVersion()).toBe(2)
   })
 
   it('ignores packs with malformed creation or approval timestamps', () => {
     const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
-    localStorage.setItem('buktiva.pack-versions.v1', JSON.stringify([
+    localStorage.setItem('Aduen.pack-versions.v1', JSON.stringify([
       { ...valid, createdAt: '2026-09-21' },
       { ...valid, id: 'approved-invalid', approvedAt: 'not-a-date' },
       valid,
@@ -75,7 +75,7 @@ describe('immutable pack storage', () => {
 
   it('ignores malformed official-link collections without discarding valid packs', () => {
     const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
-    localStorage.setItem('buktiva.pack-versions.v1', JSON.stringify([
+    localStorage.setItem('Aduen.pack-versions.v1', JSON.stringify([
       { ...valid, id: 'bad-object-links', route: { ...valid.route, officialLinks: { label: 'bad' } } },
       { ...valid, id: 'bad-item-links', route: { ...valid.route, officialLinks: [null] } },
       valid,

@@ -2,7 +2,7 @@ import { CASE_STATUSES, EMPTY_SUBMISSION } from '../domain/status'
 import type { SubmissionRecord } from '../domain/status'
 import { recordAuditEvent } from './auditRepository'
 
-const STATUS_KEY = 'buktiva.submission-record.v1'
+const STATUS_KEY = 'Aduen.submission-record.v1'
 const TUNTIVA_STATUS_KEY = 'tuntiva.submission-record.v1'
 const OUTCOMES: SubmissionRecord['outcome'][] = ['', 'refund', 'replacement', 'repair', 'delivery', 'partial', 'rejected', 'redirected', 'withdrawn', 'unresolved']
 

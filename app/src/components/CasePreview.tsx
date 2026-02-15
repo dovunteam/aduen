@@ -7,7 +7,7 @@ export function CasePreview({ locale }: { locale: Locale }) {
     <div className="preview-caption"><span className="tiny-dot" />{ms ? 'DARI BUKTI KEPADA TINDAKAN' : 'FROM EVIDENCE TO A NEXT STEP'}</div>
     <div className="preview-paper preview-paper-back" aria-hidden="true" />
     <div className="preview-paper preview-paper-front">
-      <div className="preview-document-top"><span className="document-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 3h7l4 4v14H7V3Z" /><path d="M14 3v5h4M10 12h5m-5 4h5" /></svg></span><span>BUKTIVA CASE<span>{ms ? 'Contoh ilustrasi' : 'Illustrative example'}</span></span><span className="preview-document-menu" aria-hidden="true">···</span></div>
+      <div className="preview-document-top"><span className="document-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 3h7l4 4v14H7V3Z" /><path d="M14 3v5h4M10 12h5m-5 4h5" /></svg></span><span>Aduen CASE<span>{ms ? 'Contoh ilustrasi' : 'Illustrative example'}</span></span><span className="preview-document-menu" aria-hidden="true">···</span></div>
       <div className="preview-title">{ms ? 'Semuanya, di satu tempat.' : 'The whole story, together.'}</div>
       <p className="preview-subtitle">{ms ? 'Pesanan tidak diterima' : 'Order not received'}</p>
       <div className="preview-record"><span>{ms ? 'Rekod transaksi' : 'Transaction record'}</span><span className="preview-tag">{ms ? 'Tersusun' : 'Organised'}</span></div>
