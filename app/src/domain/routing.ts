@@ -17,22 +17,15 @@ export type RouteEvaluation = {
   officialLinks?: Array<{ label: string; url: string }>
 }
 
-export type TtpmAssessment = { status: 'candidate' | 'excluded' | 'uncertain'; reason: string }
+export type TtpmAssessment = { status: 'excluded' | 'uncertain'; reason: string }
 
-export function assessTtpmCandidate(draft: CaseDraft, now = new Date()): TtpmAssessment {
-  if (!draft.purpose || !draft.category) return { status: 'uncertain', reason: 'TTPM candidate check: confirm the purchase purpose and category.' }
-  if (draft.purpose === 'business') return { status: 'excluded', reason: 'TTPM candidate check: business or professional purchase is excluded.' }
-  if (['healthcare', 'professional_service', 'land', 'aviation'].includes(draft.category)) return { status: 'excluded', reason: 'TTPM candidate check: this category is listed as excluded or sector-specific.' }
+export function assessTtpmPrerequisites(draft: CaseDraft): TtpmAssessment {
+  if (!draft.purpose || !draft.category) return { status: 'uncertain', reason: 'TTPM check: confirm the purchase purpose and category.' }
+  if (draft.purpose === 'business') return { status: 'excluded', reason: 'TTPM check: business or professional purchase is outside the documented consumer scope.' }
+  if (['healthcare', 'professional_service', 'land', 'aviation'].includes(draft.category)) return { status: 'excluded', reason: 'TTPM check: this recorded category is listed as excluded or sector-specific.' }
   const amount = Number(draft.amount)
-  if (!Number.isFinite(amount) || amount <= 0) return { status: 'uncertain', reason: 'TTPM candidate check: confirm the transaction amount.' }
-  if (amount > 50_000) return { status: 'excluded', reason: 'TTPM candidate check: the recorded amount is above the documented RM50,000 limit.' }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.purchaseDate)) return { status: 'uncertain', reason: 'TTPM candidate check: confirm the purchase date.' }
-  const purchaseDate = new Date(`${draft.purchaseDate}T00:00:00Z`)
-  const cutoff = new Date(now)
-  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 3)
-  if (!Number.isFinite(purchaseDate.getTime()) || purchaseDate.toISOString().slice(0, 10) !== draft.purchaseDate || purchaseDate > now) return { status: 'uncertain', reason: 'TTPM candidate check: the purchase date is invalid or in the future.' }
-  if (purchaseDate < cutoff) return { status: 'excluded', reason: 'TTPM candidate check: the purchase is outside the documented three-year period.' }
-  return { status: 'candidate', reason: 'TTPM candidate check: amount, personal purpose, category, and documented three-year period appear compatible; verify the live requirements.' }
+  if (!Number.isFinite(amount) || amount <= 0) return { status: 'uncertain', reason: 'TTPM check: confirm the transaction amount.' }
+  return { status: 'uncertain', reason: 'TTPM applies the RM50,000 limit to the claim amount and its three-year limit to when the claim accrued. Aduen records transaction amount and purchase date only, so it cannot assess either limit; verify both with TTPM.' }
 }
 
 export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
@@ -41,8 +34,8 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
     source: 'Aduen Case Routing Rules — R-010 Merchant-first',
     sourceUrl: 'https://github.com/dovunteam/aduen/blob/main/docs/Aduen_Case_Routing_Rules.md#r-010-merchant-first',
     sourceType: 'product-default' as const,
-    sourceChecked: '20 September 2026',
-    ruleVersion: 'MY-R010-2026.09.20.2',
+    sourceChecked: '23 September 2026',
+    ruleVersion: 'MY-R010-2026.09.23.1',
   }
 
   if (draft.purpose === 'business') return {
@@ -90,8 +83,8 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
   }
   return {
     ...base, routeName: 'Manual route review', recommendedAction: 'Review the merchant contact and response before choosing any external escalation channel.',
-    matchingFacts: [`Merchant contact recorded: ${draft.contactHistory}`, ...(draft.contactDate ? [`Contact date: ${draft.contactDate}`] : []), assessTtpmCandidate(draft).reason],
-    unmetPrerequisites: [...missing, ...(!draft.contactDate ? ['Date of merchant contact'] : []), ...(assessTtpmCandidate(draft).status === 'uncertain' ? ['TTPM candidate facts need confirmation'] : [])], exclusionsChecked: ['Merchant-first prerequisite considered'], confidence: 'uncertain',
+    matchingFacts: [`Merchant contact recorded: ${draft.contactHistory}`, ...(draft.contactDate ? [`Contact date: ${draft.contactDate}`] : []), assessTtpmPrerequisites(draft).reason],
+    unmetPrerequisites: [...missing, ...(!draft.contactDate ? ['Date of merchant contact'] : []), ...(assessTtpmPrerequisites(draft).status === 'uncertain' ? ['TTPM claim amount and accrual date require official verification'] : [])], exclusionsChecked: ['Merchant-first prerequisite considered'], confidence: 'uncertain',
     officialLinks: [
       { label: 'KPDN e-Aduan', url: 'https://eaduan.kpdn.gov.my/' },
       { label: 'TTPM e-Tribunal', url: 'https://ttpm.kpdn.gov.my/?lang=en' },
