@@ -5,6 +5,7 @@ import type { RouteEvaluation } from './routing'
 import type { EvidenceExtraction } from './extraction'
 import { createMerchantRequest } from './merchantRequest'
 import type { MerchantRequest } from './merchantRequest'
+import type { Locale } from '../i18n'
 
 export type ComplaintPack = {
   id: string
@@ -25,7 +26,7 @@ export type ComplaintPack = {
   declaration: string
 }
 
-export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata[], route: RouteEvaluation, now = new Date(), version = 1, extractions: EvidenceExtraction[] = []): ComplaintPack {
+export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata[], route: RouteEvaluation, now = new Date(), version = 1, extractions: EvidenceExtraction[] = [], locale: Locale = 'en'): ComplaintPack {
   const included = evidence.filter((item) => item.includeInPack)
   return {
     id: crypto.randomUUID(), version, createdAt: now.toISOString(), approvedAt: null,
@@ -36,7 +37,7 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
     timeline: buildTimeline(draft, included),
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
     confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion }))),
-    merchantRequest: createMerchantRequest(draft),
+    merchantRequest: createMerchantRequest(draft, locale),
     disclaimer: 'Prepared from user-confirmed details and selected evidence. Aduen provides case organisation and general routing information; it does not guarantee recovery or provide legal representation.',
     declaration: `I, ${draft.consumerName || 'the consumer'}, confirm that the information in this pack is accurate to the best of my knowledge and that I am authorised to provide it.`,
   }
