@@ -143,6 +143,22 @@ test('uploaded PDFs can be redacted locally into a flattened copy without changi
   await page.getByRole('button', { name: 'Download original' }).click()
   const original = await originalDownload
   expect(await readFile((await original.path())!)).toEqual(originalBytes)
+
+  const centralRedaction = pdfPage.getByRole('button', { name: 'Add central redaction · 1' })
+  await centralRedaction.focus()
+  await page.keyboard.press('Enter')
+  await expect(pdfPage.getByRole('status')).toHaveText('2 redactions applied to page 1.')
+  const clearRedactions = pdfPage.getByRole('button', { name: 'Clear redactions · 1' })
+  await clearRedactions.focus()
+  await page.keyboard.press('Enter')
+  await expect(pdfPage.getByRole('status')).toHaveText('No redactions on page 1.')
+  await centralRedaction.focus()
+  await page.keyboard.press('Enter')
+  await expect(pdfPage.getByRole('status')).toHaveText('1 redaction applied to page 1.')
+  const keyboardDownload = page.waitForEvent('download')
+  await exportButton.focus()
+  await page.keyboard.press('Enter')
+  expect((await keyboardDownload).suggestedFilename()).toMatch(/^redacted-evidence-.+\.pdf$/)
 })
 
 test('draft deletion can be cancelled and confirmed deletion removes saved case data', async ({ page }) => {
