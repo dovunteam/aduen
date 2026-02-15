@@ -31,6 +31,15 @@ async function fillCase(page: import('@playwright/test').Page, overrides: { purp
   await page.getByRole('button', { name: /Save case draft/ }).click()
 }
 
+async function addEvidence(page: import('@playwright/test').Page, type: string, name: string, description: string) {
+  await page.getByLabel('Original file').setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(`Synthetic ${description}. No real consumer information.`) })
+  await page.getByLabel('What kind of record?').selectOption(type)
+  await page.getByLabel('Event date').fill('2026-08-01')
+  await page.getByLabel('Description').fill(description)
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await expect(page.getByText(name)).toBeVisible()
+}
+
 test('urgent risk blocks the ordinary intake path', async ({ page }) => {
   await acceptBoundary(page)
   await page.getByLabel('A payment or transaction was not authorised by me').check()
@@ -59,4 +68,31 @@ test('a supported draft preserves original evidence and resumes at the evidence 
   await page.getByRole('button', { name: /Resume saved case/ }).click()
   await expect(page.getByRole('heading', { name: 'Keep the originals.' })).toBeVisible()
   await expect(page.getByText('synthetic-receipt.txt')).toBeVisible()
+})
+
+test('a complete merchant-first case reaches approved PDF export and outcome tracking', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await addEvidence(page, 'receipt', 'receipt.txt', 'order receipt')
+  await addEvidence(page, 'payment', 'payment.txt', 'payment record')
+  await addEvidence(page, 'listing', 'listing.txt', 'promised delivery listing')
+  await addEvidence(page, 'message', 'message.txt', 'written merchant request')
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByText('0', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Merchant or platform first' })).toBeVisible()
+  await page.getByRole('button', { name: 'Prepare merchant request' }).click()
+  await expect(page.getByText('TUNTIVA CASE PACK')).toBeVisible()
+  await page.getByLabel(/I reviewed this pack/).check()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Export PDF/ }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toBe('tuntiva-synthetic-store-v1.pdf')
+  await page.getByRole('button', { name: /Track external status/ }).click()
+  await page.getByLabel('Recipient or channel').fill('Synthetic merchant email')
+  await page.getByLabel('Submission date').fill('2026-08-10')
+  await page.getByLabel('External reference').fill('SYNTH-001')
+  await page.getByRole('button', { name: /Save status/ }).click()
+  await expect(page.getByRole('status')).toContainText('Status saved')
+  await expect(page.getByText('handed off', { exact: true })).toBeVisible()
 })
