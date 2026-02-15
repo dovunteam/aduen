@@ -4,9 +4,10 @@ import { packFileName } from '../domain/complaintPack'
 import { getEvidenceOriginal } from './evidenceRepository'
 import { createComplaintPackPdf } from './packPdf'
 import { safeFileName } from './caseArchive'
-import { listAuditEvents, recordAuditEvent } from './auditRepository'
+import { createAuditEvent, listAuditEvents, persistAuditEvent } from './auditRepository'
+import type { LocalAuditEvent } from './auditRepository'
 
-export async function buildHandoffArchive(pack: ComplaintPack): Promise<Uint8Array> {
+export async function buildHandoffArchive(pack: ComplaintPack, additionalAuditEvents: LocalAuditEvent[] = []): Promise<Uint8Array> {
   if (!pack.approvedAt) throw new Error('Approve the pack before exporting it.')
   const zip = new JSZip()
   zip.file(packFileName(pack), createComplaintPackPdf(pack).output('arraybuffer'))
@@ -28,19 +29,20 @@ export async function buildHandoffArchive(pack: ComplaintPack): Promise<Uint8Arr
     exportedAt: new Date().toISOString(),
     notice: 'User-approved Buktiva handoff archive. It contains the approved pack and only the evidence selected for that pack.',
     pack: { id: pack.id, version: pack.version, approvedAt: pack.approvedAt, route: pack.route },
-    auditLog: listAuditEvents(),
+    auditLog: [...listAuditEvents(), ...additionalAuditEvents],
     evidence: manifestEvidence,
   }, null, 2))
   return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } })
 }
 
 export async function downloadHandoffArchive(pack: ComplaintPack): Promise<void> {
-  const bytes = await buildHandoffArchive(pack)
+  const exportEvent = createAuditEvent('handoff_exported', pack.id, `approved pack v${pack.version} handoff archive exported`)
+  const bytes = await buildHandoffArchive(pack, [exportEvent])
   const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }))
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = packFileName(pack).replace(/\.pdf$/i, '-handoff.zip')
   anchor.click()
-  recordAuditEvent('handoff_exported', pack.id, `approved pack v${pack.version} handoff archive exported`)
+  persistAuditEvent(exportEvent)
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
