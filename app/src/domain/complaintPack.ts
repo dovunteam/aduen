@@ -8,6 +8,7 @@ import type { MerchantRequest } from './merchantRequest'
 import type { Locale } from '../i18n'
 
 export type ComplaintPack = {
+  locale: Locale
   id: string
   version: number
   createdAt: string
@@ -29,7 +30,7 @@ export type ComplaintPack = {
 export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata[], route: RouteEvaluation, now = new Date(), version = 1, extractions: EvidenceExtraction[] = [], locale: Locale = 'en'): ComplaintPack {
   const included = evidence.filter((item) => item.includeInPack)
   return {
-    id: crypto.randomUUID(), version, createdAt: now.toISOString(), approvedAt: null,
+    id: crypto.randomUUID(), version, createdAt: now.toISOString(), approvedAt: null, locale,
     consumerName: draft.consumerName,
     transaction: { seller: draft.seller, sellerLocation: draft.sellerLocation, platform: draft.platform, purchaseDate: draft.purchaseDate, amount: draft.amount, currency: draft.currency, paymentMethod: draft.paymentMethod, orderReference: draft.orderReference, category: draft.category.replaceAll('_', ' ') },
     issue: draft.issue.replaceAll('_', ' '), remedy: draft.remedy, remedyAmount: draft.remedy === 'refund' ? draft.remedyAmount : null,
@@ -38,8 +39,12 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
     confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion }))),
     merchantRequest: createMerchantRequest(draft, locale),
-    disclaimer: 'Prepared from user-confirmed details and selected evidence. Aduen provides case organisation and general routing information; it does not guarantee recovery or provide legal representation.',
-    declaration: `I, ${draft.consumerName || 'the consumer'}, confirm that the information in this pack is accurate to the best of my knowledge and that I am authorised to provide it.`,
+    disclaimer: locale === 'ms'
+      ? 'Disediakan berdasarkan butiran yang disahkan pengguna dan bukti yang dipilih. Aduen membantu menyusun kes dan memberi maklumat laluan umum; Aduen tidak menjamin pemulihan atau menyediakan khidmat perwakilan undang-undang.'
+      : 'Prepared from user-confirmed details and selected evidence. Aduen provides case organisation and general routing information; it does not guarantee recovery or provide legal representation.',
+    declaration: locale === 'ms'
+      ? `Saya, ${draft.consumerName || 'pengguna'}, mengesahkan bahawa maklumat dalam pek ini adalah tepat setakat pengetahuan saya dan saya diberi kuasa untuk memberikannya.`
+      : `I, ${draft.consumerName || 'the consumer'}, confirm that the information in this pack is accurate to the best of my knowledge and that I am authorised to provide it.`,
   }
 }
 

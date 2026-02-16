@@ -42,6 +42,13 @@ describe('immutable pack storage', () => {
     expect(nextPackVersion()).toBe(2)
   })
 
+  it('treats packs saved before locale support as English', () => {
+    const legacy = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
+    const { locale: _locale, ...legacyPack } = legacy
+    localStorage.setItem('Aduen.pack-versions.v1', JSON.stringify([legacyPack]))
+    expect(listPacks()).toEqual([legacy])
+  })
+
   it('ignores packs with malformed creation or approval timestamps', () => {
     const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
     localStorage.setItem('Aduen.pack-versions.v1', JSON.stringify([

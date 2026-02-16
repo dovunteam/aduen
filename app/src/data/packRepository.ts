@@ -14,7 +14,7 @@ export function listPacks(): ComplaintPack[] {
     return parsed.flatMap((pack) => {
       if (!pack || typeof pack !== 'object') return []
       const candidate = pack as Partial<ComplaintPack>
-      const normalised = { ...candidate, confirmedDerivedFacts: candidate.confirmedDerivedFacts ?? [], merchantRequest: candidate.merchantRequest ?? { subject: '', body: '', generatedFrom: [] }, route: candidate.route ? { ...candidate.route, sourceUrl: candidate.route.sourceUrl ?? 'https://github.com/dovunteam/aduen/blob/main/docs/Aduen_Case_Routing_Rules.md' } : null }
+      const normalised = { ...candidate, locale: candidate.locale === 'ms' ? 'ms' : 'en', confirmedDerivedFacts: candidate.confirmedDerivedFacts ?? [], merchantRequest: candidate.merchantRequest ?? { subject: '', body: '', generatedFrom: [] }, route: candidate.route ? { ...candidate.route, sourceUrl: candidate.route.sourceUrl ?? 'https://github.com/dovunteam/aduen/blob/main/docs/Aduen_Case_Routing_Rules.md' } : null }
       return isComplaintPack(normalised) ? [normalised] : []
     })
   }
@@ -43,7 +43,7 @@ export function clearPacks(): void { localStorage.removeItem(PACKS_KEY); localSt
 function isComplaintPack(value: unknown): value is ComplaintPack {
   if (!value || typeof value !== 'object') return false
   const pack = value as Partial<ComplaintPack>
-  return isSafeText(pack.id, 100, true) && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && isIsoTimestamp(pack.createdAt) && (pack.approvedAt === null || (typeof pack.approvedAt === 'string' && isIsoTimestamp(pack.approvedAt))) && isSafeText(pack.consumerName, 500) && isSafeText(pack.issue, 120) && isSafeText(pack.remedy, 120) && (pack.remedyAmount === null || isSafeText(pack.remedyAmount, 40)) && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && isSafeRoute(pack.route) && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && isSafeText(pack.disclaimer, 2000) && isSafeText(pack.declaration, 2000)
+  return (pack.locale === 'en' || pack.locale === 'ms') && isSafeText(pack.id, 100, true) && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && isIsoTimestamp(pack.createdAt) && (pack.approvedAt === null || (typeof pack.approvedAt === 'string' && isIsoTimestamp(pack.approvedAt))) && isSafeText(pack.consumerName, 500) && isSafeText(pack.issue, 120) && isSafeText(pack.remedy, 120) && (pack.remedyAmount === null || isSafeText(pack.remedyAmount, 40)) && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && isSafeRoute(pack.route) && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && isSafeText(pack.disclaimer, 2000) && isSafeText(pack.declaration, 2000)
 }
 
 function isSafeRoute(route: ComplaintPack['route'] | undefined): boolean {

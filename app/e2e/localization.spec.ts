@@ -68,6 +68,10 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await expect(page.locator('.request-preview')).toContainText('masih belum diterima')
   await expect(page.locator('.request-preview')).not.toContainText('I am writing')
   await expect(page.getByLabel(/Saya telah menyemak pek ini/)).toBeVisible()
+  await page.getByLabel(/Saya telah menyemak pek ini/).check()
+  const pdfDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Luluskan dan eksport PDF/ }).click()
+  expect((await pdfDownload).suggestedFilename()).toMatch(/^Aduen-kedai-contoh-v\d+\.pdf$/)
 })
 
 test('Bahasa Malaysia privacy controls describe local data handling', async ({ page }) => {
