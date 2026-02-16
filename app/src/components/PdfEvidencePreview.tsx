@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist'
 import type { PDFPageProxy } from 'pdfjs-dist'
@@ -20,6 +20,7 @@ export function PdfEvidencePreview({ evidenceId, locale }: { evidenceId: string;
   const [open, setOpen] = useState(false)
   const [bytes, setBytes] = useState<Uint8Array | null>(null)
   const [pages, setPages] = useState<PdfPage[]>([])
+  const [renderedPages, setRenderedPages] = useState<Set<number>>(() => new Set())
   const [redactions, setRedactions] = useState<Record<number, Redaction[]>>({})
   const [draftRedaction, setDraftRedaction] = useState<{ page: number; rect: Redaction } | null>(null)
   const [failed, setFailed] = useState(false)
@@ -30,6 +31,11 @@ export function PdfEvidencePreview({ evidenceId, locale }: { evidenceId: string;
   const previewAudited = useRef(false)
   const canvasRefs = useRef(new Map<number, HTMLCanvasElement>())
   const pointerPage = useRef<number | null>(null)
+
+  const markPageRendered = useCallback((page: number) => {
+    setRenderedPages((current) => current.has(page) ? current : new Set(current).add(page))
+  }, [])
+  const markPageRenderFailed = useCallback(() => setFailed(true), [])
 
   useEffect(() => {
     if (!open) return
@@ -77,7 +83,7 @@ export function PdfEvidencePreview({ evidenceId, locale }: { evidenceId: string;
   }, [open, bytes, evidenceId])
 
   function toggle() {
-    setPages([]); setBytes(null); setFailed(false); setTooManyPages(false); setDraftRedaction(null)
+    setPages([]); setRenderedPages(new Set()); setBytes(null); setFailed(false); setTooManyPages(false); setDraftRedaction(null)
     setRedactions({}); setExportFailed(false); previewAudited.current = false
     setLoading(!open); setOpen((current) => !current)
   }
@@ -167,21 +173,22 @@ export function PdfEvidencePreview({ evidenceId, locale }: { evidenceId: string;
           return <section key={number} aria-label={`${copy.page} ${number}`} style={{ marginBlock: '1.5rem' }}>
             <h3>{copy.page} {number}</h3>
             <div onPointerDown={(event) => beginRedaction(event, number)} onPointerMove={(event) => moveRedaction(event, number)} onPointerUp={(event) => finishRedaction(event, number)} onPointerCancel={(event) => finishRedaction(event, number)} style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', touchAction: 'none', cursor: 'crosshair', border: '1px solid var(--line)' }}>
-              <PdfPageCanvas page={page} scale={scale} canvasRef={(canvas) => { if (canvas) canvasRefs.current.set(number, canvas); else canvasRefs.current.delete(number) }} />
+              <PdfPageCanvas pageNumber={number} page={page} scale={scale} onRendered={markPageRendered} onError={markPageRenderFailed} canvasRef={(canvas) => { if (canvas) canvasRefs.current.set(number, canvas); else canvasRefs.current.delete(number) }} />
               {currentRedactions.map((rect, index) => <span aria-hidden="true" key={index} style={{ position: 'absolute', left: `${rect.x * 100}%`, top: `${rect.y * 100}%`, width: `${rect.width * 100}%`, height: `${rect.height * 100}%`, background: '#000', pointerEvents: 'none' }} />)}
             </div>
             <button type="button" className="secondary" onClick={() => setRedactions((current) => ({ ...current, [number]: [...(current[number] ?? []), { x: 0.25, y: 0.25, width: 0.5, height: 0.5 }] }))}>{copy.centralRedaction} · {number}</button>
             <button type="button" className="secondary" disabled={!redactions[number]?.length} onClick={() => setRedactions((current) => ({ ...current, [number]: [] }))}>{copy.clear} · {number}</button>
           </section>
         })}
-        <button type="button" className="primary" disabled={!Object.values(redactions).some((items) => items.length > 0) || exporting} onClick={() => void downloadRedactedCopy()}>{exporting ? copy.exporting : copy.export}</button>
+        {renderedPages.size !== pages.length && !failed && <p role="status">{copy.rendering}</p>}
+        <button type="button" className="primary" disabled={renderedPages.size !== pages.length || failed || !Object.values(redactions).some((items) => items.length > 0) || exporting} onClick={() => void downloadRedactedCopy()}>{exporting ? copy.exporting : copy.export}</button>
         {exportFailed && <p role="alert">{copy.exportError}</p>}
       </>}
     </div>}
   </div>
 }
 
-function PdfPageCanvas({ page, scale, canvasRef }: { page: PDFPageProxy; scale: number; canvasRef: (canvas: HTMLCanvasElement | null) => void }) {
+function PdfPageCanvas({ pageNumber, page, scale, onRendered, onError, canvasRef }: { pageNumber: number; page: PDFPageProxy; scale: number; onRendered: (page: number) => void; onError: () => void; canvasRef: (canvas: HTMLCanvasElement | null) => void }) {
   const internalRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const canvas = internalRef.current
@@ -191,9 +198,11 @@ function PdfPageCanvas({ page, scale, canvasRef }: { page: PDFPageProxy; scale: 
     const context = canvas.getContext('2d')
     if (!context) return
     const task = page.render({ canvas, canvasContext: context, viewport })
-    void task.promise.catch(() => {})
+    void task.promise.then(() => onRendered(pageNumber)).catch((error: unknown) => {
+      if (error instanceof Error && error.name !== 'RenderingCancelledException') onError()
+    })
     return () => task.cancel()
-  }, [page, scale])
+  }, [onError, onRendered, page, pageNumber, scale])
   return <canvas ref={(canvas) => { internalRef.current = canvas; canvasRef(canvas) }} style={{ display: 'block', maxWidth: '100%', height: 'auto' }} />
 }
 
@@ -204,6 +213,6 @@ function makeRect(startX: number, startY: number, endX: number, endY: number): R
 }
 
 const pdfText = {
-  en: { preview: 'Preview and redact PDF', close: 'Close PDF preview', explanation: 'PDF pages are rendered on this device. Drag over sensitive information on each page, then download a flattened copy. The original stays unchanged and is never uploaded.', loading: 'Loading PDF pages…', loadError: 'The PDF could not be rendered. Download the original to inspect it.', pageLimit: `This preview supports up to ${MAX_PAGES} pages. Download the original and redact it with a trusted PDF tool.`, warningTitle: 'Review every page before sharing.', warning: 'The exported copy is image-only: text and vector detail are flattened and may be less sharp. Check every page at full size to confirm all sensitive information is covered. Redaction does not remove information that remains visible outside the black areas.', page: 'Page', centralRedaction: 'Add central redaction', clear: 'Clear redactions', export: 'Download flattened redacted PDF', exporting: 'Preparing PDF…', exportError: 'The redacted PDF could not be created. Try again.' },
-  ms: { preview: 'Pratonton dan redaksi PDF', close: 'Tutup pratonton PDF', explanation: 'Halaman PDF dipaparkan pada peranti ini. Seret pada maklumat sensitif di setiap halaman, kemudian muat turun salinan yang diratakan. Fail asal tidak berubah dan tidak dimuat naik.', loading: 'Memuatkan halaman PDF…', loadError: 'PDF tidak dapat dipaparkan. Muat turun fail asal untuk menyemaknya.', pageLimit: `Pratonton ini menyokong sehingga ${MAX_PAGES} halaman. Muat turun fail asal dan redaksikannya dengan alat PDF yang dipercayai.`, warningTitle: 'Semak setiap halaman sebelum berkongsi.', warning: 'Salinan eksport hanya mengandungi imej: teks dan perincian vektor diratakan dan mungkin kurang jelas. Periksa setiap halaman pada saiz penuh untuk memastikan semua maklumat sensitif ditutup. Redaksi tidak membuang maklumat yang masih kelihatan di luar kawasan hitam.', page: 'Halaman', centralRedaction: 'Tambah redaksi tengah', clear: 'Kosongkan redaksi', export: 'Muat turun PDF redaksi yang diratakan', exporting: 'Menyediakan PDF…', exportError: 'PDF redaksi tidak dapat dibuat. Cuba lagi.' },
+  en: { preview: 'Preview and redact PDF', close: 'Close PDF preview', explanation: 'PDF pages are rendered on this device. Drag over sensitive information on each page, then download a flattened copy. The original stays unchanged and is never uploaded.', loading: 'Loading PDF pages…', rendering: 'Rendering PDF pages…', loadError: 'The PDF could not be rendered. Download the original to inspect it.', pageLimit: `This preview supports up to ${MAX_PAGES} pages. Download the original and redact it with a trusted PDF tool.`, warningTitle: 'Review every page before sharing.', warning: 'The exported copy is image-only: text and vector detail are flattened and may be less sharp. Check every page at full size to confirm all sensitive information is covered. Redaction does not remove information that remains visible outside the black areas.', page: 'Page', centralRedaction: 'Add central redaction', clear: 'Clear redactions', export: 'Download flattened redacted PDF', exporting: 'Preparing PDF…', exportError: 'The redacted PDF could not be created. Try again.' },
+  ms: { preview: 'Pratonton dan redaksi PDF', close: 'Tutup pratonton PDF', explanation: 'Halaman PDF dipaparkan pada peranti ini. Seret pada maklumat sensitif di setiap halaman, kemudian muat turun salinan yang diratakan. Fail asal tidak berubah dan tidak dimuat naik.', loading: 'Memuatkan halaman PDF…', rendering: 'Memaparkan halaman PDF…', loadError: 'PDF tidak dapat dipaparkan. Muat turun fail asal untuk menyemaknya.', pageLimit: `Pratonton ini menyokong sehingga ${MAX_PAGES} halaman. Muat turun fail asal dan redaksikannya dengan alat PDF yang dipercayai.`, warningTitle: 'Semak setiap halaman sebelum berkongsi.', warning: 'Salinan eksport hanya mengandungi imej: teks dan perincian vektor diratakan dan mungkin kurang jelas. Periksa setiap halaman pada saiz penuh untuk memastikan semua maklumat sensitif ditutup. Redaksi tidak membuang maklumat yang masih kelihatan di luar kawasan hitam.', page: 'Halaman', centralRedaction: 'Tambah redaksi tengah', clear: 'Kosongkan redaksi', export: 'Muat turun PDF redaksi yang diratakan', exporting: 'Menyediakan PDF…', exportError: 'PDF redaksi tidak dapat dibuat. Cuba lagi.' },
 } as const
