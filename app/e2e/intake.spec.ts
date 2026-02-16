@@ -387,3 +387,25 @@ test('extracted candidates require explicit confirmation, correction, or rejecti
   await page.getByText(/View \d+ recorded actions?/).click()
   await expect(page.getByText('Derived fact reviewed', { exact: true }).first()).toBeVisible()
 })
+
+test('confirmed amounts that disagree across evidence block request preparation', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  for (const [name, amount] of [['receipt-one.txt', '130.00'], ['receipt-two.txt', '125.50']]) {
+    await page.getByLabel('Original file').setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(`Total RM ${amount}. Synthetic evidence.`) })
+    await page.getByLabel('What kind of record?').selectOption('receipt')
+    await page.getByLabel('Description').fill(`Synthetic receipt ${amount}`)
+    await page.getByRole('button', { name: 'Add evidence' }).click()
+  }
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
+  const confirmButtons = page.getByRole('button', { name: 'Confirm', exact: true })
+  await expect(confirmButtons).toHaveCount(2)
+  await confirmButtons.nth(0).click()
+  await confirmButtons.nth(1).click()
+  await page.getByRole('button', { name: /Continue to Aduen Check/ }).click()
+  await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('Confirmed evidence contains different transaction amounts.')
+  await expect(page.getByRole('button', { name: 'Resolve fact conflicts' })).toBeDisabled()
+})
