@@ -25,6 +25,12 @@ describe('evidence safety scan', () => {
     expect(detectEvidenceRisks('Order reference: ADU-2048').map((risk) => risk.code)).not.toContain('contact_details')
   })
 
+  it('scans the full accepted text file instead of only its opening section', async () => {
+    const text = `${'ordinary evidence text. '.repeat(30_000)} Card 4111 1111 1111 1111`
+    const risks = await scanEvidenceFile(new File([text], 'long-receipt.txt', { type: 'text/plain' }))
+    expect(risks.map((risk) => risk.code)).toContain('card_number')
+  })
+
   it('does not flag ordinary complaint text', () => {
     expect(detectEvidenceRisks('The merchant promised delivery on 20 September.')).toEqual([])
   })
