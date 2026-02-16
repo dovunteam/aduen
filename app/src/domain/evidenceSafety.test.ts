@@ -19,6 +19,12 @@ describe('evidence safety scan', () => {
     expect(detectEvidenceRisks('My own phone number is included.').map((risk) => risk.code)).not.toContain('third_party_data')
   })
 
+  it('flags possible contact details without assuming whose they are', () => {
+    expect(detectEvidenceRisks('Contact: example.person@example.test').map((risk) => risk.code)).toContain('contact_details')
+    expect(detectEvidenceRisks('Mobile: +60 12-345 6789').map((risk) => risk.code)).toContain('contact_details')
+    expect(detectEvidenceRisks('Order reference: ADU-2048').map((risk) => risk.code)).not.toContain('contact_details')
+  })
+
   it('does not flag ordinary complaint text', () => {
     expect(detectEvidenceRisks('The merchant promised delivery on 20 September.')).toEqual([])
   })

@@ -1,4 +1,4 @@
-export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'binary_unscanned'; message: string }
+export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'contact_details' | 'binary_unscanned'; message: string }
 
 function passesLuhn(value: string): boolean {
   let sum = 0; let alternate = false
@@ -34,6 +34,9 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
   }
   if (/\b(?:third[- ]party|someone\s+else(?:['’]s)?|another\s+person(?:['’]s)?|other\s+person(?:['’]s)?)\b/i.test(text)) {
     risks.push({ code: 'third_party_data', message: 'The file appears to mention another person’s information. Review whether it is necessary to include.' })
+  }
+  if (/[\w.+-]+@[\w.-]+\.[A-Z]{2,}/i.test(text) || /(?<!\d)(?:\+?60[ -]?|0)1\d(?:[ ()-]?\d){7,8}(?!\d)/.test(text)) {
+    risks.push({ code: 'contact_details', message: 'The file may contain an email address or Malaysian mobile number. Check whose details they are and whether they are needed.' })
   }
   return risks
 }
