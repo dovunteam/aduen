@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 async function expectNoHighImpactViolations(page: import('@playwright/test').Page) {
+  await expect(page.locator('.page')).toHaveCSS('opacity', '1')
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
   const highImpact = results.violations.filter((violation) => violation.impact === 'critical' || violation.impact === 'serious')
   const summary = highImpact.map((violation) => ({

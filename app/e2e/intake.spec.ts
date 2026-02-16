@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import JSZip from 'jszip'
+import { jsPDF } from 'jspdf'
 
 async function acceptBoundary(page: import('@playwright/test').Page) {
   await page.goto('/')
@@ -103,22 +104,45 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   expect(await readFile((await originalFile.path())!)).toEqual(originalPng)
 })
 
-test('uploaded PDFs can be previewed locally without leaving the page', async ({ page }) => {
+test('uploaded PDFs can be redacted locally into a flattened copy without changing the original', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)
   await page.getByRole('button', { name: /Add evidence/ }).click()
-  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-receipt.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% synthetic evidence\n') })
+  const fixture = new jsPDF({ unit: 'pt', format: [600, 800] })
+  fixture.setFontSize(24)
+  fixture.text('SYNTHETIC PRIVATE DETAILS', 90, 130)
+  const originalBytes = Buffer.from(fixture.output('arraybuffer'))
+  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-receipt.pdf', mimeType: 'application/pdf', buffer: originalBytes })
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
   await page.getByRole('button', { name: 'Add evidence' }).click()
-  await page.getByRole('button', { name: 'Preview PDF', exact: true }).click()
-  await expect(page.getByText('This prototype does not scan or redact PDF content.')).toBeVisible()
-  const preview = page.getByTitle('Evidence PDF preview')
-  await expect(preview).toBeVisible()
-  await expect(preview).toHaveAttribute('src', /^blob:/)
-  await expect(preview).toHaveAttribute('sandbox', '')
-  await page.getByRole('button', { name: 'Close PDF preview' }).click()
-  await expect(preview).toHaveCount(0)
+  await page.getByRole('button', { name: 'Preview and redact PDF', exact: true }).click()
+  const exportButton = page.getByRole('button', { name: 'Download flattened redacted PDF' })
+  await expect(exportButton).toBeDisabled()
+  const pdfPage = page.locator('section[aria-label="Page 1"]')
+  await expect(pdfPage.locator('canvas')).toBeVisible()
+  await expect(page.getByRole('status', { name: 'Rendering PDF pages…' })).toHaveCount(0)
+  await expect(exportButton).toBeDisabled()
+  await pdfPage.locator('canvas').evaluate((canvas) => window.scrollBy(0, canvas.getBoundingClientRect().top - 100))
+  const canvasBox = await pdfPage.locator('canvas').boundingBox()
+  expect(canvasBox).not.toBeNull()
+  await page.mouse.move(canvasBox!.x + canvasBox!.width * 0.12, canvasBox!.y + canvasBox!.height * 0.11)
+  await page.mouse.down()
+  await page.mouse.move(canvasBox!.x + canvasBox!.width * 0.65, canvasBox!.y + canvasBox!.height * 0.17)
+  await page.mouse.up()
+  await expect(exportButton).toBeEnabled()
+  const redactedDownload = page.waitForEvent('download')
+  await exportButton.click()
+  const redactedFile = await redactedDownload
+  expect(redactedFile.suggestedFilename()).toMatch(/^redacted-evidence-.+\.pdf$/)
+  const redactedBytes = await readFile((await redactedFile.path())!)
+  expect(redactedBytes.subarray(0, 5).toString()).toBe('%PDF-')
+  expect(redactedBytes.includes(Buffer.from('SYNTHETIC PRIVATE DETAILS'))).toBe(false)
+
+  const originalDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download original' }).click()
+  const original = await originalDownload
+  expect(await readFile((await original.path())!)).toEqual(originalBytes)
 })
 
 test('draft deletion can be cancelled and confirmed deletion removes saved case data', async ({ page }) => {
