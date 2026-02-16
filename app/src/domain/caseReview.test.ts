@@ -75,6 +75,18 @@ describe('fact conflicts', () => {
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
     expect(findFactConflicts({ ...EMPTY_DRAFT, purchaseDate: '2026-08-01' }, [extraction])[0]).toContain('purchase date')
   })
+  it('compares confirmed delivery, promised, and contact dates only with the same event', () => {
+    const deliveryA = createEvidenceExtraction('e1', 'Delivery date: 2026-08-03')
+    const deliveryB = createEvidenceExtraction('e2', 'Tarikh penghantaran: 2026-08-04')
+    const promised = createEvidenceExtraction('e3', 'Promised delivery date: 2026-08-05')
+    const contact = createEvidenceExtraction('e4', 'Complaint date: 2026-08-06')
+    for (const extraction of [deliveryA, deliveryB, promised, contact]) extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
+    const draft = { ...EMPTY_DRAFT, promisedDate: '2026-08-05', contactDate: '2026-08-07' }
+    const conflicts = findFactConflicts(draft, [deliveryA, deliveryB, promised, contact])
+    expect(conflicts).toContain('Confirmed evidence contains multiple dates labelled for delivery.')
+    expect(conflicts).toContain('A confirmed date labelled for merchant contact differs from the entered merchant contact date of 2026-08-07.')
+    expect(conflicts.some((conflict) => conflict.includes('promised performance'))).toBe(false)
+  })
   it('flags a confirmed consumer name that differs from the case record', () => {
     const extraction = createEvidenceExtraction('e1', 'Customer name: Another Synthetic Consumer.')
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
