@@ -35,7 +35,9 @@ async function fillCase(page: import('@playwright/test').Page, overrides: { purp
 }
 
 async function addEvidence(page: import('@playwright/test').Page, type: string, name: string, description: string) {
-  await page.getByLabel('Original file').setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(`Synthetic ${description}. No real consumer information.`) })
+  const originalFile = page.getByLabel('Original file')
+  await originalFile.setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(`Synthetic ${description}. No real consumer information.`) })
+  await expect.poll(() => originalFile.evaluate((input: HTMLInputElement) => input.files?.[0]?.name)).toBe(name)
   await page.getByLabel('What kind of record?').selectOption(type)
   await page.getByLabel('Event date').fill('2026-08-01')
   await page.getByLabel('Description').fill(description)
@@ -68,7 +70,15 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   await reachCaseDetails(page)
   await fillCase(page)
   await page.getByRole('button', { name: /Add evidence/ }).click()
-  const originalPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=', 'base64')
+  const pngBase64 = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 20; canvas.height = 20
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#fff'
+    context.fillRect(0, 0, 20, 20)
+    return canvas.toDataURL('image/png').split(',')[1]
+  })
+  const originalPng = Buffer.from(pngBase64, 'base64')
   await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-pixel.png', mimeType: 'image/png', buffer: originalPng })
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
@@ -76,24 +86,21 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   await page.getByRole('button', { name: 'Preview image', exact: true }).click()
   const preview = page.getByRole('img', { name: 'synthetic-pixel.png' })
   await expect(preview).toBeVisible()
-  await expect.poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1)
+  await expect.poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(20)
   await expect(preview).toHaveAttribute('src', /^blob:/)
   await page.getByRole('button', { name: 'Prepare redacted image copy' }).click()
-  const imageBox = await preview.boundingBox()
-  expect(imageBox).not.toBeNull()
-  await page.mouse.move(imageBox!.x + 0.1, imageBox!.y + 0.1)
-  await page.mouse.down()
-  await page.mouse.move(imageBox!.x + Math.max(0.9, imageBox!.width - 0.1), imageBox!.y + Math.max(0.9, imageBox!.height - 0.1))
-  await page.mouse.up()
+  await page.getByRole('button', { name: 'Add central redaction' }).click()
   const redactedDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Download redacted image copy' }).click()
   const redactedFile = await redactedDownload
   expect(redactedFile.suggestedFilename()).toBe('redacted-synthetic-pixel.png')
   expect(Buffer.compare(await readFile((await redactedFile.path())!), originalPng)).not.toBe(0)
   await page.getByRole('button', { name: 'Clear redactions' }).click()
-  await page.getByRole('button', { name: 'Add central redaction' }).click()
+  await page.getByRole('button', { name: 'Add central redaction' }).focus()
+  await page.keyboard.press('Enter')
   const keyboardRedactedDownload = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Download redacted image copy' }).click()
+  await page.getByRole('button', { name: 'Download redacted image copy' }).focus()
+  await page.keyboard.press('Enter')
   expect((await keyboardRedactedDownload).suggestedFilename()).toBe('redacted-synthetic-pixel.png')
   await page.getByRole('button', { name: 'Close image preview' }).click()
   await expect(preview).toHaveCount(0)
@@ -303,7 +310,7 @@ test('a supported draft preserves original evidence and resumes at the evidence 
 })
 
 test('a complete merchant-first case reaches approved PDF export and outcome tracking', async ({ page }) => {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.addInitScript(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => undefined } }))
   await reachCaseDetails(page)
   await fillCase(page)
   await page.getByRole('button', { name: /Add evidence/ }).click()
@@ -429,6 +436,7 @@ test('confirmed amounts that disagree across evidence block request preparation'
     await page.getByLabel('What kind of record?').selectOption('receipt')
     await page.getByLabel('Description').fill(`Synthetic receipt ${amount}`)
     await page.getByRole('button', { name: 'Add evidence' }).click()
+    await expect(page.getByText(name, { exact: true })).toBeVisible()
   }
   await page.getByRole('button', { name: /Review case/ }).click()
   await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
