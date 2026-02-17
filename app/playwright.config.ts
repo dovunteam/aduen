@@ -14,7 +14,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: `http://127.0.0.1:${port}`,
-    channel: 'chrome',
+    browserName: 'chromium',
     headless: true,
     trace: 'retain-on-failure',
   },
@@ -23,4 +23,13 @@ export default defineConfig({
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: false,
   },
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium', channel: 'chrome' } },
+    {
+      name: 'firefox-recovery',
+      testMatch: /intake\.spec\.ts/,
+      grep: /a supported draft preserves original evidence and resumes at the evidence stage/,
+      use: { browserName: 'firefox' },
+    },
+  ],
 })
