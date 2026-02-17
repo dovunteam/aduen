@@ -34,7 +34,7 @@ export function persistAuditEvent(event: LocalAuditEvent): void {
 }
 
 export function clearAuditEvents(): void {
-  try { localStorage.removeItem(STORAGE_KEY) } catch { /* There is nothing to clear when storage is unavailable. */ }
+  localStorage.removeItem(STORAGE_KEY)
 }
 
 function isAuditEvent(value: unknown): value is LocalAuditEvent {
