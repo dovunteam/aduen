@@ -1,4 +1,4 @@
-export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'contact_details' | 'binary_unscanned'; message: string }
+export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'contact_details' | 'binary_unscanned' | 'pdf_text_partial'; message: string }
 
 function passesLuhn(value: string): boolean {
   let sum = 0; let alternate = false
@@ -42,6 +42,13 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
 }
 
 export async function scanEvidenceFile(file: File): Promise<EvidenceRisk[]> {
-  if (file.type !== 'text/plain') return [{ code: 'binary_unscanned', message: 'This image or PDF was not scanned for sensitive content. Review it manually before storing or sharing.' }]
-  return detectEvidenceRisks(await file.text())
+  if (file.type === 'text/plain') return detectEvidenceRisks(await file.text())
+  if (file.type === 'application/pdf') {
+    try {
+      const { extractPdfText } = await import('./pdfTextExtraction')
+      const text = await extractPdfText(file)
+      if (text) return [...detectEvidenceRisks(text), { code: 'pdf_text_partial', message: 'Searchable PDF text was checked for common sensitive patterns. Scanned, image-only, or other content outside the text layer may not be covered; review every page manually.' }]
+    } catch { /* Keep the manual-review warning if the PDF cannot be parsed. */ }
+  }
+  return [{ code: 'binary_unscanned', message: 'This image or PDF was not scanned for sensitive content. Review it manually before storing or sharing.' }]
 }
