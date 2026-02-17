@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_DRAFT } from './case'
-import { assessTtpmCandidate, evaluateInitialRoute } from './routing'
+import { assessTtpmPrerequisites, evaluateInitialRoute } from './routing'
 
 describe('initial routing', () => {
   it.each([{ sellerLocation: 'unknown' as const }, { sellerLocation: 'outside' as const }, { category: 'other' as const }])('retains uncertain scope for %j', (override) => {
@@ -52,21 +52,36 @@ describe('initial routing', () => {
   })
 })
 
-describe('TTPM candidate check', () => {
+describe('TTPM prerequisite check', () => {
   const base = { ...EMPTY_DRAFT, purpose: 'personal' as const, category: 'general_goods' as const, amount: '120.00', purchaseDate: '2026-01-01' }
 
-  it('marks an in-range personal purchase as a candidate without approving it', () => {
-    expect(assessTtpmCandidate(base, new Date('2026-09-21T00:00:00Z')).status).toBe('candidate')
+  it('keeps timing uncertain because purchase date is not claim-accrual date', () => {
+    const result = assessTtpmPrerequisites(base)
+    expect(result.status).toBe('uncertain')
+    expect(result.reason).toContain('when the claim accrued')
+    expect(result.reason).toContain('claim amount')
+  })
+
+  it('does not treat transaction value above RM50,000 as proof the claim amount exceeds the limit', () => {
+    const result = assessTtpmPrerequisites({ ...base, amount: '50000.01' })
+    expect(result.status).toBe('uncertain')
+    expect(result.reason).toContain('cannot assess either limit')
+  })
+
+  it('does not treat an old purchase date as proof that the claim is time-barred', () => {
+    const result = assessTtpmPrerequisites({ ...base, purchaseDate: '2018-01-01' })
+    expect(result.status).toBe('uncertain')
+    expect(result.reason).toContain('purchase date only')
   })
 
   it.each([
     [{ ...base, purpose: 'business' as const }, 'excluded'],
-    [{ ...base, amount: '50000.01' }, 'excluded'],
-    [{ ...base, purchaseDate: '2022-09-20' }, 'excluded'],
+    [{ ...base, amount: '50000.01' }, 'uncertain'],
+    [{ ...base, purchaseDate: '2022-09-20' }, 'uncertain'],
     [{ ...base, purchaseDate: '2026-02-30' }, 'uncertain'],
     [{ ...base, amount: '' }, 'uncertain'],
     [{ ...base, purpose: '' as const }, 'uncertain'],
   ] as const)('retains uncertainty or exclusion for %j', (draft, status) => {
-    expect(assessTtpmCandidate(draft, new Date('2026-09-21T00:00:00Z')).status).toBe(status)
+    expect(assessTtpmPrerequisites(draft).status).toBe(status)
   })
 })
