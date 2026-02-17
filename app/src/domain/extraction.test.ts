@@ -74,6 +74,7 @@ describe('bounded text extraction', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
     expect(extraction.extractorVersion).toBe('plain-text-v4')
     expect(extraction.candidates[0].status).toBe('unconfirmed')
+    expect(createEvidenceExtraction('evidence-pdf', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'), 'pdf-text-v1').extractorVersion).toBe('pdf-text-v1')
   })
 
   it('retains the extracted value when a user confirms or corrects it', () => {
@@ -90,6 +91,7 @@ describe('bounded text extraction', () => {
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v2' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v3' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'pdf-text-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], confidence: 2 }] })).toBe(false)
   })
