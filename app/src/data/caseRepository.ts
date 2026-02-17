@@ -10,7 +10,7 @@ const CASE_STATUSES: CaseRecordStatus[] = ['draft', 'out_of_scope', 'evidence_co
 const ENUM_FIELDS = {
   consumerLocation: ['', 'malaysia', 'outside'], sellerLocation: ['', 'malaysia', 'outside', 'unknown'], currency: ['MYR'],
   purpose: ['', 'personal', 'business'], issue: ['', 'non_delivery', 'mismatch', 'missing_refund', 'cancellation', 'uncertain'],
-  category: ['', 'general_goods', 'general_services', 'aviation', 'financial_service', 'healthcare', 'professional_service', 'land', 'other'],
+  category: ['', 'general_goods', 'general_services', 'aviation', 'financial_service', 'healthcare', 'professional_service', 'land', 'personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal', 'other'],
   remedy: ['', 'delivery', 'replacement', 'repair', 'cancellation', 'refund'], contactHistory: ['', 'none', 'contacted', 'responded'],
 } as const
 

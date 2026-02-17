@@ -12,6 +12,11 @@ export function assessScope(draft: CaseDraft): ScopeAssessment {
     healthcare: 'Healthcare matters are excluded from this prototype.',
     professional_service: 'Regulated professional services are excluded from this prototype.',
     land: 'Land and property matters are excluded from this prototype.',
+    personal_injury: 'Claims arising from personal injury or death are excluded from TTPM jurisdiction.',
+    wills_estates: 'Wills, inheritance, and estate-rights disputes are excluded from TTPM jurisdiction.',
+    franchise: 'Franchise disputes are excluded from TTPM jurisdiction.',
+    goodwill_ip: 'Goodwill, trade-secret, and intellectual-property disputes are excluded from TTPM jurisdiction.',
+    other_tribunal: 'This subject may belong to another tribunal and is outside the prototype’s supported scope.',
   }
   if (categoryReason[draft.category]) unsupported.push(categoryReason[draft.category] as string)
   if (unsupported.length) return { result: 'unsupported', reasons: unsupported }
