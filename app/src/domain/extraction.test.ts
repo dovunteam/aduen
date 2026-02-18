@@ -92,6 +92,7 @@ describe('bounded text extraction', () => {
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v2' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v3' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'pdf-text-v1' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'ocr-local-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], confidence: 2 }] })).toBe(false)
   })

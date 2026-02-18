@@ -112,6 +112,72 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   expect(await readFile((await originalFile.path())!)).toEqual(originalPng)
 })
 
+test('image OCR stays on-device and produces unconfirmed review candidates', async ({ page }) => {
+  test.setTimeout(120_000)
+  const externalRequests: string[] = []
+  page.on('request', (request) => {
+    if (!request.url().startsWith('http://127.0.0.1:')) externalRequests.push(request.url())
+  })
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  const pngBase64 = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1200; canvas.height = 260
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = '#000'; context.font = 'bold 84px Arial'; context.fillText('Total RM 130.00', 30, 160)
+    return canvas.toDataURL('image/png').split(',')[1]
+  })
+  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-receipt.png', mimeType: 'image/png', buffer: Buffer.from(pngBase64, 'base64') })
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await expect(page.getByRole('alert')).toContainText('Local OCR checked')
+  await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
+  await page.getByRole('button', { name: 'Add evidence' }).click({ timeout: 120_000 })
+  await expect(page.getByText('synthetic-receipt.png', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
+  const amountCandidate = page.locator('article.candidate').filter({ hasText: '130.00' })
+  await expect(amountCandidate).toContainText('ocr-local-v1')
+  await expect(amountCandidate.getByRole('button', { name: 'Confirm' })).toBeEnabled()
+  expect(externalRequests).toEqual([])
+})
+
+test('scanned PDF OCR creates review candidates without changing the original', async ({ page }) => {
+  test.setTimeout(120_000)
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  const image = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1200; canvas.height = 260
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = '#000'; context.font = 'bold 84px Arial'; context.fillText('Total RM 130.00', 30, 160)
+    return canvas.toDataURL('image/png')
+  })
+  const pdf = new jsPDF()
+  pdf.addImage(image, 'PNG', 10, 30, 190, 45)
+  const original = Buffer.from(pdf.output('arraybuffer'))
+  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-scanned-receipt.pdf', mimeType: 'application/pdf', buffer: original })
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await expect(page.getByRole('alert')).toContainText('Local OCR checked')
+  await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
+  await page.getByRole('button', { name: 'Add evidence' }).click({ timeout: 120_000 })
+  await expect(page.getByText('synthetic-scanned-receipt.pdf', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
+  const amountCandidate = page.locator('article.candidate').filter({ hasText: '130.00' })
+  await expect(amountCandidate).toContainText('ocr-local-v1')
+  await expect(amountCandidate.getByRole('button', { name: 'Confirm' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Data controls' }).click()
+  const archiveDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export ZIP' }).click()
+  const archiveFile = await archiveDownload
+  const archive = await JSZip.loadAsync(await readFile((await archiveFile.path())!))
+  expect(await archive.file('evidence-originals/01-synthetic-scanned-receipt.pdf')!.async('nodebuffer')).toEqual(original)
+})
+
 test('rejects oversized evidence before content scanning', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)

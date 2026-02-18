@@ -9,7 +9,7 @@ This directory contains the first interactive Aduen prototype. It currently supp
 - local text, image, and PDF previews with original-download controls;
 - text and image redacted-copy workflows that leave originals unchanged;
 - on-device PDF page redaction with flattened, image-only copies that leave originals unchanged;
-- bounded plain-text and searchable-PDF text extraction with user confirmation or correction (scanned PDFs remain manual-review only);
+- bounded plain-text and searchable-PDF extraction plus on-device OCR for images and scanned PDFs, with user confirmation or correction;
 - issue-specific completeness checks and a sourced chronology;
 - versioned merchant-first routing;
 - user-reviewed PDF complaint packs;
@@ -41,4 +41,4 @@ npm run test:e2e
 
 ## Current boundary
 
-Accounts, image OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. Searchable PDF text can be extracted locally; scanned PDFs and images are not OCR processed. PDF redaction renders pages locally and produces an image-only copy; inspect every page because text selection and vector detail are lost, and the tool cannot detect sensitive content automatically. English and Bahasa Malaysia are available for the prototype interface; source evidence and generated material retain their original language. See the [implementation ledger](../docs/Aduen_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
+Accounts, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. Image and scanned-PDF OCR runs on-device with bundled English and Bahasa Malaysia models; OCR can misread or miss content, so every extracted candidate requires review and every page still needs manual inspection for sensitive content. The OCR engine and language data are copied from locked npm dependencies during development startup and production builds. PDF redaction renders pages locally and produces an image-only copy; inspect every page because text selection and vector detail are lost. English and Bahasa Malaysia are available for the prototype interface; source evidence and generated material retain their original language. See the [implementation ledger](../docs/Aduen_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
