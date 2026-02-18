@@ -1,10 +1,13 @@
 import type { EvidenceInput, EvidenceMetadata } from '../domain/evidence'
 import { validateEvidenceFile } from '../domain/evidence'
+import { createEvidenceExtraction, reviewCandidate } from '../domain/extraction'
+import type { EvidenceExtraction } from '../domain/extraction'
 
 const DATABASE_NAME = 'tuntiva-prototype'
-const DATABASE_VERSION = 1
+const DATABASE_VERSION = 2
 const METADATA_STORE = 'evidence-metadata'
 const ORIGINAL_STORE = 'evidence-originals'
+const EXTRACTION_STORE = 'evidence-extractions'
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -13,6 +16,10 @@ function openDatabase(): Promise<IDBDatabase> {
       const database = request.result
       if (!database.objectStoreNames.contains(METADATA_STORE)) database.createObjectStore(METADATA_STORE, { keyPath: 'id' })
       if (!database.objectStoreNames.contains(ORIGINAL_STORE)) database.createObjectStore(ORIGINAL_STORE)
+      if (!database.objectStoreNames.contains(EXTRACTION_STORE)) {
+        const store = database.createObjectStore(EXTRACTION_STORE, { keyPath: 'id' })
+        store.createIndex('evidenceId', 'evidenceId')
+      }
     }
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error ?? new Error('Could not open evidence storage.'))
@@ -48,11 +55,13 @@ export async function addEvidence(file: File, input: EvidenceInput): Promise<Evi
     includeInPack: true,
     uploadedAt: new Date().toISOString(),
   }
+  const extraction = file.type === 'text/plain' ? createEvidenceExtraction(metadata.id, (await file.text()).slice(0, 500_000)) : null
 
   const database = await openDatabase()
-  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE], 'readwrite')
+  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE, EXTRACTION_STORE], 'readwrite')
   transaction.objectStore(METADATA_STORE).add(metadata)
   transaction.objectStore(ORIGINAL_STORE).add(file, metadata.id)
+  if (extraction?.candidates.length) transaction.objectStore(EXTRACTION_STORE).add(extraction)
   await transactionDone(transaction)
   database.close()
   return metadata
@@ -82,6 +91,35 @@ export async function getEvidenceOriginal(id: string): Promise<Blob | null> {
   return original
 }
 
+export async function listExtractions(): Promise<EvidenceExtraction[]> {
+  const database = await openDatabase()
+  const transaction = database.transaction(EXTRACTION_STORE, 'readonly')
+  const request = transaction.objectStore(EXTRACTION_STORE).getAll()
+  const records = await new Promise<EvidenceExtraction[]>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+  database.close()
+  return records
+}
+
+export async function reviewExtractionCandidate(extractionId: string, candidateId: string, status: 'confirmed' | 'rejected', correctedValue?: string): Promise<EvidenceExtraction> {
+  const database = await openDatabase()
+  const transaction = database.transaction(EXTRACTION_STORE, 'readwrite')
+  const store = transaction.objectStore(EXTRACTION_STORE)
+  const request = store.get(extractionId)
+  const updated = await new Promise<EvidenceExtraction>((resolve, reject) => {
+    request.onsuccess = () => {
+      const extraction = request.result as EvidenceExtraction | undefined
+      if (!extraction) { reject(new Error('Extraction record not found.')); return }
+      const next = { ...extraction, candidates: extraction.candidates.map((item) => item.id === candidateId ? reviewCandidate(item, status, correctedValue) : item) }
+      store.put(next); resolve(next)
+    }
+    request.onerror = () => reject(request.error)
+  })
+  await transactionDone(transaction); database.close(); return updated
+}
+
 export async function updateEvidenceInclusion(id: string, includeInPack: boolean): Promise<void> {
   const database = await openDatabase()
   const transaction = database.transaction(METADATA_STORE, 'readwrite')
@@ -97,18 +135,22 @@ export async function updateEvidenceInclusion(id: string, includeInPack: boolean
 
 export async function deleteEvidence(id: string): Promise<void> {
   const database = await openDatabase()
-  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE], 'readwrite')
+  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE, EXTRACTION_STORE], 'readwrite')
   transaction.objectStore(METADATA_STORE).delete(id)
   transaction.objectStore(ORIGINAL_STORE).delete(id)
+  const extractionStore = transaction.objectStore(EXTRACTION_STORE)
+  const extractionKeys = extractionStore.index('evidenceId').getAllKeys(id)
+  extractionKeys.onsuccess = () => extractionKeys.result.forEach((key) => extractionStore.delete(key))
   await transactionDone(transaction)
   database.close()
 }
 
 export async function clearEvidence(): Promise<void> {
   const database = await openDatabase()
-  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE], 'readwrite')
+  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE, EXTRACTION_STORE], 'readwrite')
   transaction.objectStore(METADATA_STORE).clear()
   transaction.objectStore(ORIGINAL_STORE).clear()
+  transaction.objectStore(EXTRACTION_STORE).clear()
   await transactionDone(transaction)
   database.close()
 }

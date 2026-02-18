@@ -1,13 +1,14 @@
 import JSZip from 'jszip'
 import type { CaseDraft } from '../domain/case'
 import type { SubmissionRecord } from '../domain/status'
-import { getEvidenceOriginal, listEvidence } from './evidenceRepository'
+import { getEvidenceOriginal, listEvidence, listExtractions } from './evidenceRepository'
 import { readConsent } from './consentRepository'
 import { readCase } from './caseRepository'
 import { listPacks } from './packRepository'
 
 export async function downloadCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<void> {
   const evidence = await listEvidence()
+  const extractions = await listExtractions()
   const zip = new JSZip()
   const manifest = {
     exportVersion: 1,
@@ -19,6 +20,7 @@ export async function downloadCaseArchive(draft: CaseDraft, submission: Submissi
     consent: readConsent(),
     submission,
     evidence,
+    extractions,
   }
   zip.file('case-record.json', JSON.stringify(manifest, null, 2))
   const originals = zip.folder('evidence-originals')
