@@ -58,9 +58,12 @@ describe('bounded text extraction', () => {
     expect(candidates.every((item) => item.status === 'unconfirmed' && item.sourceExcerpt.length > 0)).toBe(true)
   })
 
-  it('classifies only explicitly labelled purchase dates', () => {
+  it('classifies explicitly labelled event dates', () => {
     expect(extractCandidateFacts('Tarikh pembelian: 2026-08-01')[0].dateRole).toBe('purchase')
-    expect(extractCandidateFacts('Delivery date: 2026-08-02')[0].dateRole).toBe('unclassified')
+    expect(extractCandidateFacts('Delivery date: 2026-08-02')[0].dateRole).toBe('delivery')
+    expect(extractCandidateFacts('Promised delivery date: 2026-08-03')[0].dateRole).toBe('promised')
+    expect(extractCandidateFacts('Complaint date: 2026-08-04')[0].dateRole).toBe('contact')
+    expect(extractCandidateFacts('The event happened on 2026-08-05')[0].dateRole).toBe('unclassified')
   })
 
   it('does not offer invalid calendar dates as candidates', () => {
@@ -69,7 +72,7 @@ describe('bounded text extraction', () => {
 
   it('marks every extracted value unconfirmed by default', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
-    expect(extraction.extractorVersion).toBe('plain-text-v3')
+    expect(extraction.extractorVersion).toBe('plain-text-v4')
     expect(extraction.candidates[0].status).toBe('unconfirmed')
   })
 
@@ -86,6 +89,7 @@ describe('bounded text extraction', () => {
     expect(isValidEvidenceExtraction(valid)).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v2' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v3' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], confidence: 2 }] })).toBe(false)
   })
