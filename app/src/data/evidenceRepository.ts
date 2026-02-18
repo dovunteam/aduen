@@ -64,20 +64,21 @@ export async function addEvidence(file: File, input: EvidenceInput): Promise<Evi
   let extraction: EvidenceExtraction | null = null
   if (file.type === 'text/plain') extraction = createEvidenceExtraction(metadata.id, (await file.text()).slice(0, 500_000))
   else if (file.type === 'application/pdf') {
+    let text = ''
     try {
       const { extractPdfText } = await import('../domain/pdfTextExtraction')
-      const text = await extractPdfText(file)
-      if (text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'pdf-text-v1')
+      text = await extractPdfText(file)
     } catch { /* PDF text extraction is best-effort; preserve the original even if parsing fails. */ }
-    if (!extraction?.candidates.length) {
+    try {
       const { extractLocalOcrText } = await import('../domain/localOcr')
-      const text = await extractLocalOcrText(file, file.type)
-      if (text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'ocr-local-v1')
-    }
+      const hybrid = await extractLocalOcrText(file, file.type)
+      if (hybrid.usedOcr && hybrid.text) extraction = createEvidenceExtraction(metadata.id, hybrid.text, new Date(), 'ocr-local-v1')
+    } catch { /* OCR is best-effort; preserve the original and any searchable text. */ }
+    if (!extraction && text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'pdf-text-v1')
   } else if (file.type.startsWith('image/')) {
     const { extractLocalOcrText } = await import('../domain/localOcr')
-    const text = await extractLocalOcrText(file, file.type)
-    if (text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'ocr-local-v1')
+    const result = await extractLocalOcrText(file, file.type)
+    if (result.text) extraction = createEvidenceExtraction(metadata.id, result.text, new Date(), 'ocr-local-v1')
   }
 
   const database = await openDatabase()
