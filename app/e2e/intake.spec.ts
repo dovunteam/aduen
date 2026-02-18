@@ -438,7 +438,7 @@ test('searchable PDF text creates reviewable candidates without changing the ori
   await page.getByLabel('Original file').setInputFiles({ name: 'searchable-order.pdf', mimeType: 'application/pdf', buffer: original })
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await expect(page.getByRole('alert')).toContainText('email address or Malaysian mobile number')
-  await expect(page.getByRole('alert')).toContainText('Searchable PDF text was checked')
+  await expect(page.getByRole('alert')).toContainText('up to 500,000 characters across 30 pages')
   await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await page.getByRole('button', { name: /Review case/ }).click()
