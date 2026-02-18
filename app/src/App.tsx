@@ -15,7 +15,7 @@ import { createComplaintPack } from './domain/complaintPack'
 import type { ComplaintPack } from './domain/complaintPack'
 import { clearSubmission } from './data/statusRepository'
 import { acceptConsent, clearConsent, readConsent } from './data/consentRepository'
-import { clearCase, readCase, recordCaseTransition, saveCaseDraft } from './data/caseRepository'
+import { clearCase, readCase, recordCaseTransition, saveCaseDraft, wasCaseRestored } from './data/caseRepository'
 import { clearAuditEvents } from './data/auditRepository'
 import { clearPacks, listPacks, nextPackVersion, savePack } from './data/packRepository'
 import { assessScope } from './domain/scope'
@@ -35,6 +35,7 @@ function App() {
   const [consent, setConsent] = useState(() => Boolean(readConsent()))
   const [urgentReasons, setUrgentReasons] = useState<string[]>([])
   const [draft, setDraft] = useState<CaseDraft>(() => readCase()?.draft ?? EMPTY_DRAFT)
+  const [caseRecovered, setCaseRecovered] = useState(wasCaseRestored)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [reviewEvidence, setReviewEvidence] = useState<EvidenceMetadata[]>([])
   const [complaintPack, setComplaintPack] = useState<ComplaintPack | null>(null)
@@ -74,7 +75,7 @@ function App() {
     try { await action() } catch { reportStorageError() }
   }
   function persistDraft(next: CaseDraft) {
-    try { saveCaseDraft(next); setLastSaved(new Date()); setUnsaved(false); setStorageError('') }
+    try { saveCaseDraft(next); setLastSaved(new Date()); setUnsaved(false); setStorageError(''); setCaseRecovered(false) }
     catch { setUnsaved(true); setLastSaved(null); reportStorageError() }
   }
 
@@ -88,6 +89,7 @@ function App() {
     void runAction(() => {
       const assessment = assessScope(draft)
       recordCaseTransition(draft, assessment.result === 'unsupported' ? 'out_of_scope' : 'evidence_collection', assessment.result === 'unsupported' ? 'scope_exclusion_identified' : assessment.result === 'uncertain' ? 'manual_scope_review_needed' : 'case_details_confirmed')
+      setCaseRecovered(false)
       setScopeAssessment(assessment); setLastSaved(new Date()); setUnsaved(false)
       setStep(assessment.result === 'unsupported' ? 'scope' : 'saved')
     })
@@ -96,7 +98,7 @@ function App() {
     const prompt = locale === 'ms' ? 'Padam draf kes, setiap fail asal bukti, pek tersimpan, dan rekod status daripada pelayar ini? Tindakan ini tidak boleh dibatalkan.' : 'Delete the case draft, every evidence original, saved packs, and status record from this browser? This cannot be undone.'
     if (!window.confirm(prompt)) return
     await clearEvidence(); clearSubmission(); clearPacks(); clearConsent(); clearAuditEvents(); clearCase()
-    setUnsaved(false); setStorageError('')
+    setUnsaved(false); setStorageError(''); setCaseRecovered(false)
     setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setReviewEvidence([]); setExtractions([]); setScopeAssessment(null); setStep('welcome')
   }
   function openDataControls() { setReturnStep(step === 'data' ? 'welcome' : step); setStep('data') }
@@ -126,6 +128,7 @@ function App() {
     <main>
       <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div aria-current={index + 1 === progress ? 'step' : undefined} className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
       {storageError && <div className="storage-error" role="alert"><p>{storageError}</p>{unsaved && <button type="button" className="secondary" onClick={() => persistDraft(draft)}>{locale === 'ms' ? 'Cuba simpan lagi' : 'Retry saving'}</button>}</div>}
+      {caseRecovered && <div className="storage-error" role="status"><p>{locale === 'ms' ? 'Simpanan kes terdahulu dipulihkan kerana rekod terkini tidak dapat dibaca. Semak butiran kes yang dipulihkan sebelum meneruskan.' : 'A previous case autosave was restored because the latest record could not be read. Review the restored case details before continuing.'}</p><button type="button" className="secondary" onClick={() => setCaseRecovered(false)}>{locale === 'ms' ? 'Tutup' : 'Dismiss'}</button></div>}
 
       {step === 'welcome' && <section className="page welcome-page">
         <div className="welcome-hero"><div className="hero-copy"><div className="eyebrow"><span />{text.welcome.eyebrow}</div><h1>{renderLines(text.welcome.title)}</h1>

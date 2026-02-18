@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_DRAFT } from '../domain/case'
-import { readCase, saveCaseDraft } from './caseRepository'
+import { clearCase, readCase, saveCaseDraft, wasCaseRestored } from './caseRepository'
 import { listAuditEvents } from './auditRepository'
 
 beforeEach(() => {
@@ -10,6 +10,7 @@ beforeEach(() => {
     setItem: (key: string, value: string) => values.set(key, value),
     removeItem: (key: string) => values.delete(key),
   })
+  clearCase()
 })
 afterEach(() => vi.unstubAllGlobals())
 
@@ -20,6 +21,27 @@ describe('case repository', () => {
 
   it('rejects a stored case with an unknown lifecycle status', () => {
     localStorage.setItem('Aduen.case-record.v1', JSON.stringify({ id: 'case-1', createdAt: '2026-09-21', updatedAt: '2026-09-21', status: 'invalid', draft: EMPTY_DRAFT, history: [] }))
+    expect(readCase()).toBeNull()
+  })
+
+  it('restores and audits the last valid autosave when the current case record is unreadable', () => {
+    saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Synthetic original seller' })
+    saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Synthetic newer seller' })
+    localStorage.setItem('Aduen.case-record.v1', '{broken json')
+
+    const recovered = readCase()
+
+    expect(recovered?.draft.seller).toBe('Synthetic original seller')
+    expect(JSON.parse(localStorage.getItem('Aduen.case-record.v1')!).draft.seller).toBe('Synthetic original seller')
+    expect(wasCaseRestored()).toBe(true)
+    expect(listAuditEvents().map((event) => event.action)).toContain('case_recovered')
+  })
+
+  it('removes the recovery snapshot when the case is deleted', () => {
+    saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Synthetic first version' })
+    saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Synthetic second version' })
+    clearCase()
+    localStorage.setItem('Aduen.case-record.v1', '{broken json')
     expect(readCase()).toBeNull()
   })
 

@@ -13,8 +13,9 @@ This directory contains the first interactive Aduen prototype. It currently supp
 - issue-specific completeness checks and a sourced chronology;
 - versioned merchant-first routing;
 - user-reviewed PDF complaint packs;
-- submission and outcome tracking; and
-- complete ZIP export, local activity history, and explicit local deletion.
+- submission and outcome tracking;
+- complete ZIP export, local activity history, and explicit local deletion; and
+- recovery of the previous valid case autosave if the latest local case record becomes unreadable, with a visible notice and activity entry.
 
 The prototype has no server or account system. Structured case data is stored in browser `localStorage`; evidence originals and metadata use separate IndexedDB stores. Do not use it for real consumer evidence.
 
