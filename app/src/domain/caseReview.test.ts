@@ -34,6 +34,13 @@ describe('fact conflicts', () => {
     amountExtraction.candidates[0] = reviewCandidate(amountExtraction.candidates[0], 'confirmed')
     expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '125.50' }, [amountExtraction])[0]).toContain('differs')
   })
+  it('flags different confirmed amounts across evidence even when one matches the case', () => {
+    const first = createEvidenceExtraction('e1', 'Total RM 130.00')
+    const second = createEvidenceExtraction('e2', 'Total RM 125.50')
+    first.candidates[0] = reviewCandidate(first.candidates[0], 'confirmed')
+    second.candidates[0] = reviewCandidate(second.candidates[0], 'confirmed')
+    expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '125.50' }, [first, second])).toContain('Confirmed evidence contains different transaction amounts.')
+  })
   it('ignores unconfirmed derived values', () => {
     expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '125.50' }, [createEvidenceExtraction('e1', 'Total RM 130.00')])).toEqual([])
   })
@@ -41,6 +48,17 @@ describe('fact conflicts', () => {
     const extraction = createEvidenceExtraction('e1', 'I requested a replacement.')
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
     expect(findFactConflicts({ ...EMPTY_DRAFT, remedy: 'refund' }, [extraction])[0]).toContain('requested remedy')
+  })
+  it('flags different confirmed references and remedies across evidence', () => {
+    const referenceA = createEvidenceExtraction('e1', 'Order no. ADU-1234')
+    const referenceB = createEvidenceExtraction('e2', 'Order no. ADU-5678')
+    const remedyA = createEvidenceExtraction('e3', 'I requested a refund.')
+    const remedyB = createEvidenceExtraction('e4', 'I requested a replacement.')
+    for (const extraction of [referenceA, referenceB, remedyA, remedyB]) extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
+    expect(findFactConflicts(EMPTY_DRAFT, [referenceA, referenceB, remedyA, remedyB])).toEqual(expect.arrayContaining([
+      'Confirmed evidence contains different order or reference numbers.',
+      'Confirmed evidence contains different requested remedies.',
+    ]))
   })
   it('flags a single confirmed evidence date that differs from the purchase date', () => {
     const extraction = createEvidenceExtraction('e1', 'Order date: 2026-08-02')
@@ -61,6 +79,13 @@ describe('fact conflicts', () => {
     const extraction = createEvidenceExtraction('e1', 'Customer name: Another Synthetic Consumer.')
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
     expect(findFactConflicts({ ...EMPTY_DRAFT, consumerName: 'Synthetic Test Consumer' }, [extraction])[0]).toContain('consumer name')
+  })
+  it('flags different confirmed consumer names even when the case name is blank', () => {
+    const first = createEvidenceExtraction('e1', 'Customer name: Synthetic Consumer One.')
+    const second = createEvidenceExtraction('e2', 'Customer name: Synthetic Consumer Two.')
+    first.candidates[0] = reviewCandidate(first.candidates[0], 'confirmed')
+    second.candidates[0] = reviewCandidate(second.candidates[0], 'confirmed')
+    expect(findFactConflicts(EMPTY_DRAFT, [first, second])).toContain('Confirmed evidence contains different consumer names.')
   })
 })
 
