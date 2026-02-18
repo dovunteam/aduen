@@ -78,9 +78,9 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
   if (enteredAmount > 0 && extractedAmounts.some((amount) => Number.isFinite(amount) && Math.abs(amount - enteredAmount) >= 0.01)) conflicts.push(`A confirmed extracted amount differs from the entered transaction amount of MYR ${enteredAmount.toFixed(2)}.`)
   const extractedReferences = [...new Set(confirmed.filter((item) => item.field === 'reference').map((item) => item.confirmedValue).filter(Boolean))]
   if (draft.orderReference && extractedReferences.some((reference) => reference?.toLowerCase() !== draft.orderReference.toLowerCase())) conflicts.push('A confirmed extracted reference differs from the entered order or reference number.')
-  const extractedDates = [...new Set(confirmed.filter((item) => item.field === 'date').map((item) => item.confirmedValue).filter(Boolean))]
-  if (extractedDates.length > 1) conflicts.push('Confirmed evidence contains multiple extracted dates. Check which event each date describes.')
-  if (draft.purchaseDate && extractedDates.length === 1 && extractedDates[0] !== draft.purchaseDate) conflicts.push(`A confirmed extracted date differs from the entered purchase date of ${draft.purchaseDate}. Check which event the date describes.`)
+  const extractedPurchaseDates = [...new Set(confirmed.filter((item) => item.field === 'date' && item.dateRole === 'purchase').map((item) => item.confirmedValue).filter(Boolean))]
+  if (extractedPurchaseDates.length > 1) conflicts.push('Confirmed evidence contains multiple dates explicitly labelled as purchase dates.')
+  if (draft.purchaseDate && extractedPurchaseDates.some((date) => date !== draft.purchaseDate)) conflicts.push(`A confirmed date labelled as a purchase date differs from the entered purchase date of ${draft.purchaseDate}.`)
   const extractedRemedies = [...new Set(confirmed.filter((item) => item.field === 'remedy').map((item) => item.confirmedValue?.toLowerCase()).filter(Boolean))]
   if (draft.remedy && extractedRemedies.some((remedy) => remedy !== draft.remedy)) conflicts.push(`A confirmed extracted remedy differs from the entered requested remedy of ${draft.remedy}.`)
   const normaliseName = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase()

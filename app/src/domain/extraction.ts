@@ -9,6 +9,7 @@ export type ExtractionCandidate = {
   end: number
   status: 'unconfirmed' | 'confirmed' | 'rejected'
   confirmedValue: string | null
+  dateRole?: 'purchase' | 'unclassified'
   reviewHistory?: Array<{ at: string; previousStatus: ExtractionCandidate['status']; previousValue: string | null; status: ExtractionCandidate['status']; value: string | null }>
 }
 
@@ -16,22 +17,28 @@ export type EvidenceExtraction = {
   id: string
   evidenceId: string
   createdAt: string
-  extractorVersion: 'plain-text-v1' | 'plain-text-v2'
+  extractorVersion: 'plain-text-v1' | 'plain-text-v2' | 'plain-text-v3'
   candidates: ExtractionCandidate[]
 }
 
 export function isValidEvidenceExtraction(value: unknown): value is EvidenceExtraction {
   if (!value || typeof value !== 'object') return false
   const extraction = value as Partial<EvidenceExtraction>
-  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2'].includes(extraction.extractorVersion as string) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
+  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2', 'plain-text-v3'].includes(extraction.extractorVersion as string) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
 }
 
-function candidate(field: ExtractedField, value: string, confidence: number, text: string, start: number, end: number): ExtractionCandidate {
+function candidate(field: ExtractedField, value: string, confidence: number, text: string, start: number, end: number, dateRole?: ExtractionCandidate['dateRole']): ExtractionCandidate {
   return {
     id: crypto.randomUUID(), field, value, confidence,
     sourceExcerpt: text.slice(Math.max(0, start - 24), Math.min(text.length, end + 24)).replace(/\s+/g, ' ').trim(),
     start, end, status: 'unconfirmed', confirmedValue: null,
+    ...(field === 'date' ? { dateRole: dateRole ?? 'unclassified' } : {}),
   }
+}
+
+function classifyDate(text: string, start: number): NonNullable<ExtractionCandidate['dateRole']> {
+  const context = text.slice(Math.max(0, start - 60), start).trimEnd()
+  return /(?:purchase\s+date|date\s+of\s+purchase|order\s+date|transaction\s+date|purchased(?:\s+on)?|tarikh\s+(?:pembelian|pesanan|transaksi))\s*(?:(?:is|on|pada|:)\s*)?$/i.test(context) ? 'purchase' : 'unclassified'
 }
 
 export function extractCandidateFacts(text: string): ExtractionCandidate[] {
@@ -44,7 +51,7 @@ export function extractCandidateFacts(text: string): ExtractionCandidate[] {
     add(candidate('amount', Number(raw).toFixed(2), 0.92, text, match.index, match.index + match[0].length))
   }
   const addDate = (value: string, confidence: number, match: RegExpMatchArray) => {
-    if (match.index !== undefined && isValidCandidateValue('date', value)) add(candidate('date', value, confidence, text, match.index, match.index + match[0].length))
+    if (match.index !== undefined && isValidCandidateValue('date', value)) add(candidate('date', value, confidence, text, match.index, match.index + match[0].length, classifyDate(text, match.index)))
   }
   for (const match of text.matchAll(/\b(20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b/g)) {
     addDate(`${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`, 0.88, match)
@@ -80,7 +87,7 @@ export function extractCandidateFacts(text: string): ExtractionCandidate[] {
 }
 
 export function createEvidenceExtraction(evidenceId: string, text: string, now = new Date()): EvidenceExtraction {
-  return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion: 'plain-text-v2', candidates: extractCandidateFacts(text) }
+  return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion: 'plain-text-v3', candidates: extractCandidateFacts(text) }
 }
 
 export function reviewCandidate(candidateValue: ExtractionCandidate, status: ExtractionCandidate['status'], correctedValue?: string, now = new Date()): ExtractionCandidate {
@@ -106,6 +113,7 @@ function isValidCandidate(value: unknown): value is ExtractionCandidate {
   if (!value || typeof value !== 'object') return false
   const candidateValue = value as Partial<ExtractionCandidate>
   if (typeof candidateValue.id !== 'string' || !candidateValue.id || typeof candidateValue.field !== 'string' || !['amount', 'date', 'reference', 'remedy', 'name'].includes(candidateValue.field) || typeof candidateValue.value !== 'string' || typeof candidateValue.confidence !== 'number' || !Number.isFinite(candidateValue.confidence) || candidateValue.confidence < 0 || candidateValue.confidence > 1 || typeof candidateValue.sourceExcerpt !== 'string' || typeof candidateValue.start !== 'number' || !Number.isInteger(candidateValue.start) || candidateValue.start < 0 || typeof candidateValue.end !== 'number' || !Number.isInteger(candidateValue.end) || candidateValue.end < candidateValue.start || !['unconfirmed', 'confirmed', 'rejected'].includes(candidateValue.status as string) || (candidateValue.confirmedValue !== null && typeof candidateValue.confirmedValue !== 'string')) return false
+  if (candidateValue.dateRole !== undefined && (candidateValue.field !== 'date' || !['purchase', 'unclassified'].includes(candidateValue.dateRole))) return false
   const confirmedValid = candidateValue.confirmedValue === null || candidateValue.status !== 'confirmed' || isValidCandidateValue(candidateValue.field as ExtractedField, candidateValue.confirmedValue)
   return confirmedValid && (!candidateValue.reviewHistory || (Array.isArray(candidateValue.reviewHistory) && candidateValue.reviewHistory.every(isValidReview)))
 }

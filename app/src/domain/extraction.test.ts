@@ -58,13 +58,18 @@ describe('bounded text extraction', () => {
     expect(candidates.every((item) => item.status === 'unconfirmed' && item.sourceExcerpt.length > 0)).toBe(true)
   })
 
+  it('classifies only explicitly labelled purchase dates', () => {
+    expect(extractCandidateFacts('Tarikh pembelian: 2026-08-01')[0].dateRole).toBe('purchase')
+    expect(extractCandidateFacts('Delivery date: 2026-08-02')[0].dateRole).toBe('unclassified')
+  })
+
   it('does not offer invalid calendar dates as candidates', () => {
     expect(extractCandidateFacts('Tarikh: 31/02/2026 or 31 Februari 2026.')).toEqual([])
   })
 
   it('marks every extracted value unconfirmed by default', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
-    expect(extraction.extractorVersion).toBe('plain-text-v2')
+    expect(extraction.extractorVersion).toBe('plain-text-v3')
     expect(extraction.candidates[0].status).toBe('unconfirmed')
   })
 
@@ -80,6 +85,7 @@ describe('bounded text extraction', () => {
     const valid = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00.000Z'))
     expect(isValidEvidenceExtraction(valid)).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v1' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v2' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], confidence: 2 }] })).toBe(false)
   })
