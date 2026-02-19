@@ -6,7 +6,8 @@ import { PackStep } from './components/PackStep'
 import { StatusStep } from './components/StatusStep'
 import { DataControls } from './components/DataControls'
 import { OutOfScopeStep } from './components/OutOfScopeStep'
-import { clearEvidence, listEvidence } from './data/evidenceRepository'
+import { ExtractionStep } from './components/ExtractionStep'
+import { clearEvidence, listEvidence, listExtractions } from './data/evidenceRepository'
 import { EMPTY_DRAFT } from './domain/case'
 import type { CaseDraft } from './domain/case'
 import type { EvidenceMetadata } from './domain/evidence'
@@ -18,9 +19,10 @@ import { clearCase, readCase, recordCaseTransition, saveCaseDraft } from './data
 import { clearPacks, listPacks, nextPackVersion, savePack } from './data/packRepository'
 import { assessScope } from './domain/scope'
 import type { ScopeAssessment } from './domain/scope'
+import type { EvidenceExtraction } from './domain/extraction'
 import './App.css'
 
-type Step = 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'review' | 'pack' | 'status' | 'data'
+type Step = 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
 function App() {
   const [step, setStep] = useState<Step>('welcome')
   const [consent, setConsent] = useState(() => Boolean(readConsent()))
@@ -31,8 +33,9 @@ function App() {
   const [complaintPack, setComplaintPack] = useState<ComplaintPack | null>(null)
   const [returnStep, setReturnStep] = useState<Step>('welcome')
   const [scopeAssessment, setScopeAssessment] = useState<ScopeAssessment | null>(null)
+  const [extractions, setExtractions] = useState<EvidenceExtraction[]>([])
   const isUrgent = urgentReasons.length > 0
-  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, scope: 3, saved: 3, evidence: 4, review: 5, pack: 6, status: 7, data: 0 }[step]), [step])
+  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, scope: 3, saved: 3, evidence: 4, extraction: 5, review: 6, pack: 7, status: 8, data: 0 }[step]), [step])
 
   useEffect(() => {
     if (step !== 'case') return
@@ -53,6 +56,7 @@ function App() {
     if (record.status === 'out_of_scope') { setScopeAssessment(assessScope(record.draft)); setStep('scope'); return }
     if (record.status === 'draft') { setStep('case'); return }
     if (record.status === 'evidence_collection') { setStep('evidence'); return }
+    if (record.status === 'confirmation') { setReviewEvidence(await listEvidence()); setExtractions(await listExtractions()); setStep('extraction'); return }
     if (record.status === 'review' || record.status === 'ready_for_pack') { setReviewEvidence(await listEvidence()); setStep('review'); return }
     if (record.status === 'approved') {
       const latest = listPacks().sort((a, b) => b.version - a.version)[0]
@@ -65,7 +69,7 @@ function App() {
   return <div className="app-shell">
     <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label="Tuntiva home">TUNTIVA<span aria-hidden="true">/</span></button><div className="header-actions"><button className="data-link" type="button" onClick={openDataControls}>Data controls</button><div className="pilot-label"><span /> Private prototype</div></div></header>
     <main>
-      <nav className="progress" aria-label="Case setup progress">{['Understand', 'Safety check', 'Case details', 'Evidence', 'Check', 'Pack', 'Status'].map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
+      <nav className="progress" aria-label="Case setup progress">{['Understand', 'Safety check', 'Case details', 'Evidence', 'Confirm facts', 'Check', 'Pack', 'Status'].map((label, index) => <div className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
 
       {step === 'welcome' && <section className="page welcome-page">
         <div className="eyebrow">A clearer recovery path</div><h1>Put a failed purchase<br />into order.</h1>
@@ -97,7 +101,8 @@ function App() {
 
       {step === 'saved' && <section className="page narrow-page saved-page"><div className="success-mark">✓</div><div className="eyebrow">Draft saved</div><h1>Your case record<br />has started.</h1><p className="lede">The transaction details are stored only in this browser. Next, add the original records that support the case.</p><dl className="summary"><div><dt>Seller</dt><dd>{draft.seller}</dd></div><div><dt>Amount</dt><dd>RM {Number(draft.amount).toFixed(2)}</dd></div><div><dt>Issue</dt><dd>{draft.issue.replaceAll('_', ' ')}</dd></div><div><dt>Remedy</dt><dd>{draft.remedy}</dd></div></dl><div className="actions split"><button className="secondary" onClick={() => void startOver()}>Delete draft</button><div className="button-group"><button className="secondary" onClick={() => setStep('case')}>Edit details</button><button className="primary" onClick={() => setStep('evidence')}>Add evidence <span>→</span></button></div></div></section>}
       {step === 'scope' && scopeAssessment && <OutOfScopeStep assessment={scopeAssessment} onEdit={() => setStep('case')} onDelete={startOver} />}
-      {step === 'evidence' && <EvidenceStep onBack={() => setStep('case')} onContinue={(items) => { recordCaseTransition(draft, 'review', 'evidence_review_requested'); setReviewEvidence(items); setStep('review') }} />}
+      {step === 'evidence' && <EvidenceStep onBack={() => setStep('case')} onContinue={(items) => { void listExtractions().then((records) => { setReviewEvidence(items); setExtractions(records); if (records.some((record) => record.candidates.some((item) => item.status === 'unconfirmed'))) { recordCaseTransition(draft, 'confirmation', 'extracted_facts_require_confirmation'); setStep('extraction') } else { recordCaseTransition(draft, 'review', 'evidence_review_requested'); setStep('review') } }) }} />}
+      {step === 'extraction' && <ExtractionStep initialExtractions={extractions} evidence={reviewEvidence} onBack={() => setStep('evidence')} onContinue={(records) => { setExtractions(records); recordCaseTransition(draft, 'review', 'extracted_facts_reviewed'); setStep('review') }} />}
       {step === 'review' && <ReviewStep draft={draft} evidence={reviewEvidence} onBack={() => setStep('evidence')} onPrepare={(route) => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion()); savePack(pack); setComplaintPack(pack); setStep('pack') }} />}
       {step === 'pack' && complaintPack && <PackStep initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`) }} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep onBack={() => setStep('pack')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
