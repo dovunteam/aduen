@@ -84,6 +84,23 @@ describe('initial routing', () => {
     expect(route.routeName).toBe('Out of supported scope')
     expect(route.confidence).toBe('unsupported')
   })
+
+  it.each(['healthcare', 'professional_service', 'land', 'personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'] as const)('keeps every documented TTPM exclusion outside the supported route: %s', (category) => {
+    const draft = { ...EMPTY_DRAFT, consumerLocation: 'malaysia' as const, sellerLocation: 'malaysia' as const, purpose: 'personal' as const, category }
+    const route = evaluateInitialRoute(draft, [])
+    expect(route.confidence).toBe('unsupported')
+    expect(route.routeName).toBe('Out of supported scope')
+    expect(route.officialLinks).toBeUndefined()
+    expect(assessTtpmPrerequisites(draft).status).toBe('excluded')
+  })
+
+  it.each(['outside', 'unknown'] as const)('retains manual review for a %s seller jurisdiction', (sellerLocation) => {
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', sellerLocation, purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', amount: '125.50', contactHistory: 'none' }, [])
+    expect(route.routeName).toBe('Manual scope review')
+    expect(route.confidence).toBe('uncertain')
+    expect(route.unmetPrerequisites).toContain('Reviewed category and seller jurisdiction')
+    expect(route.officialLinks).toBeUndefined()
+  })
 })
 
 describe('TTPM prerequisite check', () => {
