@@ -25,11 +25,6 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { browserName: 'chromium', channel: 'chrome' } },
-    {
-      name: 'firefox-recovery',
-      testMatch: /intake\.spec\.ts/,
-      grep: /a supported draft preserves original evidence and resumes at the evidence stage/,
-      use: { browserName: 'firefox' },
-    },
+    { name: 'firefox', use: { browserName: 'firefox' } },
   ],
 })
