@@ -11,7 +11,7 @@ export type CaseDraft = {
   orderReference: string
   purpose: 'personal' | 'business' | ''
   issue: 'non_delivery' | 'mismatch' | 'missing_refund' | 'cancellation' | 'uncertain' | ''
-  category: 'general_goods' | 'general_services' | 'aviation' | 'financial_service' | 'healthcare' | 'professional_service' | 'land' | 'other' | ''
+  category: 'general_goods' | 'general_services' | 'aviation' | 'financial_service' | 'healthcare' | 'professional_service' | 'land' | 'personal_injury' | 'wills_estates' | 'franchise' | 'goodwill_ip' | 'other_tribunal' | 'other' | ''
   remedy: 'delivery' | 'replacement' | 'repair' | 'cancellation' | 'refund' | ''
   remedyAmount: string
   promisedDate: string
