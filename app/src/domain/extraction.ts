@@ -18,14 +18,14 @@ export type EvidenceExtraction = {
   id: string
   evidenceId: string
   createdAt: string
-  extractorVersion: 'plain-text-v1' | 'plain-text-v2' | 'plain-text-v3' | 'plain-text-v4'
+  extractorVersion: 'plain-text-v1' | 'plain-text-v2' | 'plain-text-v3' | 'plain-text-v4' | 'pdf-text-v1'
   candidates: ExtractionCandidate[]
 }
 
 export function isValidEvidenceExtraction(value: unknown): value is EvidenceExtraction {
   if (!value || typeof value !== 'object') return false
   const extraction = value as Partial<EvidenceExtraction>
-  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2', 'plain-text-v3', 'plain-text-v4'].includes(extraction.extractorVersion as string) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
+  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2', 'plain-text-v3', 'plain-text-v4', 'pdf-text-v1'].includes(extraction.extractorVersion as string) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
 }
 
 function candidate(field: ExtractedField, value: string, confidence: number, text: string, start: number, end: number, dateRole?: ExtractionCandidate['dateRole']): ExtractionCandidate {
@@ -92,8 +92,8 @@ export function extractCandidateFacts(text: string): ExtractionCandidate[] {
   return results
 }
 
-export function createEvidenceExtraction(evidenceId: string, text: string, now = new Date()): EvidenceExtraction {
-  return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion: 'plain-text-v4', candidates: extractCandidateFacts(text) }
+export function createEvidenceExtraction(evidenceId: string, text: string, now = new Date(), extractorVersion: EvidenceExtraction['extractorVersion'] = 'plain-text-v4'): EvidenceExtraction {
+  return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion, candidates: extractCandidateFacts(text) }
 }
 
 export function reviewCandidate(candidateValue: ExtractionCandidate, status: ExtractionCandidate['status'], correctedValue?: string, now = new Date()): ExtractionCandidate {
