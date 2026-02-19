@@ -26,13 +26,13 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
   if (numberCandidates.some((candidate) => { const digits = candidate.replace(/\D/g, ''); return digits.length >= 13 && digits.length <= 19 && passesLuhn(digits) })) {
     risks.push({ code: 'card_number', message: 'A possible full payment-card number appears in this file.' })
   }
-  if (/\b(?:password|passcode|pin|otp|one[ -]time password|recovery code|security answer)\b/i.test(text)) {
+  if (/\b(?:password|passcode|pin|otp|one[ -]time password|recovery code|security answer|kata\s+laluan|katalaluan|kod\s+(?:laluan|pengesahan|sekali\s+guna|pemulihan|keselamatan)|jawapan\s+keselamatan)\b/i.test(text)) {
     risks.push({ code: 'authentication_secret', message: 'The file mentions a password, PIN, OTP, recovery code, or similar secret.' })
   }
-  if (/\b(?:mykad|passport|identity card|national registration identity card|nric)\b/i.test(text) || containsPossibleMalaysianIdentityNumber(text)) {
+  if (/\b(?:mykad|passport|pasport|identity card|national registration identity card|nric|kad\s+pengenalan|nombor\s+(?:kad\s+pengenalan|kp)|no\.?\s*kp)\b/i.test(text) || containsPossibleMalaysianIdentityNumber(text)) {
     risks.push({ code: 'identity_number', message: 'The file may contain an identity-document number.' })
   }
-  if (/\b(?:third[- ]party|someone\s+else(?:['’]s)?|another\s+person(?:['’]s)?|other\s+person(?:['’]s)?)\b/i.test(text)) {
+  if (/\b(?:third[- ]party|someone\s+else(?:['’]s)?|another\s+person(?:['’]s)?|other\s+person(?:['’]s)?)\b/i.test(text) || /\b(?:pihak\s+ketiga|maklumat\s+orang\s+lain|butiran\s+orang\s+lain|milik\s+orang\s+lain)\b/i.test(text)) {
     risks.push({ code: 'third_party_data', message: 'The file appears to mention another person’s information. Review whether it is necessary to include.' })
   }
   if (/[\w.+-]+@[\w.-]+\.[A-Z]{2,}/i.test(text) || /(?<!\d)(?:\+?60[ -]?|0)1\d(?:[ ()-]?\d){7,8}(?!\d)/.test(text)) {
