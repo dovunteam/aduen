@@ -160,10 +160,10 @@ input[type='checkbox'] { width: 17px; height: 17px; }
 .empty-state p { font-size: 12px; margin-top: 9px; }
 .evidence-list { border: 0; display: grid; gap: 12px; }
 .evidence-item { border: 1px solid #dfe5d8; background: #fffefa; padding: 23px; border-radius: 9px; }
-.file-icon { border-radius: 6px; background: #edf1e6; color: #5f7750; font-family: inherit; }
+.file-icon { border-radius: 6px; background: #edf1e6; color: #173a36; font-family: inherit; }
 .evidence-copy > strong { font-size: 14px; }
 .evidence-copy p { font-size: 12px; line-height: 1.5; }
-.evidence-copy code { background: #f0f2e9; color: #66765a; border-radius: 4px; }
+.evidence-copy code { background: #f0f2e9; color: #173a36; border-radius: 4px; }
 .evidence-controls button { min-height: 28px; font-size: 11px; }
 .review-section { border: 0; margin-top: 36px; padding: 30px; border-radius: 12px; background: #fffefa; border: 1px solid #dfe5d8; grid-template-columns: 225px minmax(0, 1fr); gap: 40px; }
 .check-score { border-radius: 10px; background: #edf2e5; min-width: 150px; padding: 22px; border-color: #d8e3cd; }
@@ -188,6 +188,7 @@ input[type='checkbox'] { width: 17px; height: 17px; }
 .pack-document > header span { font-family: inherit; font-size: 12px; }
 .pack-document section p { text-transform: none; line-height: 1.65; }
 .approval-panel { background: #ecf1e5; border-color: #d8e2ce; border-radius: 10px; }
+.approval-panel .eyebrow { color: #173a36; }
 .approval-panel h2 { font-size: 23px; line-height: 1.25; letter-spacing: -.035em; }
 .approval-panel .check-row { font-size: 12px; }
 .approval-panel .primary { font-size: 12px; gap: 10px; padding-inline: 14px; }

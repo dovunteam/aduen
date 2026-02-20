@@ -42,3 +42,59 @@ test('privacy controls have no serious automated WCAG violations', async ({ page
   await expect(page.getByRole('heading', { name: 'Your data stays under your control.' })).toBeVisible()
   await expectNoHighImpactViolations(page)
 })
+
+test('evidence review, pack approval, and status screens have no serious automated WCAG violations', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel(/I understand Aduen's role/).check()
+  await page.getByRole('button', { name: 'Begin safety check' }).click()
+  await page.getByRole('button', { name: /No urgent issue/ }).click()
+  await page.getByLabel('Your name or chosen case name').fill('Synthetic Accessibility Consumer')
+  await page.getByLabel('Your location').selectOption('malaysia')
+  await page.getByLabel('Seller or merchant').fill('Synthetic Accessibility Store')
+  await page.getByLabel('Seller location').selectOption('malaysia')
+  await page.getByLabel('Purchase date').fill('2026-08-01')
+  await page.getByLabel('Amount paid (MYR)').fill('125.50')
+  await page.getByLabel('Payment method').selectOption({ label: 'Card' })
+  await page.getByLabel('Purchase purpose').selectOption('personal')
+  await page.getByLabel('Purchase category').selectOption('general_goods')
+  await page.getByLabel('What went wrong?').selectOption('non_delivery')
+  await page.getByLabel('Primary remedy').selectOption('refund')
+  await page.getByLabel('Refund amount (RM)').fill('125.50')
+  await page.getByLabel('Merchant contact').selectOption('none')
+  await page.getByRole('button', { name: /Save case draft/ }).click()
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+
+  for (const [type, name, description] of [
+    ['receipt', 'a11y-receipt.txt', 'synthetic transaction receipt'],
+    ['payment', 'a11y-payment.txt', 'synthetic payment record'],
+    ['listing', 'a11y-listing.txt', 'synthetic delivery listing'],
+    ['message', 'a11y-message.txt', 'synthetic merchant request'],
+  ]) {
+    const input = page.getByLabel('Original file')
+    await input.setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(type === 'receipt' ? 'Total RM 125.50.' : `Synthetic ${description}.`) })
+    await page.getByLabel('What kind of record?').selectOption(type)
+    await page.getByLabel('Description').fill(description)
+    await page.getByRole('button', { name: 'Add evidence' }).click()
+    await expect(page.getByText(name, { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Add evidence' })).toBeEnabled()
+  }
+  await expectNoHighImpactViolations(page)
+
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
+  await expectNoHighImpactViolations(page)
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click()
+  await page.getByRole('button', { name: /Continue to Aduen Check/ }).click()
+  await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
+  await expectNoHighImpactViolations(page)
+  await page.getByRole('button', { name: 'Prepare merchant request' }).click()
+  await expect(page.getByText('Aduen CASE PACK')).toBeVisible()
+  await page.getByLabel(/I reviewed this pack/).check()
+  const pdfDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Approve and export PDF/ }).click()
+  await pdfDownload
+  await expectNoHighImpactViolations(page)
+  await page.getByRole('button', { name: /Track external status/ }).click()
+  await expect(page.getByRole('heading', { name: 'Record what happens next.' })).toBeVisible()
+  await expectNoHighImpactViolations(page)
+})
