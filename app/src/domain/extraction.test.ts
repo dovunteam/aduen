@@ -47,15 +47,25 @@ describe('bounded text extraction', () => {
   })
 
   it('extracts Malay amounts, dates, references, remedies, and Unicode names as unconfirmed candidates', () => {
-    const candidates = extractCandidateFacts('No. rujukan: ADU-1234. Dibayar MYR 1,250.50 pada 3 September 2026. Nama pelanggan: Nur Aisyah Binti Ömer. Saya memohon bayaran balik.')
+    const candidates = extractCandidateFacts('No. rujukan: ADU-1234. Dibayar MYR 1,250.50 pada 3 September 2026. Nama pelanggan: Nur Aisyah Binti \u00D6mer. Saya memohon bayaran balik.')
     expect(candidates.map(({ field, value }) => ({ field, value }))).toEqual([
       { field: 'amount', value: '1250.50' },
       { field: 'date', value: '2026-09-03' },
       { field: 'reference', value: 'ADU-1234' },
       { field: 'remedy', value: 'refund' },
-      { field: 'name', value: 'Nur Aisyah Binti Ömer' },
+      { field: 'name', value: 'Nur Aisyah Binti \u00D6mer' },
     ])
     expect(candidates.every((item) => item.status === 'unconfirmed' && item.sourceExcerpt.length > 0)).toBe(true)
+  })
+
+  it('extracts explicitly labelled names without consuming the following line', () => {
+    const text = 'Name of buyer: O\u2019Connor\nOrder no: SYN-9982'
+    const [name] = extractCandidateFacts(text)
+    expect(name).toMatchObject({ field: 'name', value: 'O\u2019Connor', status: 'unconfirmed' })
+    expect(text.slice(name.start, name.end)).not.toContain('Order no')
+    expect(reviewCandidate(name, 'confirmed').confirmedValue).toBe('O\u2019Connor')
+
+    expect(extractCandidateFacts('Nama penuh pengguna: Nur Aisyah.')[0]).toMatchObject({ field: 'name', value: 'Nur Aisyah' })
   })
 
   it('classifies explicitly labelled event dates', () => {
@@ -72,7 +82,7 @@ describe('bounded text extraction', () => {
 
   it('marks every extracted value unconfirmed by default', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
-    expect(extraction.extractorVersion).toBe('plain-text-v4')
+    expect(extraction.extractorVersion).toBe('plain-text-v5')
     expect(extraction.candidates[0].status).toBe('unconfirmed')
     expect(createEvidenceExtraction('evidence-pdf', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'), 'pdf-text-v1').extractorVersion).toBe('pdf-text-v1')
   })
@@ -91,6 +101,7 @@ describe('bounded text extraction', () => {
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v2' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v3' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v4' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'pdf-text-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'ocr-local-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
