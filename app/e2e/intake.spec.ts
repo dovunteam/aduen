@@ -310,6 +310,26 @@ test('a supported draft preserves original evidence and resumes at the evidence 
   await expect(page.getByText('Evidence previewed')).toBeVisible()
 })
 
+test('a corrupted case autosave restores the previous version and reports the recovery', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: 'Edit details' }).click()
+  await page.getByLabel('Seller or merchant').fill('Synthetic newer seller')
+  await page.evaluate(() => localStorage.setItem('Aduen.case-record.v1', '{broken json'))
+  await page.reload()
+  await expect(page.getByRole('status')).toContainText('A previous case autosave was restored')
+  await page.getByRole('button', { name: 'BM', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('Simpanan kes terdahulu dipulihkan')
+  await page.getByRole('button', { name: 'EN', exact: true }).click()
+  await page.getByRole('button', { name: /Resume saved case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Keep the originals.' })).toBeVisible()
+  await page.getByRole('button', { name: '← Case details' }).click()
+  await expect(page.getByLabel('Seller or merchant')).toHaveValue('Synthetic Store')
+  await page.getByRole('button', { name: 'Data controls' }).click()
+  await page.getByText(/View \d+ recorded actions?/).click()
+  await expect(page.getByText('Previous case autosave restored', { exact: true })).toBeVisible()
+})
+
 test('a complete merchant-first case reaches approved PDF export and outcome tracking', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => undefined } }))
   await reachCaseDetails(page)
@@ -382,6 +402,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   const dataArchive = await JSZip.loadAsync(await readFile((await dataExport.path())!))
   const dataManifest = JSON.parse(await dataArchive.file('case-record.json')!.async('string'))
   expect(dataManifest.case.consumerName).toBe('Synthetic Test Consumer')
+  expect(dataManifest.caseRecoveryBackup.draft.seller).toBe('Synthetic Store')
   expect(dataManifest.auditLog.some((event: { action: string }) => event.action === 'case_exported')).toBe(true)
 })
 
