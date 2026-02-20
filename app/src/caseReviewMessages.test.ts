@@ -9,6 +9,9 @@ describe('case review conflict messages', () => {
     expect(localizeFactConflict('A confirmed extracted remedy differs from the entered requested remedy of refund.', 'ms')).toContain('bayaran balik')
     expect(localizeFactConflict('Confirmed evidence contains different consumer names.', 'ms')).toContain('nama pengguna yang berbeza')
     expect(localizeFactConflict('A confirmed extracted reference differs from the entered order or reference number.', 'ms')).toContain('Nombor rujukan')
+    expect(localizeFactConflict('A confirmed promised performance date occurs before the recorded purchase date.', 'ms')).toContain('sebelum tarikh pembelian')
+    expect(localizeFactConflict('A confirmed delivery date occurs before the recorded purchase date.', 'ms')).toContain('sebelum tarikh pembelian')
+    expect(localizeFactConflict('A confirmed delivery date occurs before the promised performance date.', 'ms')).toContain('sebelum tarikh prestasi yang dijanjikan')
   })
 
   it('preserves the original English message for the English interface', () => {
