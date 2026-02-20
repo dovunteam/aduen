@@ -141,15 +141,17 @@ test('image OCR stays on-device and produces unconfirmed review candidates', asy
   await page.getByRole('button', { name: /Add evidence/ }).click()
   const pngBase64 = await page.evaluate(() => {
     const canvas = document.createElement('canvas')
-    canvas.width = 1200; canvas.height = 260
+    canvas.width = 1200; canvas.height = 360
     const context = canvas.getContext('2d')!
     context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height)
     context.fillStyle = '#000'; context.font = 'bold 84px Arial'; context.fillText('Total RM 130.00', 30, 160)
+    context.font = 'bold 96px Arial'; context.fillText('OTP 123456', 30, 315)
     return canvas.toDataURL('image/png').split(',')[1]
   })
   await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-receipt.png', mimeType: 'image/png', buffer: Buffer.from(pngBase64, 'base64') })
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await expect(page.getByRole('alert')).toContainText('Local OCR checked')
+  await expect(page.getByRole('alert')).toContainText('password, PIN, OTP')
   await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
   await page.getByRole('button', { name: 'Add evidence' }).click({ timeout: 120_000 })
   await expect(page.getByText('synthetic-receipt.png', { exact: true })).toBeVisible()
@@ -168,10 +170,11 @@ test('scanned PDF OCR creates review candidates without changing the original', 
   await page.getByRole('button', { name: /Add evidence/ }).click()
   const image = await page.evaluate(() => {
     const canvas = document.createElement('canvas')
-    canvas.width = 1200; canvas.height = 260
+    canvas.width = 1200; canvas.height = 360
     const context = canvas.getContext('2d')!
     context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height)
     context.fillStyle = '#000'; context.font = 'bold 84px Arial'; context.fillText('Total RM 130.00', 30, 160)
+    context.font = 'bold 96px Arial'; context.fillText('OTP 123456', 30, 315)
     return canvas.toDataURL('image/png')
   })
   const pdf = new jsPDF()
@@ -180,6 +183,7 @@ test('scanned PDF OCR creates review candidates without changing the original', 
   await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-scanned-receipt.pdf', mimeType: 'application/pdf', buffer: original })
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await expect(page.getByRole('alert')).toContainText('Local OCR checked')
+  await expect(page.getByRole('alert')).toContainText('password, PIN, OTP')
   await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
   await page.getByRole('button', { name: 'Add evidence' }).click({ timeout: 120_000 })
   await expect(page.getByText('synthetic-scanned-receipt.pdf', { exact: true })).toBeVisible()
