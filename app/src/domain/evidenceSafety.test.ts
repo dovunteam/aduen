@@ -19,6 +19,12 @@ describe('evidence safety scan', () => {
     expect(codes).toContain('identity_number')
   })
 
+  it('flags labeled card security codes in English and Bahasa Malaysia', () => {
+    expect(detectEvidenceRisks('Card CVV: 123.').map((risk) => risk.code)).toContain('authentication_secret')
+    expect(detectEvidenceRisks('Kod keselamatan kad: 123.').map((risk) => risk.code)).toContain('authentication_secret')
+    expect(detectEvidenceRisks('Card verification code 123.').map((risk) => risk.code)).toContain('authentication_secret')
+  })
+
   it('flags explicit third-party information language', () => {
     expect(detectEvidenceRisks('This screenshot contains someone else\'s phone number.').map((risk) => risk.code)).toContain('third_party_data')
     expect(detectEvidenceRisks('This screenshot contains another person\u2019s email address.').map((risk) => risk.code)).toContain('third_party_data')
