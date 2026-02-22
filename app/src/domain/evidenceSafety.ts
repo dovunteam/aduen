@@ -1,4 +1,4 @@
-export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'contact_details' | 'binary_unscanned' | 'pdf_text_partial' | 'ocr_partial'; message: string }
+export type EvidenceRisk = { code: 'card_number' | 'bank_account' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'contact_details' | 'binary_unscanned' | 'pdf_text_partial' | 'ocr_partial'; message: string }
 
 function passesLuhn(value: string): boolean {
   let sum = 0; let alternate = false
@@ -25,6 +25,17 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
   const numberCandidates = text.match(/(?:\d[ -]?){13,19}/g) ?? []
   if (numberCandidates.some((candidate) => { const digits = candidate.replace(/\D/g, ''); return digits.length >= 13 && digits.length <= 19 && passesLuhn(digits) })) {
     risks.push({ code: 'card_number', message: 'A possible full payment-card number appears in this file.' })
+  }
+  const bankAccountLabels = /\b(?:bank\s+account|account\s+(?:number|no\.?|#)|a\/c\s*(?:number|no\.?|#)?|nombor\s+akaun|no\.?\s*akaun)\b/i
+  if (text.split(/\r?\n/).some((line) => {
+    if (!bankAccountLabels.test(line)) return false
+    const numbers = line.match(/(?<!\d)(?:\d[ -]?){7,19}\d(?!\d)/g) ?? []
+    return numbers.some((candidate) => {
+      const digits = candidate.replace(/\D/g, '')
+      return digits.length >= 8 && digits.length <= 20
+    })
+  })) {
+    risks.push({ code: 'bank_account', message: 'A possible bank-account number appears beside an account label. Check whether it is needed before sharing.' })
   }
   if (/\b(?:password|passcode|pin|otp|one[ -]time\s+(?:password|code)|recovery\s+(?:code|phrase)|backup\s+code|verification\s+code|authentication\s+code|security\s+answer|cvv|cvc|cvn|card\s+(?:security|verification)\s+code|security\s+code|kata\s+laluan|katalaluan|frasa\s+pemulihan|kod\s+(?:laluan|pengesahan|sekali\s+guna|pemulihan|sandaran|keselamatan(?:\s+kad)?|cvv|cvc|cvn)|jawapan\s+keselamatan)\b/i.test(text)) {
     risks.push({ code: 'authentication_secret', message: 'The file mentions a password, PIN, OTP, recovery phrase or backup code, card security code (CVV/CVC), or similar secret.' })
