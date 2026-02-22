@@ -26,14 +26,20 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
   if (numberCandidates.some((candidate) => { const digits = candidate.replace(/\D/g, ''); return digits.length >= 13 && digits.length <= 19 && passesLuhn(digits) })) {
     risks.push({ code: 'card_number', message: 'A possible full payment-card number appears in this file.' })
   }
-  const bankAccountLabels = /\b(?:bank\s+account|account\s+(?:number|no\.?|#)|a\/c\s*(?:number|no\.?|#)?|nombor\s+akaun|no\.?\s*akaun)\b/i
-  if (text.split(/\r?\n/).some((line) => {
+  const bankAccountLabels = /\b(?:bank\s+account(?:\s+(?:number|no\.?|#))?|account\s+(?:number|no\.?|#)|a\/c\s*(?:number|no\.?|#)?|nombor\s+akaun|no\.?\s*akaun)\b/i
+  const lines = text.split(/\r?\n/)
+  const hasAccountLengthNumber = (candidate: string) => {
+    const digits = candidate.replace(/\D/g, '')
+    return digits.length >= 8 && digits.length <= 20
+  }
+  if (lines.some((line, index) => {
     if (!bankAccountLabels.test(line)) return false
     const numbers = line.match(/(?<!\d)(?:\d[ -]?){7,19}\d(?!\d)/g) ?? []
-    return numbers.some((candidate) => {
-      const digits = candidate.replace(/\D/g, '')
-      return digits.length >= 8 && digits.length <= 20
-    })
+    if (numbers.some(hasAccountLengthNumber)) return true
+    const labelOnly = line.replace(bankAccountLabels, '').replace(/[\s:#.-]/g, '') === ''
+    if (!labelOnly || !lines[index + 1]) return false
+    const nextLine = /^\s*[:#-]?\s*((?:\d[ -]?){7,19}\d)\s*$/.exec(lines[index + 1])
+    return Boolean(nextLine && hasAccountLengthNumber(nextLine[1]))
   })) {
     risks.push({ code: 'bank_account', message: 'A possible bank-account number appears beside an account label. Check whether it is needed before sharing.' })
   }

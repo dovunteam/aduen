@@ -10,7 +10,9 @@ describe('evidence safety scan', () => {
   it('flags bank-account numbers only when an account label is present', () => {
     expect(detectEvidenceRisks('Bank account number: 123456789012').map((risk) => risk.code)).toContain('bank_account')
     expect(detectEvidenceRisks('Nombor akaun: 1234 5678 9012').map((risk) => risk.code)).toContain('bank_account')
+    expect(detectEvidenceRisks('Bank account number:\n123456789012').map((risk) => risk.code)).toContain('bank_account')
     expect(detectEvidenceRisks('Order reference: 123456789012').map((risk) => risk.code)).not.toContain('bank_account')
+    expect(detectEvidenceRisks('Order reference:\n123456789012').map((risk) => risk.code)).not.toContain('bank_account')
   })
 
   it('flags authentication and identity-document language', () => {
