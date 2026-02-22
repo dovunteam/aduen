@@ -4,7 +4,7 @@ import { approveComplaintPack, createComplaintPack, packFileName } from './compl
 import type { EvidenceMetadata } from './evidence'
 import type { RouteEvaluation } from './routing'
 
-const route: RouteEvaluation = { routeName: 'Merchant or platform first', recommendedAction: 'Write', matchingFacts: [], unmetPrerequisites: [], exclusionsChecked: [], source: 'R-010', sourceChecked: '20 September 2026', ruleVersion: 'MY-R010-2026.09.20', confidence: 'supported' }
+const route: RouteEvaluation = { routeName: 'Merchant or platform first', recommendedAction: 'Write', matchingFacts: [], unmetPrerequisites: [], exclusionsChecked: [], source: 'R-010', sourceUrl: 'https://example.test/rule', sourceType: 'product-default', sourceChecked: '20 September 2026', ruleVersion: 'MY-R010-2026.09.20', confidence: 'supported' }
 const item: EvidenceMetadata = { id: 'e1', fileName: 'receipt.pdf', mimeType: 'application/pdf', size: 100, sha256: 'abc', sourceType: 'receipt', eventDate: '2026-05-01', description: 'Order receipt', includeInPack: true, uploadedAt: '2026-05-01T00:00:00Z' }
 
 describe('complaint pack', () => {

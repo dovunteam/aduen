@@ -8,6 +8,8 @@ export type RouteEvaluation = {
   unmetPrerequisites: string[]
   exclusionsChecked: string[]
   source: string
+  sourceUrl: string
+  sourceType: 'product-default' | 'official'
   sourceChecked: string
   ruleVersion: string
   confidence: 'supported' | 'uncertain' | 'unsupported'
@@ -17,6 +19,8 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
   const missing = checks.filter((item) => item.level === 'required' && !item.satisfied).map((item) => item.label)
   const base = {
     source: 'Tuntiva Case Routing Rules — R-010 Merchant-first',
+    sourceUrl: 'https://github.com/dovunteam/tuntiva/blob/5d42568/docs/Tuntiva_Case_Routing_Rules.md#r-010-merchant-first',
+    sourceType: 'product-default' as const,
     sourceChecked: '20 September 2026',
     ruleVersion: 'MY-R010-2026.09.20',
   }

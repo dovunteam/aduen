@@ -3,7 +3,7 @@ import type { ComplaintPack } from '../domain/complaintPack'
 const PACKS_KEY = 'tuntiva.pack-versions.v1'
 
 export function listPacks(): ComplaintPack[] {
-  try { const value = localStorage.getItem(PACKS_KEY); return value ? (JSON.parse(value) as ComplaintPack[]).map((pack) => ({ ...pack, confirmedDerivedFacts: pack.confirmedDerivedFacts ?? [] })) : [] }
+  try { const value = localStorage.getItem(PACKS_KEY); return value ? (JSON.parse(value) as ComplaintPack[]).map((pack) => ({ ...pack, confirmedDerivedFacts: pack.confirmedDerivedFacts ?? [], route: { ...pack.route, sourceUrl: pack.route.sourceUrl ?? 'https://github.com/dovunteam/tuntiva/blob/main/docs/Tuntiva_Case_Routing_Rules.md' } })) : [] }
   catch { return [] }
 }
 
