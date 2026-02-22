@@ -371,6 +371,27 @@ test('financial-service cases receive the provider-first BNM handoff before evid
   await expect(page.getByRole('button', { name: 'Add evidence' })).toHaveCount(0)
 })
 
+test('overdue sector sources hide time-dependent instructions but keep official source links', async ({ page }) => {
+  await page.clock.install({ time: new Date('2027-03-23T12:00:00Z') })
+  await reachCaseDetails(page)
+  for (const [index, category, linkName] of [
+    [0, 'aviation', 'Open official CAAM source'],
+    [1, 'financial_service', 'Open official Bank Negara Malaysia source'],
+  ] as const) {
+    if (index > 0) {
+      await page.getByRole('button', { name: 'Review case details' }).click()
+      await page.getByLabel('Purchase category').selectOption(category)
+      await page.getByRole('button', { name: /Save case draft/ }).click()
+    } else {
+      await fillCase(page, { category })
+    }
+    await expect(page.getByRole('link', { name: linkName })).toBeVisible()
+    const sourceNote = page.locator('.source-note')
+    await expect(sourceNote).toContainText('over 180 days old')
+    await expect(sourceNote).not.toContainText(/14 days|30 days/)
+  }
+})
+
 test('a supported draft preserves original evidence and resumes at the evidence stage', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)

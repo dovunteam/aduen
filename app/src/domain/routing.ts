@@ -1,6 +1,8 @@
 import type { CaseDraft } from './case'
 import type { CheckItem } from './caseReview'
 import { assessScope } from './scope'
+import { isSourceCurrent, SOURCE_REVIEW_MAX_AGE_DAYS } from './sourceFreshness'
+export const ROUTE_SOURCE_REVIEW_DAYS = SOURCE_REVIEW_MAX_AGE_DAYS
 
 export type RouteEvaluation = {
   routeName: string
@@ -18,9 +20,6 @@ export type RouteEvaluation = {
 }
 
 export type TtpmAssessment = { status: 'excluded' | 'uncertain'; reason: string }
-export const ROUTE_SOURCE_REVIEW_DAYS = 180
-const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000
-
 export function assessTtpmPrerequisites(draft: CaseDraft): TtpmAssessment {
   if (!draft.purpose || !draft.category) return { status: 'uncertain', reason: 'TTPM check: confirm the purchase purpose and category.' }
   if (draft.purpose === 'business') return { status: 'excluded', reason: 'TTPM check: business or professional purchase is outside the documented consumer scope.' }
@@ -32,7 +31,7 @@ export function assessTtpmPrerequisites(draft: CaseDraft): TtpmAssessment {
 
 export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[], now = new Date()): RouteEvaluation {
   const route = evaluateRoute(draft, checks)
-  if (route.confidence !== 'supported' || isRouteSourceCurrent(route.sourceChecked, now)) return route
+  if (route.confidence !== 'supported' || isSourceCurrent(route.sourceChecked, now)) return route
   return {
     ...route,
     routeName: 'Manual source review',
@@ -42,15 +41,6 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[], now 
     exclusionsChecked: [...route.exclusionsChecked, 'Source freshness checked'],
     confidence: 'uncertain',
   }
-}
-
-function isRouteSourceCurrent(sourceChecked: string, now: Date): boolean {
-  const checkedAt = Date.parse(sourceChecked)
-  if (!Number.isFinite(checkedAt) || !Number.isFinite(now.getTime())) return false
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-  const checkedDay = Date.UTC(new Date(checkedAt).getUTCFullYear(), new Date(checkedAt).getUTCMonth(), new Date(checkedAt).getUTCDate())
-  const ageInDays = Math.floor((today - checkedDay) / DAY_IN_MILLISECONDS)
-  return ageInDays >= 0 && ageInDays <= ROUTE_SOURCE_REVIEW_DAYS
 }
 
 function evaluateRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
