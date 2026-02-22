@@ -21,6 +21,10 @@ export function assessScope(draft: CaseDraft): ScopeAssessment {
   if (categoryReason[draft.category]) unsupported.push(categoryReason[draft.category] as string)
   if (unsupported.length) return { result: 'unsupported', reasons: unsupported }
   const uncertain: string[] = []
+  if (!draft.purpose) uncertain.push('The purchase purpose needs confirmation.')
+  if (!draft.consumerLocation) uncertain.push('The consumer location needs confirmation.')
+  if (!draft.category) uncertain.push('The purchase category needs confirmation.')
+  if (!draft.sellerLocation) uncertain.push('The seller location needs confirmation.')
   if (draft.category === 'other') uncertain.push('The purchase category needs manual review.')
   if (draft.sellerLocation === 'outside' || draft.sellerLocation === 'unknown') uncertain.push('The seller’s location may limit available recovery routes.')
   return { result: uncertain.length ? 'uncertain' : 'supported', reasons: uncertain }
