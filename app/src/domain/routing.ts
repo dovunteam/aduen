@@ -18,6 +18,8 @@ export type RouteEvaluation = {
 }
 
 export type TtpmAssessment = { status: 'excluded' | 'uncertain'; reason: string }
+export const ROUTE_SOURCE_REVIEW_DAYS = 180
+const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000
 
 export function assessTtpmPrerequisites(draft: CaseDraft): TtpmAssessment {
   if (!draft.purpose || !draft.category) return { status: 'uncertain', reason: 'TTPM check: confirm the purchase purpose and category.' }
@@ -28,13 +30,36 @@ export function assessTtpmPrerequisites(draft: CaseDraft): TtpmAssessment {
   return { status: 'uncertain', reason: 'TTPM applies the RM50,000 limit to the claim amount and its three-year limit to when the claim accrued. Aduen records transaction amount and purchase date only, so it cannot assess either limit; verify both with TTPM.' }
 }
 
-export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
+export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[], now = new Date()): RouteEvaluation {
+  const route = evaluateRoute(draft, checks)
+  if (route.confidence !== 'supported' || isRouteSourceCurrent(route.sourceChecked, now)) return route
+  return {
+    ...route,
+    routeName: 'Manual source review',
+    recommendedAction: 'This route source review is overdue. Check current official guidance before taking the next step.',
+    matchingFacts: [...route.matchingFacts, `Rule source last checked: ${route.sourceChecked}`],
+    unmetPrerequisites: [...route.unmetPrerequisites, 'Review current route source'],
+    exclusionsChecked: [...route.exclusionsChecked, 'Source freshness checked'],
+    confidence: 'uncertain',
+  }
+}
+
+function isRouteSourceCurrent(sourceChecked: string, now: Date): boolean {
+  const checkedAt = Date.parse(sourceChecked)
+  if (!Number.isFinite(checkedAt) || !Number.isFinite(now.getTime())) return false
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  const checkedDay = Date.UTC(new Date(checkedAt).getUTCFullYear(), new Date(checkedAt).getUTCMonth(), new Date(checkedAt).getUTCDate())
+  const ageInDays = Math.floor((today - checkedDay) / DAY_IN_MILLISECONDS)
+  return ageInDays >= 0 && ageInDays <= ROUTE_SOURCE_REVIEW_DAYS
+}
+
+function evaluateRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
   const missing = checks.filter((item) => item.level === 'required' && !item.satisfied).map((item) => item.label)
   const base = {
     source: 'Aduen Case Routing Rules — R-010 Merchant-first',
     sourceUrl: 'https://github.com/dovunteam/aduen/blob/main/docs/Aduen_Case_Routing_Rules.md#r-010-merchant-first',
     sourceType: 'product-default' as const,
-    sourceChecked: '23 September 2026',
+    sourceChecked: '2026-09-23',
     ruleVersion: 'MY-R010-2026.09.23.1',
   }
 
