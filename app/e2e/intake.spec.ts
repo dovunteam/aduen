@@ -163,6 +163,29 @@ test('image OCR stays on-device and produces unconfirmed review candidates', asy
   expect(externalRequests).toEqual([])
 })
 
+test('image OCR failure preserves the original for manual review', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(window, 'Worker', {
+    configurable: true,
+    value: class { constructor() { throw new Error('Synthetic OCR worker failure.') } },
+  }))
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  const pngBase64 = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 20; canvas.height = 20
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height)
+    return canvas.toDataURL('image/png').split(',')[1]
+  })
+  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-ocr-failure.png', mimeType: 'image/png', buffer: Buffer.from(pngBase64, 'base64') })
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await expect(page.getByRole('alert')).toContainText('was not scanned for sensitive content')
+  await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await expect(page.getByText('synthetic-ocr-failure.png', { exact: true })).toBeVisible()
+})
+
 test('scanned PDF OCR creates review candidates without changing the original', async ({ page }) => {
   test.setTimeout(120_000)
   await reachCaseDetails(page)
