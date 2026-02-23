@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_DRAFT } from './case'
-import { buildTimeline, checkCompleteness, findFactConflicts, findTimelineWarnings } from './caseReview'
+import { buildTimeline, checkCompleteness, findFactConflicts, findTimelineWarnings, timelineDetail, timelineLabel, timelineSource } from './caseReview'
 import type { EvidenceMetadata } from './evidence'
 import { createEvidenceExtraction, reviewCandidate } from './extraction'
 
@@ -162,5 +162,18 @@ describe('timeline', () => {
   it('includes confirmed promise and merchant-contact events', () => {
     const draft = { ...EMPTY_DRAFT, purchaseDate: '2026-05-01', promisedDate: '2026-05-05', contactHistory: 'contacted' as const, contactDate: '2026-05-06' }
     expect(buildTimeline(draft, []).map((item) => item.id)).toEqual(['purchase', 'promised', 'merchant-contact'])
+  })
+
+  it('adds only user-confirmed extracted dates with distinct evidence provenance', () => {
+    const record = createEvidenceExtraction('evidence-1', 'Purchase date: 2026-05-04\nDelivery date: 2026-05-06')
+    record.candidates[0] = reviewCandidate(record.candidates[0], 'confirmed')
+    const attachedEvidence = evidence({ id: 'evidence-1', fileName: 'order.txt' })
+    const timeline = buildTimeline(EMPTY_DRAFT, [attachedEvidence], [record])
+    expect(timeline.map((item) => item.id)).toEqual([record.candidates[0].id, 'purchase', attachedEvidence.id])
+    expect(timeline[0]).toMatchObject({ date: '2026-05-04', source: 'confirmed extracted fact', eventRole: 'purchase', detail: 'order.txt' })
+    expect(timelineLabel(timeline[0], 'ms')).toBe('Tarikh pembelian dalam bukti')
+    expect(timelineDetail(timeline[0], 'ms')).toBe('Bukti: order.txt')
+    expect(timelineSource('confirmed extracted fact', 'ms')).toBe('fakta daripada bukti yang disahkan pengguna')
+    expect(timeline.some((item) => item.id === record.candidates[1].id)).toBe(false)
   })
 })
