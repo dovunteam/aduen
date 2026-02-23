@@ -2,12 +2,12 @@ import type { CaseDraft } from './case'
 import { buildTimeline } from './caseReview'
 import type { EvidenceMetadata } from './evidence'
 import type { RouteEvaluation } from './routing'
-import type { EvidenceExtraction, ExtractedAmountRole } from './extraction'
+import type { EvidenceExtraction, ExtractedAmountRole, ExtractedReferenceRole } from './extraction'
 import { createMerchantRequest } from './merchantRequest'
 import type { MerchantRequest } from './merchantRequest'
 import type { Locale } from '../i18n'
 
-export type ConfirmedDerivedFact = { field: string; value: string; extractedValue: string; evidenceId: string; extractorVersion: string; candidateId?: string; amountRole?: ExtractedAmountRole }
+export type ConfirmedDerivedFact = { field: string; value: string; extractedValue: string; evidenceId: string; extractorVersion: string; candidateId?: string; amountRole?: ExtractedAmountRole; referenceRole?: ExtractedReferenceRole }
 
 export type ComplaintPack = {
   locale: Locale
@@ -39,7 +39,7 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
     route: { routeName: route.routeName, ruleVersion: route.ruleVersion, sourceChecked: route.sourceChecked, sourceUrl: route.sourceUrl, officialLinks: route.officialLinks },
     timeline: buildTimeline(draft, included, extractions.filter((record) => included.some((item) => item.id === record.evidenceId))),
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
-    confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion, candidateId: item.id, ...(item.field === 'amount' && item.amountRole ? { amountRole: item.amountRole } : {}) }))),
+    confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion, candidateId: item.id, ...(item.field === 'amount' && item.amountRole ? { amountRole: item.amountRole } : {}), ...(item.field === 'reference' && item.referenceRole ? { referenceRole: item.referenceRole } : {}) }))),
     merchantRequest: createMerchantRequest(draft, locale),
     disclaimer: locale === 'ms'
       ? 'Disediakan berdasarkan butiran yang disahkan pengguna dan bukti yang dipilih. Aduen membantu menyusun kes dan memberi maklumat laluan umum; Aduen tidak menjamin pemulihan atau menyediakan khidmat perwakilan undang-undang.'
@@ -56,6 +56,12 @@ export function confirmedFactLabel(fact: ConfirmedDerivedFact, locale: Locale): 
       ? { transaction: 'Jumlah transaksi mungkin', refund: 'Jumlah bayaran balik mungkin', unclassified: 'Jumlah (jenis tidak pasti)' }
       : { transaction: 'Possible transaction amount', refund: 'Possible refund amount', unclassified: 'Amount (role uncertain)' }
     return roles[fact.amountRole]
+  }
+  if (fact.field === 'reference' && fact.referenceRole) {
+    const roles = locale === 'ms'
+      ? { order: 'Nombor pesanan', invoice: 'Nombor invois', generic: 'Rujukan (jenis tidak pasti)' }
+      : { order: 'Order reference', invoice: 'Invoice number', generic: 'Reference (type uncertain)' }
+    return roles[fact.referenceRole]
   }
   const labels = locale === 'ms'
     ? { amount: 'Jumlah', date: 'Tarikh', reference: 'Rujukan', remedy: 'Penyelesaian', name: 'Nama' }

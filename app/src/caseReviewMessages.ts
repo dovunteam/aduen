@@ -21,6 +21,7 @@ export function localizeFactConflict(conflict: string, locale: Locale): string {
     'Confirmed evidence contains different transaction amounts.': 'Bukti yang disahkan menunjukkan jumlah transaksi yang berbeza.',
     'Confirmed evidence contains different refund amounts.': 'Bukti yang disahkan menunjukkan jumlah bayaran balik yang berbeza.',
     'Confirmed evidence contains different order or reference numbers.': 'Bukti yang disahkan mengandungi nombor pesanan atau rujukan yang berbeza.',
+    'Confirmed evidence contains different invoice numbers.': 'Bukti yang disahkan mengandungi nombor invois yang berbeza.',
     'A confirmed extracted reference differs from the entered order or reference number.': 'Nombor rujukan yang diekstrak dan disahkan berbeza daripada nombor pesanan atau rujukan yang dimasukkan.',
     'Confirmed evidence contains different requested remedies.': 'Bukti yang disahkan menunjukkan penyelesaian diminta yang berbeza.',
     'Confirmed evidence contains different consumer names.': 'Bukti yang disahkan mengandungi nama pengguna yang berbeza.',

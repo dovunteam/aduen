@@ -84,6 +84,27 @@ describe('fact conflicts', () => {
       'Confirmed evidence contains different requested remedies.',
     ]))
   })
+  it('does not compare an invoice number with the entered or extracted order number', () => {
+    const order = createEvidenceExtraction('e1', 'Order no. ADU-1234')
+    const invoice = createEvidenceExtraction('e2', 'Invoice no. INV-5678')
+    order.candidates[0] = reviewCandidate(order.candidates[0], 'confirmed')
+    invoice.candidates[0] = reviewCandidate(invoice.candidates[0], 'confirmed')
+    expect(findFactConflicts({ ...EMPTY_DRAFT, orderReference: 'ADU-1234' }, [order, invoice])).toEqual([])
+  })
+  it('uses explicit source labels to distinguish references in older extractions', () => {
+    const order = createEvidenceExtraction('e1', 'Order no. ADU-1234', new Date(), 'plain-text-v6')
+    const invoice = createEvidenceExtraction('e2', 'Invoice no. INV-5678', new Date(), 'plain-text-v6')
+    order.candidates = order.candidates.map(({ referenceRole: _role, ...candidate }) => reviewCandidate(candidate, 'confirmed'))
+    invoice.candidates = invoice.candidates.map(({ referenceRole: _role, ...candidate }) => reviewCandidate(candidate, 'confirmed'))
+    expect(findFactConflicts({ ...EMPTY_DRAFT, orderReference: 'ADU-1234' }, [order, invoice])).toEqual([])
+  })
+  it('still flags conflicting values for the same reference role', () => {
+    const first = createEvidenceExtraction('e1', 'Invoice no. INV-1234')
+    const second = createEvidenceExtraction('e2', 'Invoice no. INV-5678')
+    first.candidates[0] = reviewCandidate(first.candidates[0], 'confirmed')
+    second.candidates[0] = reviewCandidate(second.candidates[0], 'confirmed')
+    expect(findFactConflicts(EMPTY_DRAFT, [first, second])).toContain('Confirmed evidence contains different invoice numbers.')
+  })
   it('flags a single confirmed evidence date that differs from the purchase date', () => {
     const extraction = createEvidenceExtraction('e1', 'Order date: 2026-08-02')
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')

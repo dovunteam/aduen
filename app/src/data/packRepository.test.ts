@@ -90,12 +90,14 @@ describe('immutable pack storage', () => {
     expect(listPacks()).toEqual([valid])
   })
 
-  it('reads historical derived facts and rejects malformed amount roles', () => {
+  it('reads historical derived facts and rejects malformed field roles', () => {
     const valid = createComplaintPack(EMPTY_DRAFT, [], evaluateInitialRoute(EMPTY_DRAFT, []))
     const historicalFact = { field: 'amount', value: '25.00', extractedValue: '25.00', evidenceId: 'e1', extractorVersion: 'plain-text-v5' }
-    const historical = { ...valid, confirmedDerivedFacts: [historicalFact] }
+    const referenceFact = { field: 'reference', value: 'ADU-1234', extractedValue: 'ADU-1234', evidenceId: 'e1', extractorVersion: 'plain-text-v7', referenceRole: 'order' as const }
+    const historical = { ...valid, confirmedDerivedFacts: [historicalFact, referenceFact] }
     localStorage.setItem('Aduen.pack-versions.v1', JSON.stringify([
       { ...valid, id: 'bad-role', confirmedDerivedFacts: [{ ...historicalFact, amountRole: 'delivery' }] },
+      { ...valid, id: 'bad-reference-role', confirmedDerivedFacts: [{ ...referenceFact, referenceRole: 'refund' }] },
       { ...valid, id: 'bad-fact', confirmedDerivedFacts: [null] },
       historical,
     ]))

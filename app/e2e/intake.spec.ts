@@ -158,7 +158,7 @@ test('image OCR stays on-device and produces unconfirmed review candidates', asy
   await page.getByRole('button', { name: /Review case/ }).click()
   await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
   const amountCandidate = page.locator('article.candidate').filter({ hasText: '130.00' })
-  await expect(amountCandidate).toContainText('ocr-local-v2')
+  await expect(amountCandidate).toContainText('ocr-local-v3')
   await expect(amountCandidate.getByRole('button', { name: 'Confirm' })).toBeEnabled()
   expect(externalRequests).toEqual([])
 })
@@ -213,7 +213,7 @@ test('scanned PDF OCR creates review candidates without changing the original', 
   await page.getByRole('button', { name: /Review case/ }).click()
   await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
   const amountCandidate = page.locator('article.candidate').filter({ hasText: '130.00' })
-  await expect(amountCandidate).toContainText('ocr-local-v2')
+  await expect(amountCandidate).toContainText('ocr-local-v3')
   await expect(amountCandidate.getByRole('button', { name: 'Confirm' })).toBeEnabled()
   await page.getByRole('button', { name: 'Data controls' }).click()
   const archiveDownload = page.waitForEvent('download')
@@ -249,10 +249,10 @@ test('hybrid PDFs OCR image-bearing pages alongside searchable text', async ({ p
   const candidates = page.locator('article.candidate')
   await expect(candidates).toHaveCount(2)
   const amountCandidate = candidates.nth(0)
-  await expect(amountCandidate).toContainText('ocr-local-v2')
+  await expect(amountCandidate).toContainText('ocr-local-v3')
   const referenceCandidate = candidates.nth(1)
   await expect(referenceCandidate).toContainText('SYN-HYBRID-2048')
-  await expect(referenceCandidate).toContainText('ocr-local-v2')
+  await expect(referenceCandidate).toContainText('ocr-local-v3')
 })
 
 test('rejects oversized evidence before content scanning', async ({ page }) => {
@@ -630,7 +630,7 @@ test('searchable PDF text creates reviewable candidates without changing the ori
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await page.getByRole('button', { name: /Review case/ }).click()
   await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
-  await expect(page.getByText('pdf-text-v2', { exact: true })).toBeVisible()
+  await expect(page.getByText('pdf-text-v3', { exact: true })).toBeVisible()
   const cards = page.locator('article.candidate')
   await expect(cards).toHaveCount(3)
   await expect(cards.nth(0)).toContainText('130.00')
@@ -641,7 +641,7 @@ test('searchable PDF text creates reviewable candidates without changing the ori
   const downloadedArchive = await archiveDownload
   const archive = await JSZip.loadAsync(await readFile((await downloadedArchive.path())!))
   const manifest = JSON.parse(await archive.file('case-record.json')!.async('string'))
-  expect(manifest.extractions[0].extractorVersion).toBe('pdf-text-v2')
+  expect(manifest.extractions[0].extractorVersion).toBe('pdf-text-v3')
   expect(await archive.file('evidence-originals/01-searchable-order.pdf')!.async('nodebuffer')).toEqual(original)
 })
 
@@ -666,6 +666,28 @@ test('confirmed amounts that disagree across evidence block request preparation'
   await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
   await expect(page.getByRole('alert')).toContainText('Confirmed evidence contains different transaction amounts.')
   await expect(page.getByRole('button', { name: 'Resolve fact conflicts' })).toBeDisabled()
+})
+
+test('an invoice number does not conflict with a separate order number', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  for (const [name, reference] of [['order.txt', 'Order no. ADU-1234'], ['invoice.txt', 'Invoice no. INV-5678']]) {
+    await page.getByLabel('Original file').setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(`${reference}. Synthetic evidence.`) })
+    await page.getByLabel('What kind of record?').selectOption('receipt')
+    await page.getByLabel('Description').fill(`Synthetic ${name}`)
+    await page.getByRole('button', { name: 'Add evidence' }).click()
+    await expect(page.getByText(name, { exact: true })).toBeVisible()
+  }
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
+  const confirmButtons = page.getByRole('button', { name: 'Confirm', exact: true })
+  await expect(confirmButtons).toHaveCount(2)
+  await confirmButtons.nth(0).click()
+  await confirmButtons.nth(1).click()
+  await page.getByRole('button', { name: /Continue to Aduen Check/ }).click()
+  await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
+  await expect(page.locator('.conflict-panel')).toHaveCount(0)
 })
 
 test('confirmed purchase and delivery dates in reverse order block request preparation', async ({ page }) => {
