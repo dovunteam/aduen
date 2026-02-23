@@ -91,6 +91,14 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
     if (eventDates.length > 1) conflicts.push(`Confirmed evidence contains multiple dates labelled for ${label}.`)
     if (value && eventDates.some((date) => date !== value)) conflicts.push(`A confirmed date labelled for ${label} differs from the entered ${label} date of ${value}.`)
   }
+  const datesFor = (role: NonNullable<EvidenceExtraction['candidates'][number]['dateRole']>) => [...new Set(confirmed.filter((item) => item.field === 'date' && item.dateRole === role).map((item) => item.confirmedValue).filter((date): date is string => Boolean(date)))]
+  const purchaseDates = [...datesFor('purchase'), ...(draft.purchaseDate ? [draft.purchaseDate] : [])]
+  const promisedDates = [...datesFor('promised'), ...(draft.promisedDate ? [draft.promisedDate] : [])]
+  const deliveryDates = datesFor('delivery')
+  const outOfOrder = (earlier: string[], later: string[]) => earlier.some((date) => later.some((otherDate) => date > otherDate))
+  if (outOfOrder(purchaseDates, promisedDates)) conflicts.push('A confirmed promised performance date occurs before the recorded purchase date.')
+  if (outOfOrder(purchaseDates, deliveryDates)) conflicts.push('A confirmed delivery date occurs before the recorded purchase date.')
+  if (outOfOrder(promisedDates, deliveryDates)) conflicts.push('A confirmed delivery date occurs before the promised performance date.')
   const extractedRemedies = [...new Set(confirmed.filter((item) => item.field === 'remedy').map((item) => item.confirmedValue?.toLowerCase()).filter(Boolean))]
   if (extractedRemedies.length > 1) conflicts.push('Confirmed evidence contains different requested remedies.')
   if (draft.remedy && extractedRemedies.some((remedy) => remedy !== draft.remedy)) conflicts.push(`A confirmed extracted remedy differs from the entered requested remedy of ${draft.remedy}.`)
