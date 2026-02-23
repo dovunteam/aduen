@@ -76,13 +76,31 @@ describe('bounded text extraction', () => {
     expect(extractCandidateFacts('The event happened on 2026-08-05')[0].dateRole).toBe('unclassified')
   })
 
+  it('keeps the labelled role when the same date also appears without a label', () => {
+    const firstLabelled = extractCandidateFacts('Purchase date: 2026-08-01\nPaid on 2026-08-01')
+    const lastLabelled = extractCandidateFacts('Event: 2026-08-01\nPurchase date: 2026-08-01')
+    expect(firstLabelled.filter((item) => item.field === 'date').map((item) => item.dateRole)).toEqual(['purchase'])
+    expect(lastLabelled.filter((item) => item.field === 'date').map((item) => item.dateRole)).toEqual(['purchase'])
+  })
+
+  it('classifies labelled transaction and refund amounts without assigning an unlabeled amount', () => {
+    const candidates = extractCandidateFacts('Total RM 120.00\nRefund amount: RM 25.00\nBayaran balik RM 30.00\nShipping fee RM 8.00')
+    expect(candidates.filter((item) => item.field === 'amount').map((item) => item.amountRole)).toEqual(['transaction', 'refund', 'refund', 'unclassified'])
+    expect(extractCandidateFacts('Dibayar MYR 120.00')[0].amountRole).toBe('transaction')
+  })
+
+  it('keeps equal transaction and refund amounts as separate candidates', () => {
+    const amounts = extractCandidateFacts('Total RM 25.00\nRefund RM 25.00').filter((item) => item.field === 'amount')
+    expect(amounts.map((item) => item.amountRole)).toEqual(['transaction', 'refund'])
+  })
+
   it('does not offer invalid calendar dates as candidates', () => {
     expect(extractCandidateFacts('Tarikh: 31/02/2026 or 31 Februari 2026.')).toEqual([])
   })
 
   it('marks every extracted value unconfirmed by default', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
-    expect(extraction.extractorVersion).toBe('plain-text-v5')
+    expect(extraction.extractorVersion).toBe('plain-text-v6')
     expect(extraction.candidates[0].status).toBe('unconfirmed')
     expect(createEvidenceExtraction('evidence-pdf', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'), 'pdf-text-v1').extractorVersion).toBe('pdf-text-v1')
   })
@@ -102,9 +120,17 @@ describe('bounded text extraction', () => {
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v2' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v3' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v4' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v5' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'pdf-text-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'ocr-local-v1' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'pdf-text-v2' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'ocr-local-v2' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], confidence: 2 }] })).toBe(false)
+    expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], amountRole: 'delivery' }] })).toBe(false)
+    expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], field: 'date' }] })).toBe(false)
+    const { amountRole: _role, ...legacyAmount } = valid.candidates[0]
+    expect(isValidEvidenceExtraction({ ...valid, candidates: [legacyAmount] })).toBe(false)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v5', candidates: [legacyAmount] })).toBe(true)
   })
 })

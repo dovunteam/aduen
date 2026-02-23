@@ -74,9 +74,14 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
   const confirmed = extractions.flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed').map((item) => ({ ...item, evidenceId: record.evidenceId })))
   const conflicts: string[] = []
   const enteredAmount = Number(draft.amount)
-  const extractedAmounts = [...new Set(confirmed.filter((item) => item.field === 'amount' && item.confirmedValue).map((item) => Number(item.confirmedValue)))]
-  if (new Set(extractedAmounts.filter(Number.isFinite).map((amount) => Math.round(amount * 100))).size > 1) conflicts.push('Confirmed evidence contains different transaction amounts.')
-  if (enteredAmount > 0 && extractedAmounts.some((amount) => Number.isFinite(amount) && Math.abs(amount - enteredAmount) >= 0.01)) conflicts.push(`A confirmed extracted amount differs from the entered transaction amount of MYR ${enteredAmount.toFixed(2)}.`)
+  const amountsFor = (role: 'transaction' | 'refund') => [...new Set(confirmed.filter((item) => item.field === 'amount' && item.confirmedValue && (item.amountRole === role || (role === 'transaction' && item.amountRole === undefined))).map((item) => Number(item.confirmedValue)).filter(Number.isFinite).map((amount) => Math.round(amount * 100)))]
+  const transactionAmounts = amountsFor('transaction')
+  if (transactionAmounts.length > 1) conflicts.push('Confirmed evidence contains different transaction amounts.')
+  if (enteredAmount > 0 && transactionAmounts.some((amount) => Math.abs(amount - Math.round(enteredAmount * 100)) >= 1)) conflicts.push(`A confirmed extracted amount differs from the entered transaction amount of MYR ${enteredAmount.toFixed(2)}.`)
+  const refundAmounts = amountsFor('refund')
+  if (refundAmounts.length > 1) conflicts.push('Confirmed evidence contains different refund amounts.')
+  const requestedRefund = Number(draft.remedyAmount)
+  if (draft.remedy === 'refund' && requestedRefund > 0 && refundAmounts.some((amount) => Math.abs(amount - Math.round(requestedRefund * 100)) >= 1)) conflicts.push(`A confirmed extracted refund amount differs from the entered requested refund amount of MYR ${requestedRefund.toFixed(2)}.`)
   const extractedReferences = [...new Set(confirmed.filter((item) => item.field === 'reference').map((item) => item.confirmedValue).filter(Boolean))]
   if (new Set(extractedReferences.map((reference) => reference?.trim().toLowerCase())).size > 1) conflicts.push('Confirmed evidence contains different order or reference numbers.')
   if (draft.orderReference && extractedReferences.some((reference) => reference?.trim().toLowerCase() !== draft.orderReference.trim().toLowerCase())) conflicts.push('A confirmed extracted reference differs from the entered order or reference number.')
