@@ -82,6 +82,9 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   }
   await page.getByRole('button', { name: 'Teruskan ke Semakan Aduen' }).click()
   await expect(page.getByRole('heading', { name: 'Semak rekod.' })).toBeVisible()
+  await expect(page.locator('.route-preview h2')).toHaveText('Hubungi peniaga atau platform dahulu')
+  await expect(page.locator('.route-preview > p')).toContainText('Hantar permintaan bertulis yang jelas')
+  await expect(page.locator('.route-preview')).not.toContainText('Merchant or platform first')
   await expect(page.getByRole('alert')).toContainText('Jumlah yang diekstrak dan disahkan berbeza daripada jumlah transaksi yang dimasukkan sebanyak MYR 120.00.')
   await page.getByRole('button', { name: '← Bukti' }).click()
   await page.getByRole('button', { name: 'Semak kes' }).click()
