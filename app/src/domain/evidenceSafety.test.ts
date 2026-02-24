@@ -25,6 +25,12 @@ describe('evidence safety scan', () => {
     expect(detectEvidenceRisks('Card verification code 123.').map((risk) => risk.code)).toContain('authentication_secret')
   })
 
+  it('flags recovery phrases, backup codes, and one-time verification codes', () => {
+    for (const text of ['Recovery phrase: alpha beta gamma.', 'Backup code: 123456.', 'One-time code: 123456.', 'Frasa pemulihan: alfa beta gama.', 'Kod sandaran: 123456.']) {
+      expect(detectEvidenceRisks(text).map((risk) => risk.code)).toContain('authentication_secret')
+    }
+  })
+
   it('flags explicit third-party information language', () => {
     expect(detectEvidenceRisks('This screenshot contains someone else\'s phone number.').map((risk) => risk.code)).toContain('third_party_data')
     expect(detectEvidenceRisks('This screenshot contains another person\u2019s email address.').map((risk) => risk.code)).toContain('third_party_data')

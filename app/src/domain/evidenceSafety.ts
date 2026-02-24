@@ -26,8 +26,8 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
   if (numberCandidates.some((candidate) => { const digits = candidate.replace(/\D/g, ''); return digits.length >= 13 && digits.length <= 19 && passesLuhn(digits) })) {
     risks.push({ code: 'card_number', message: 'A possible full payment-card number appears in this file.' })
   }
-  if (/\b(?:password|passcode|pin|otp|one[ -]time password|recovery code|security answer|cvv|cvc|cvn|card\s+(?:security|verification)\s+code|security\s+code|kata\s+laluan|katalaluan|kod\s+(?:laluan|pengesahan|sekali\s+guna|pemulihan|keselamatan(?:\s+kad)?|cvv|cvc|cvn)|jawapan\s+keselamatan)\b/i.test(text)) {
-    risks.push({ code: 'authentication_secret', message: 'The file mentions a password, PIN, OTP, recovery code, or similar secret.' })
+  if (/\b(?:password|passcode|pin|otp|one[ -]time\s+(?:password|code)|recovery\s+(?:code|phrase)|backup\s+code|verification\s+code|authentication\s+code|security\s+answer|cvv|cvc|cvn|card\s+(?:security|verification)\s+code|security\s+code|kata\s+laluan|katalaluan|frasa\s+pemulihan|kod\s+(?:laluan|pengesahan|sekali\s+guna|pemulihan|sandaran|keselamatan(?:\s+kad)?|cvv|cvc|cvn)|jawapan\s+keselamatan)\b/i.test(text)) {
+    risks.push({ code: 'authentication_secret', message: 'The file mentions a password, PIN, OTP, recovery phrase or backup code, card security code (CVV/CVC), or similar secret.' })
   }
   if (/\b(?:mykad|passport|pasport|identity card|national registration identity card|nric|kad\s+pengenalan|nombor\s+(?:kad\s+pengenalan|kp)|no\.?\s*kp)\b/i.test(text) || containsPossibleMalaysianIdentityNumber(text)) {
     risks.push({ code: 'identity_number', message: 'The file may contain an identity-document number.' })
