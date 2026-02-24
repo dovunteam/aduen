@@ -606,7 +606,7 @@ test('extracted candidates require explicit confirmation, correction, or rejecti
   await expect(page.getByText('Confirmed as 125.00')).toBeVisible()
   await cards.nth(0).getByText('Decision history', { exact: true }).click()
   await expect(cards.nth(0).locator('details')).toContainText('125.50')
-  await expect(page.getByText('Rejected — not used as a fact')).toBeVisible()
+  await expect(page.getByText('Rejected - not used as a fact')).toBeVisible()
   await page.getByRole('button', { name: /Continue to Aduen Check/ }).click()
   await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
   await page.getByRole('button', { name: 'Data controls' }).click()

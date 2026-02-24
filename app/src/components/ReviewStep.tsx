@@ -152,7 +152,7 @@ function localizeRoutePrerequisite(value: string): string {
 }
 
 function localizeRouteSource(value: string): string {
-  return value.startsWith('Aduen Case Routing Rules') ? 'Peraturan Penghalaan Aduen — R-010 Hubungi peniaga dahulu' : value
+  return value.startsWith('Aduen Case Routing Rules') ? 'Peraturan Penghalaan Aduen - R-010 Hubungi peniaga dahulu' : value
 }
 
 function confidenceLabel(confidence: RouteEvaluation['confidence'], locale: Locale) {

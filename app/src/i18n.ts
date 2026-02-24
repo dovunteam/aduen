@@ -43,7 +43,7 @@ export const messages = {
       nsrc: 'Official NSRC guidance ↗',
       source: "Use only contact details from your bank's official app, card, or website. Do not share an OTP, PIN, password, or recovery code.",
       back: '← Back',
-      continue: 'No urgent issue — continue',
+      continue: 'No urgent issue - continue',
     },
     caseDetails: {
       eyebrow: 'Case details', title: 'Describe the purchase.', saved: 'Saved', savedDevice: 'Saved on this device', lede: 'Start with what you know. You can leave optional fields blank and return later.',
@@ -95,7 +95,7 @@ export const messages = {
       nsrc: 'Panduan rasmi NSRC ↗',
       source: 'Gunakan hanya butiran hubungan daripada aplikasi, kad, atau laman web rasmi bank anda. Jangan kongsi OTP, PIN, kata laluan, atau kod pemulihan.',
       back: '← Kembali',
-      continue: 'Tiada isu mendesak — teruskan',
+      continue: 'Tiada isu mendesak - teruskan',
     },
     caseDetails: {
       eyebrow: 'Butiran kes', title: 'Terangkan pembelian.', saved: 'Disimpan', savedDevice: 'Disimpan pada peranti ini', lede: 'Mulakan dengan perkara yang anda tahu. Anda boleh membiarkan medan pilihan kosong dan kembali kemudian.',
