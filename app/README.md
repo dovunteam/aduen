@@ -14,6 +14,7 @@ This directory contains the first interactive Aduen prototype. It currently supp
 - versioned merchant-first routing;
 - structured manual-review brief export for uncertain routes, without original evidence bytes;
 - user-reviewed PDF complaint packs;
+- separate local operator review checklist for pilot release before pack export;
 - submission and outcome tracking;
 - a returning-user case workspace with guided resumption, progress, purchase summary, searchable evidence, missing-item counts, pack version history, and recent case activity;
 - local follow-up reminders on the workspace, using the user's chosen date and hidden after a recorded outcome;

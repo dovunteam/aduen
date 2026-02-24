@@ -46,6 +46,19 @@ async function addEvidence(page: import('@playwright/test').Page, type: string, 
   await expect(page.getByRole('button', { name: 'Add evidence' })).toBeEnabled()
 }
 
+async function recordOperatorReview(page: import('@playwright/test').Page) {
+  await page.getByLabel('Reviewer code').fill('SYNTH-OPERATOR-01')
+  for (const label of [
+    'Transaction identity and amount match the evidence',
+    'Routing eligibility and uncertainty are reviewed',
+    'Dates and deadline assumptions are checked',
+    'Unsupported allegations and conclusions are removed',
+    'Evidence selection and redaction are reviewed',
+  ]) await page.getByLabel(label).check()
+  await page.getByRole('button', { name: 'Record operator review' }).click()
+  await expect(page.getByText('Operator review recorded', { exact: true })).toBeVisible()
+}
+
 test('uncertain scope prevents pack preparation even with complete evidence', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page, { category: 'other' })
@@ -515,6 +528,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   expect(reviewBrief).not.toHaveProperty('originals')
   await page.getByRole('button', { name: 'Prepare merchant request' }).click()
   await expect(page.getByText('Aduen CASE PACK')).toBeVisible()
+  await recordOperatorReview(page)
   await expect(page.getByRole('button', { name: 'Export PDF and selected evidence (ZIP)' })).toBeDisabled()
   await page.getByLabel(/I reviewed this pack/).check()
   const downloadPromise = page.waitForEvent('download')
@@ -533,6 +547,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   for (const entry of manifest.evidence) {
     expect(await archive.file(entry.archivePath)!.async('string')).toContain('Synthetic')
   }
+  expect(manifest.pack.operatorReview.reviewerCode).toBe('SYNTH-OPERATOR-01')
   expect(await archive.file('Aduen-synthetic-store-v1.pdf')!.async('string')).toMatch(/^%PDF/)
   await page.getByRole('button', { name: /Track external status/ }).click()
   await page.getByLabel('Recipient or channel').fill('Synthetic merchant email')

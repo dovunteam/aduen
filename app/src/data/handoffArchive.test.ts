@@ -8,6 +8,7 @@ import { evaluateInitialRoute } from '../domain/routing'
 import { createEvidenceExtraction, reviewCandidate } from '../domain/extraction'
 import type { EvidenceMetadata } from '../domain/evidence'
 import { recordAuditEvent, clearAuditEvents } from './auditRepository'
+import { saveOperatorReview } from './operatorReviewRepository'
 
 vi.mock('./evidenceRepository', () => ({ getEvidenceOriginal: vi.fn() }))
 
@@ -20,7 +21,9 @@ async function fixture() {
   const extraction = createEvidenceExtraction('excluded', 'RM 999.00')
   extraction.candidates = extraction.candidates.map((candidate) => reviewCandidate(candidate, 'confirmed'))
   const pack = createComplaintPack(EMPTY_DRAFT, [item, excluded], evaluateInitialRoute(EMPTY_DRAFT, []), new Date(), 1, [extraction])
-  return { original, pack: approveComplaintPack(pack) }
+  const approved = approveComplaintPack(pack)
+  saveOperatorReview(approved.id, { reviewerCode: 'TEST-OPERATOR', reviewedAt: new Date().toISOString(), notes: '', checks: { facts: true, route: true, deadlines: true, language: true, evidence: true } })
+  return { original, pack: approved }
 }
 
 describe('approved evidence archive', () => {
@@ -42,7 +45,7 @@ describe('approved evidence archive', () => {
     expect(await zip.file(manifest.evidence[0].archivePath)!.async('string')).toBe(await original.text())
     expect(manifest.evidence[0].archivePath).not.toContain('../')
     expect(manifest.pack.route).toMatchObject({ routeName: 'Manual review', ruleVersion: 'MY-R010-2026.09.23.1' })
-    expect(manifest.auditLog[0].action).toBe('evidence_previewed')
+    expect(manifest.auditLog.map((event: { action: string }) => event.action)).toEqual(expect.arrayContaining(['evidence_previewed', 'operator_review_recorded']))
     expect(getEvidenceOriginal).toHaveBeenCalledExactlyOnceWith('selected')
     expect(pack.confirmedDerivedFacts).toEqual([])
     const pdf = await zip.file('Aduen-case-v1.pdf')!.async('string')
