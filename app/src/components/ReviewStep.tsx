@@ -20,7 +20,13 @@ export function ReviewStep({ locale, draft, evidence, extractions, onBack, onPre
   const staleSourceReview = route.routeName === 'Manual source review'
   const routeName = locale === 'ms' && staleSourceReview ? 'Semakan sumber manual' : route.routeName
   const routeAction = locale === 'ms' && staleSourceReview ? 'Semakan sumber laluan ini sudah melebihi tempoh. Semak panduan rasmi semasa sebelum meneruskan.' : route.recommendedAction
-  const routeFacts = route.matchingFacts.map((fact) => locale === 'ms' && staleSourceReview && fact.startsWith('Rule source last checked:') ? `Sumber peraturan terakhir disemak: ${route.sourceChecked}` : fact)
+  const scopeFactsMs: Record<string, string> = {
+    'The purchase purpose needs confirmation.': 'Tujuan pembelian perlu disahkan.',
+    'The consumer location needs confirmation.': 'Lokasi pengguna perlu disahkan.',
+    'The purchase category needs confirmation.': 'Kategori pembelian perlu disahkan.',
+    'The seller location needs confirmation.': 'Lokasi penjual perlu disahkan.',
+  }
+  const routeFacts = route.matchingFacts.map((fact) => locale === 'ms' ? scopeFactsMs[fact] ?? (staleSourceReview && fact.startsWith('Rule source last checked:') ? `Sumber peraturan terakhir disemak: ${route.sourceChecked}` : fact) : fact)
   const routePrerequisites = route.unmetPrerequisites.map((item) => locale === 'ms' && staleSourceReview && item === 'Review current route source' ? 'Semak sumber laluan semasa' : item)
 
   return <section className="page form-page">

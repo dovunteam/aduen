@@ -22,6 +22,8 @@ describe('initial routing', () => {
     expect(route.confidence).toBe('uncertain')
     expect(route.unmetPrerequisites).toContain('Purchase purpose')
     expect(route.unmetPrerequisites).toContain('Seller location')
+    expect(route.routeName).toBe('Manual scope review')
+    expect(route.officialLinks).toBeUndefined()
   })
   it('recommends merchant-first when no contact is recorded', () => {
     const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', sellerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', amount: '125.50', contactHistory: 'none' }, [])
@@ -58,7 +60,7 @@ describe('initial routing', () => {
   })
 
   it('does not guess an escalation after merchant contact', () => {
-    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', amount: '125.50', contactHistory: 'contacted' }, [])
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', sellerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', amount: '125.50', contactHistory: 'contacted' }, [])
     expect(route.routeName).toBe('Manual route review')
     expect(route.unmetPrerequisites).toContain('Date of merchant contact')
     expect(route.confidence).toBe('uncertain')

@@ -24,4 +24,14 @@ describe('prototype scope', () => {
   it('marks unknown seller and category facts for review', () => {
     expect(assessScope({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', purpose: 'personal', sellerLocation: 'unknown', category: 'other' }).result).toBe('uncertain')
   })
+  it('does not mark incomplete scope facts as supported', () => {
+    const assessment = assessScope(EMPTY_DRAFT)
+    expect(assessment.result).toBe('uncertain')
+    expect(assessment.reasons).toEqual(expect.arrayContaining([
+      'The purchase purpose needs confirmation.',
+      'The consumer location needs confirmation.',
+      'The purchase category needs confirmation.',
+      'The seller location needs confirmation.',
+    ]))
+  })
 })
