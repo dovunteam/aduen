@@ -76,9 +76,11 @@ export async function addEvidence(file: File, input: EvidenceInput): Promise<Evi
     } catch { /* OCR is best-effort; preserve the original and any searchable text. */ }
     if (!extraction && text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'pdf-text-v1')
   } else if (file.type.startsWith('image/')) {
-    const { extractLocalOcrText } = await import('../domain/localOcr')
-    const result = await extractLocalOcrText(file, file.type)
-    if (result.text) extraction = createEvidenceExtraction(metadata.id, result.text, new Date(), 'ocr-local-v1')
+    try {
+      const { extractLocalOcrText } = await import('../domain/localOcr')
+      const result = await extractLocalOcrText(file, file.type)
+      if (result.text) extraction = createEvidenceExtraction(metadata.id, result.text, new Date(), 'ocr-local-v1')
+    } catch { /* OCR is best-effort; preserve the original for manual review. */ }
   }
 
   const database = await openDatabase()
