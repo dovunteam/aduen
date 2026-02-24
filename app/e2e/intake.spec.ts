@@ -506,6 +506,13 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await page.getByRole('button', { name: /Review case/ }).click()
   await expect(page.getByText('0', { exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Merchant or platform first' })).toBeVisible()
+  const reviewBriefDownloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export manual review brief' }).click()
+  const reviewBriefDownload = await reviewBriefDownloadPromise
+  const reviewBrief = JSON.parse(await readFile((await reviewBriefDownload.path())!, 'utf8'))
+  expect(reviewBrief.route.confidence).toBe('supported')
+  expect(reviewBrief.evidence).toHaveLength(4)
+  expect(reviewBrief).not.toHaveProperty('originals')
   await page.getByRole('button', { name: 'Prepare merchant request' }).click()
   await expect(page.getByText('Aduen CASE PACK')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Export PDF and selected evidence (ZIP)' })).toBeDisabled()
