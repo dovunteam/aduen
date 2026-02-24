@@ -7,6 +7,12 @@ describe('evidence safety scan', () => {
     expect(detectEvidenceRisks('Reference 4111 1111 1111 1112').map((risk) => risk.code)).not.toContain('card_number')
   })
 
+  it('flags bank-account numbers only when an account label is present', () => {
+    expect(detectEvidenceRisks('Bank account number: 123456789012').map((risk) => risk.code)).toContain('bank_account')
+    expect(detectEvidenceRisks('Nombor akaun: 1234 5678 9012').map((risk) => risk.code)).toContain('bank_account')
+    expect(detectEvidenceRisks('Order reference: 123456789012').map((risk) => risk.code)).not.toContain('bank_account')
+  })
+
   it('flags authentication and identity-document language', () => {
     const codes = detectEvidenceRisks('OTP 123456. MyKad number follows.').map((risk) => risk.code)
     expect(codes).toContain('authentication_secret')
