@@ -108,7 +108,7 @@ function App() {
   async function startOver() {
     const prompt = locale === 'ms' ? 'Padam draf kes, setiap fail asal bukti, pek tersimpan, dan rekod status daripada pelayar ini? Tindakan ini tidak boleh dibatalkan.' : 'Delete the case draft, every evidence original, saved packs, and status record from this browser? This cannot be undone.'
     if (!window.confirm(prompt)) return
-    await clearEvidence(); clearSubmission(); clearPacks(); clearOperatorReviews(); clearRetention(); clearConsent(); clearAuditEvents(); clearCase()
+    await clearEvidence(); clearSubmission(); clearPacks(); clearOperatorReviews(); clearRetention(false); clearConsent(); clearAuditEvents(); clearCase()
     setUnsaved(false); setStorageError(''); setCaseRecovered(false)
     setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setReviewEvidence([]); setExtractions([]); setScopeAssessment(null); setStep('welcome')
   }

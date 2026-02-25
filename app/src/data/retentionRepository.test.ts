@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearRetention, isRetentionDue, readRetention, saveRetention } from './retentionRepository'
-import { listAuditEvents } from './auditRepository'
+import { clearAuditEvents, listAuditEvents } from './auditRepository'
 
 describe('retention settings', () => {
   beforeEach(() => {
@@ -19,10 +19,18 @@ describe('retention settings', () => {
     expect(listAuditEvents()).toMatchObject([{ action: 'retention_updated', targetId: 'retention' }])
     clearRetention()
     expect(readRetention()).toBeNull()
+    expect(listAuditEvents()).toHaveLength(2)
   })
 
   it('ignores malformed retention records', () => {
     localStorage.setItem('Aduen.retention.v1', JSON.stringify({ days: 45, setAt: 'invalid', expiresAt: 'invalid' }))
     expect(readRetention()).toBeNull()
+  })
+
+  it('can clear retention without leaving a deletion audit event', () => {
+    saveRetention(90, new Date('2026-09-24T00:00:00.000Z'))
+    clearAuditEvents()
+    clearRetention(false)
+    expect(listAuditEvents()).toEqual([])
   })
 })
