@@ -73,7 +73,7 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await page.getByRole('button', { name: 'Tambah bukti' }).click()
   await page.getByRole('button', { name: 'Semak kes' }).click()
   await expect(page.getByRole('heading', { name: 'Semak setiap calon.' })).toBeVisible()
-  await expect(page.getByText('plain-text-v6', { exact: true })).toBeVisible()
+  await expect(page.getByText('plain-text-v7', { exact: true })).toBeVisible()
   const confirmCandidate = page.getByRole('button', { name: 'Sahkan', exact: true })
   await expect(confirmCandidate).toHaveCount(5)
   for (let index = 0; index < 5; index += 1) {
@@ -102,7 +102,7 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await expect(page.getByRole('heading', { name: /Fakta terbitan disahkan/ })).toBeVisible()
   await expect(page.locator('.pack-document')).toContainText('Jumlah transaksi mungkin: 120.00')
   await expect(page.locator('.pack-document')).toContainText('Tarikh pembelian dalam bukti')
-  await expect(page.getByText('plain-text-v6').last()).toBeVisible()
+  await expect(page.getByText('plain-text-v7').last()).toBeVisible()
   await expect(page.locator('.request-preview')).toContainText('Tuan/Puan Kedai Contoh')
   await expect(page.locator('.request-preview')).toContainText('masih belum diterima')
   await expect(page.locator('.request-preview')).not.toContainText('I am writing')

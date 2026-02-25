@@ -94,13 +94,20 @@ describe('bounded text extraction', () => {
     expect(amounts.map((item) => item.amountRole)).toEqual(['transaction', 'refund'])
   })
 
+  it('classifies extracted order, invoice, and generic references separately in English and Bahasa Malaysia', () => {
+    const candidates = extractCandidateFacts('Order no. ADU-1234\nInvoice no. INV-5678\nNombor pesanan: ADU-4321\nNombor invois: INV-8765\nReference: REF-1000')
+    expect(candidates.filter((item) => item.field === 'reference').map((item) => [item.value, item.referenceRole])).toEqual([
+      ['ADU-1234', 'order'], ['INV-5678', 'invoice'], ['REF-1000', 'generic'], ['ADU-4321', 'order'], ['INV-8765', 'invoice'],
+    ])
+  })
+
   it('does not offer invalid calendar dates as candidates', () => {
     expect(extractCandidateFacts('Tarikh: 31/02/2026 or 31 Februari 2026.')).toEqual([])
   })
 
   it('marks every extracted value unconfirmed by default', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
-    expect(extraction.extractorVersion).toBe('plain-text-v6')
+    expect(extraction.extractorVersion).toBe('plain-text-v7')
     expect(extraction.candidates[0].status).toBe('unconfirmed')
     expect(createEvidenceExtraction('evidence-pdf', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'), 'pdf-text-v1').extractorVersion).toBe('pdf-text-v1')
   })
@@ -121,10 +128,14 @@ describe('bounded text extraction', () => {
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v3' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v4' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v5' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v6' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v7' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'pdf-text-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'ocr-local-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'pdf-text-v2' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'ocr-local-v2' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'pdf-text-v3' })).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'ocr-local-v3' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], confidence: 2 }] })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], amountRole: 'delivery' }] })).toBe(false)
@@ -132,5 +143,9 @@ describe('bounded text extraction', () => {
     const { amountRole: _role, ...legacyAmount } = valid.candidates[0]
     expect(isValidEvidenceExtraction({ ...valid, candidates: [legacyAmount] })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v5', candidates: [legacyAmount] })).toBe(true)
+    const reference = createEvidenceExtraction('evidence-2', 'Order no. ADU-1234').candidates[0]
+    const { referenceRole: _referenceRole, ...legacyReference } = reference
+    expect(isValidEvidenceExtraction({ ...valid, candidates: [legacyReference] })).toBe(false)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v6', candidates: [legacyReference] })).toBe(true)
   })
 })
