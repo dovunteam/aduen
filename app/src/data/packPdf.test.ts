@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { EMPTY_DRAFT } from '../domain/case'
 import { approveComplaintPack, createComplaintPack } from '../domain/complaintPack'
 import { evaluateInitialRoute } from '../domain/routing'
+import type { EvidenceMetadata } from '../domain/evidence'
+import { createEvidenceExtraction, reviewCandidate } from '../domain/extraction'
 import { createComplaintPackPdf } from './packPdf'
 
 describe('complaint pack PDF localization', () => {
@@ -28,5 +30,17 @@ describe('complaint pack PDF localization', () => {
     const content = new TextDecoder('windows-1252').decode(createComplaintPackPdf(pack).output('arraybuffer'))
     expect(content).toContain('Possible transaction amount: 120.00')
     expect(content).toContain('Possible refund amount: 25.00')
+  })
+
+  it('exports confirmed extracted dates in the chronology with their provenance', () => {
+    const evidence: EvidenceMetadata = { id: 'e1', fileName: 'synthetic-order.txt', mimeType: 'text/plain', size: 30, sha256: 'a'.repeat(64), sourceType: 'receipt', eventDate: null, description: 'Synthetic order record', includeInPack: true, uploadedAt: '2026-09-22T00:00:00Z' }
+    const extraction = createEvidenceExtraction(evidence.id, 'Delivery date: 2026-09-10')
+    extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
+    const draft = { ...EMPTY_DRAFT, seller: 'Synthetic Store' }
+    const pack = approveComplaintPack(createComplaintPack(draft, [evidence], evaluateInitialRoute(draft, []), new Date(), 1, [extraction], 'ms'), new Date('2026-09-22T00:00:00Z'))
+    const content = new TextDecoder('windows-1252').decode(createComplaintPackPdf(pack).output('arraybuffer'))
+    expect(content).toContain('Tarikh penghantaran dalam bukti')
+    expect(content).toContain('fakta daripada bukti yang disahkan pengguna')
+    expect(content).toContain('Bukti: synthetic-order.txt')
   })
 })

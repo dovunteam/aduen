@@ -689,5 +689,8 @@ test('confirmed purchase and delivery dates in reverse order block request prepa
   await page.getByRole('button', { name: /Continue to Aduen Check/ }).click()
   await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
   await expect(page.getByRole('alert')).toContainText('A confirmed delivery date occurs before the recorded purchase date.')
+  await expect(page.getByText('Purchase date in evidence')).toBeVisible()
+  await expect(page.getByText('Delivery date in evidence')).toBeVisible()
+  await expect(page.getByText('confirmed extracted fact', { exact: true })).toHaveCount(2)
   await expect(page.getByRole('button', { name: 'Resolve fact conflicts' })).toBeDisabled()
 })
