@@ -99,6 +99,7 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await page.getByRole('button', { name: 'Sediakan permintaan peniaga' }).click()
   await expect(page.getByRole('heading', { name: 'Semak sebelum mengeksport.' })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Fakta terbitan disahkan/ })).toBeVisible()
+  await expect(page.locator('.pack-document')).toContainText('Jumlah transaksi mungkin: 120.00')
   await expect(page.getByText('plain-text-v6').last()).toBeVisible()
   await expect(page.locator('.request-preview')).toContainText('Tuan/Puan Kedai Contoh')
   await expect(page.locator('.request-preview')).toContainText('masih belum diterima')

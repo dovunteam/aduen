@@ -1,4 +1,4 @@
-import type { ComplaintPack } from '../domain/complaintPack'
+import type { ComplaintPack, ConfirmedDerivedFact } from '../domain/complaintPack'
 
 const PACKS_KEY = 'Aduen.pack-versions.v1'
 const TUNTIVA_PACKS_KEY = 'tuntiva.pack-versions.v1'
@@ -43,7 +43,13 @@ export function clearPacks(): void { localStorage.removeItem(PACKS_KEY); localSt
 function isComplaintPack(value: unknown): value is ComplaintPack {
   if (!value || typeof value !== 'object') return false
   const pack = value as Partial<ComplaintPack>
-  return (pack.locale === 'en' || pack.locale === 'ms') && isSafeText(pack.id, 100, true) && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && isIsoTimestamp(pack.createdAt) && (pack.approvedAt === null || (typeof pack.approvedAt === 'string' && isIsoTimestamp(pack.approvedAt))) && isSafeText(pack.consumerName, 500) && isSafeText(pack.issue, 120) && isSafeText(pack.remedy, 120) && (pack.remedyAmount === null || isSafeText(pack.remedyAmount, 40)) && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && isSafeRoute(pack.route) && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && isSafeText(pack.disclaimer, 2000) && isSafeText(pack.declaration, 2000)
+  return (pack.locale === 'en' || pack.locale === 'ms') && isSafeText(pack.id, 100, true) && typeof pack.version === 'number' && Number.isInteger(pack.version) && pack.version > 0 && typeof pack.createdAt === 'string' && isIsoTimestamp(pack.createdAt) && (pack.approvedAt === null || (typeof pack.approvedAt === 'string' && isIsoTimestamp(pack.approvedAt))) && isSafeText(pack.consumerName, 500) && isSafeText(pack.issue, 120) && isSafeText(pack.remedy, 120) && (pack.remedyAmount === null || isSafeText(pack.remedyAmount, 40)) && Boolean(pack.transaction && typeof pack.transaction === 'object') && Boolean(pack.route && typeof pack.route === 'object') && isSafeRoute(pack.route) && Array.isArray(pack.timeline) && Array.isArray(pack.evidence) && Array.isArray(pack.confirmedDerivedFacts) && pack.confirmedDerivedFacts.every(isConfirmedDerivedFact) && Boolean(pack.merchantRequest && typeof pack.merchantRequest === 'object') && isSafeText(pack.disclaimer, 2000) && isSafeText(pack.declaration, 2000)
+}
+
+function isConfirmedDerivedFact(value: unknown): value is ConfirmedDerivedFact {
+  if (!value || typeof value !== 'object') return false
+  const fact = value as Partial<ConfirmedDerivedFact>
+  return isSafeText(fact.field, 120, true) && isSafeText(fact.value, 500, true) && isSafeText(fact.extractedValue, 500, true) && isSafeText(fact.evidenceId, 100, true) && isSafeText(fact.extractorVersion, 100, true) && (fact.candidateId === undefined || isSafeText(fact.candidateId, 100, true)) && (fact.amountRole === undefined || (fact.field === 'amount' && ['transaction', 'refund', 'unclassified'].includes(fact.amountRole)))
 }
 
 function isSafeRoute(route: ComplaintPack['route'] | undefined): boolean {
