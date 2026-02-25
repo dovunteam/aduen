@@ -158,7 +158,7 @@ test('image OCR stays on-device and produces unconfirmed review candidates', asy
   await page.getByRole('button', { name: /Review case/ }).click()
   await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
   const amountCandidate = page.locator('article.candidate').filter({ hasText: '130.00' })
-  await expect(amountCandidate).toContainText('ocr-local-v1')
+  await expect(amountCandidate).toContainText('ocr-local-v2')
   await expect(amountCandidate.getByRole('button', { name: 'Confirm' })).toBeEnabled()
   expect(externalRequests).toEqual([])
 })
@@ -213,7 +213,7 @@ test('scanned PDF OCR creates review candidates without changing the original', 
   await page.getByRole('button', { name: /Review case/ }).click()
   await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
   const amountCandidate = page.locator('article.candidate').filter({ hasText: '130.00' })
-  await expect(amountCandidate).toContainText('ocr-local-v1')
+  await expect(amountCandidate).toContainText('ocr-local-v2')
   await expect(amountCandidate.getByRole('button', { name: 'Confirm' })).toBeEnabled()
   await page.getByRole('button', { name: 'Data controls' }).click()
   const archiveDownload = page.waitForEvent('download')
@@ -249,10 +249,10 @@ test('hybrid PDFs OCR image-bearing pages alongside searchable text', async ({ p
   const candidates = page.locator('article.candidate')
   await expect(candidates).toHaveCount(2)
   const amountCandidate = candidates.nth(0)
-  await expect(amountCandidate).toContainText('ocr-local-v1')
+  await expect(amountCandidate).toContainText('ocr-local-v2')
   const referenceCandidate = candidates.nth(1)
   await expect(referenceCandidate).toContainText('SYN-HYBRID-2048')
-  await expect(referenceCandidate).toContainText('ocr-local-v1')
+  await expect(referenceCandidate).toContainText('ocr-local-v2')
 })
 
 test('rejects oversized evidence before content scanning', async ({ page }) => {
@@ -630,7 +630,7 @@ test('searchable PDF text creates reviewable candidates without changing the ori
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await page.getByRole('button', { name: /Review case/ }).click()
   await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
-  await expect(page.getByText('pdf-text-v1', { exact: true })).toBeVisible()
+  await expect(page.getByText('pdf-text-v2', { exact: true })).toBeVisible()
   const cards = page.locator('article.candidate')
   await expect(cards).toHaveCount(3)
   await expect(cards.nth(0)).toContainText('130.00')
@@ -641,7 +641,7 @@ test('searchable PDF text creates reviewable candidates without changing the ori
   const downloadedArchive = await archiveDownload
   const archive = await JSZip.loadAsync(await readFile((await downloadedArchive.path())!))
   const manifest = JSON.parse(await archive.file('case-record.json')!.async('string'))
-  expect(manifest.extractions[0].extractorVersion).toBe('pdf-text-v1')
+  expect(manifest.extractions[0].extractorVersion).toBe('pdf-text-v2')
   expect(await archive.file('evidence-originals/01-searchable-order.pdf')!.async('nodebuffer')).toEqual(original)
 })
 

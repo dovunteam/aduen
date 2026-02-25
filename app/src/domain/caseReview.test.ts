@@ -41,6 +41,30 @@ describe('fact conflicts', () => {
     second.candidates[0] = reviewCandidate(second.candidates[0], 'confirmed')
     expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '125.50' }, [first, second])).toContain('Confirmed evidence contains different transaction amounts.')
   })
+  it('compares confirmed transaction and refund amounts with their respective case values', () => {
+    const extraction = createEvidenceExtraction('e1', 'Total RM 120.00\nRefund amount: RM 25.00')
+    extraction.candidates = extraction.candidates.map((item) => reviewCandidate(item, 'confirmed'))
+    const draft = { ...EMPTY_DRAFT, amount: '120', remedy: 'refund' as const, remedyAmount: '25' }
+    expect(findFactConflicts(draft, [extraction])).toEqual([])
+    expect(findFactConflicts({ ...draft, remedyAmount: '30' }, [extraction])).toContain('A confirmed extracted refund amount differs from the entered requested refund amount of MYR 30.00.')
+  })
+  it('does not treat an unlabeled amount as a transaction contradiction', () => {
+    const extraction = createEvidenceExtraction('e1', 'Shipping fee RM 8.00')
+    extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
+    expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '120' }, [extraction])).toEqual([])
+  })
+  it('flags conflicting confirmed refund amounts across evidence', () => {
+    const first = createEvidenceExtraction('e1', 'Refund RM 25.00')
+    const second = createEvidenceExtraction('e2', 'Bayaran balik RM 30.00')
+    first.candidates[0] = reviewCandidate(first.candidates[0], 'confirmed')
+    second.candidates[0] = reviewCandidate(second.candidates[0], 'confirmed')
+    expect(findFactConflicts({ ...EMPTY_DRAFT, remedy: 'refund', remedyAmount: '25' }, [first, second])).toContain('Confirmed evidence contains different refund amounts.')
+  })
+  it('keeps previously confirmed amounts comparable for older extraction records', () => {
+    const extraction = createEvidenceExtraction('e1', 'RM 130.00', new Date(), 'plain-text-v5')
+    extraction.candidates[0] = reviewCandidate({ ...extraction.candidates[0], amountRole: undefined }, 'confirmed')
+    expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '120' }, [extraction])).toContain('A confirmed extracted amount differs from the entered transaction amount of MYR 120.00.')
+  })
   it('ignores unconfirmed derived values', () => {
     expect(findFactConflicts({ ...EMPTY_DRAFT, amount: '125.50' }, [createEvidenceExtraction('e1', 'Total RM 130.00')])).toEqual([])
   })
