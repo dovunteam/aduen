@@ -12,6 +12,7 @@ This directory contains the first interactive Aduen prototype. It currently supp
 - bounded plain-text and searchable-PDF extraction plus on-device OCR for images and scanned PDFs, with user confirmation or correction;
 - issue-specific completeness checks and a sourced chronology;
 - versioned merchant-first routing;
+- structured manual-review brief export for uncertain routes, without original evidence bytes;
 - user-reviewed PDF complaint packs;
 - submission and outcome tracking;
 - a returning-user case workspace with guided resumption, progress, purchase summary, searchable evidence, missing-item counts, pack version history, and recent case activity;
