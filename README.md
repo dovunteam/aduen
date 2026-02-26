@@ -24,10 +24,10 @@ The initial product is deliberately narrow: ordinary Malaysian consumer purchase
 
 Aduen distinguishes four kinds of information:
 
-1. **Original evidence** — receipts, invoices, order confirmations, payment records, policies, screenshots, messages, delivery records, and merchant responses.
-2. **User statements** — the consumer's account of events and requested remedy.
-3. **Aduen-derived data** — extracted dates, amounts, entities, deadlines, and a generated chronology.
-4. **Official outcome** — a merchant response, platform decision, regulator communication, tribunal order, bank decision, or other external result.
+1. **Original evidence** - receipts, invoices, order confirmations, payment records, policies, screenshots, messages, delivery records, and merchant responses.
+2. **User statements** - the consumer's account of events and requested remedy.
+3. **Aduen-derived data** - extracted dates, amounts, entities, deadlines, and a generated chronology.
+4. **Official outcome** - a merchant response, platform decision, regulator communication, tribunal order, bank decision, or other external result.
 
 Derived data never silently replaces original evidence.
 
@@ -44,3 +44,7 @@ The Aduen product proposition is not yet validated. There is no evidence in this
 ## Product status
 
 An early local-first web prototype is available in [`app`](app/README.md). It now covers the core workflow from consent and urgent triage through evidence capture, local previews and supported redacted copies, completeness checks, merchant-first routing, a user-approved PDF pack, outcome tracking, local audit history, and data export or deletion. It is not a production service and has no regulator integration, legal review, account system, server-side evidence storage, or payment handling.
+
+## Quick run and verify
+
+On Windows, double-click [`run-aduen.bat`](run-aduen.bat) to start the development server. To run a specific command from Command Prompt, use `run-aduen.bat test`, `run-aduen.bat lint`, `run-aduen.bat build`, `run-aduen.bat e2e`, or `run-aduen.bat verify`. The batch file's browser checks use Chromium; run `npm run test:e2e` from `app` when you want the full configured browser matrix.

@@ -50,8 +50,8 @@ export function createMerchantRequest(draft: CaseDraft, locale: Locale = 'en'): 
   ].join('\n\n')
   return {
     subject: ms
-      ? `Permohonan ${draft.remedy ? REMEDY_LABELS_MS[draft.remedy] : 'penyelesaian'} — ${reference}`
-      : `Request for ${draft.remedy ? draft.remedy.replaceAll('_', ' ') : 'resolution'} — ${reference}`,
+      ? `Permohonan ${draft.remedy ? REMEDY_LABELS_MS[draft.remedy] : 'penyelesaian'} - ${reference}`
+      : `Request for ${draft.remedy ? draft.remedy.replaceAll('_', ' ') : 'resolution'} - ${reference}`,
     body,
     generatedFrom: ['consumerName', 'seller', 'purchaseDate', 'amount', 'orderReference', 'promisedDate', 'issue', 'remedy', 'remedyAmount'],
   }
