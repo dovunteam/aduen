@@ -48,6 +48,10 @@ describe('fact conflicts', () => {
     expect(findFactConflicts(draft, [extraction])).toEqual([])
     expect(findFactConflicts({ ...draft, remedyAmount: '30' }, [extraction])).toContain('A confirmed extracted refund amount differs from the entered requested refund amount of MYR 30.00.')
   })
+  it('flags a requested refund that exceeds the recorded transaction amount', () => {
+    const draft = { ...EMPTY_DRAFT, amount: '120', remedy: 'refund' as const, remedyAmount: '125' }
+    expect(findFactConflicts(draft, [])).toContain('The requested refund amount is greater than the recorded transaction amount.')
+  })
   it('does not treat an unlabeled amount as a transaction contradiction', () => {
     const extraction = createEvidenceExtraction('e1', 'Shipping fee RM 8.00')
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
