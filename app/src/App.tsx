@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { CaseWorkspace } from './components/CaseWorkspace'
 import { EvidenceStep } from './components/EvidenceStep'
 import { ReviewStep } from './components/ReviewStep'
 import { PackStep } from './components/PackStep'
@@ -28,10 +29,10 @@ import { FeatureIcon } from './components/FeatureIcon'
 import './App.css'
 import './visual.css'
 
-type Step = 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
+type Step = 'workspace' | 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
 function App() {
   const [locale, setLocale] = useState<Locale>(readLocale)
-  const [step, setStep] = useState<Step>('welcome')
+  const [step, setStep] = useState<Step>(() => readCase() && readConsent() ? 'workspace' : 'welcome')
   const [consent, setConsent] = useState(() => Boolean(readConsent()))
   const [urgentReasons, setUrgentReasons] = useState<string[]>([])
   const [draft, setDraft] = useState<CaseDraft>(() => readCase()?.draft ?? EMPTY_DRAFT)
@@ -47,7 +48,7 @@ function App() {
   const isUrgent = urgentReasons.length > 0
   const text = messages[locale]
   const caseText = text.caseDetails
-  const progress = useMemo(() => ({ welcome: 1, triage: 2, case: 3, scope: 3, saved: 3, evidence: 4, extraction: 5, review: 6, pack: 7, status: 8, data: 0 }[step]), [step])
+  const progress = useMemo(() => ({ workspace: 0, welcome: 1, triage: 2, case: 3, scope: 3, saved: 3, evidence: 4, extraction: 5, review: 6, pack: 7, status: 8, data: 0 }[step]), [step])
 
   useEffect(() => {
     try { saveLocale(locale) } catch { /* Language can still be changed for this session. */ }
@@ -123,12 +124,14 @@ function App() {
     setStep('saved')
   }
 
-  return <div className={`app-shell ${step === 'welcome' ? 'is-welcome' : 'is-workflow'}`}>
-    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M7 5h10l5 5v13H7V5Z" /><path d="M3 9v16m10-10h5m-5 4h5M17 5v6h5" /></svg></span>Aduen<span className="brand-period" aria-hidden="true">.</span></button><div className="header-actions"><div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
+  return <div className={`app-shell ${step === 'welcome' || step === 'workspace' ? 'is-welcome' : 'is-workflow'}`}>
+    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M7 5h10l5 5v13H7V5Z" /><path d="M3 9v16m10-10h5m-5 4h5M17 5v6h5" /></svg></span>Aduen<span className="brand-period" aria-hidden="true">.</span></button><div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
     <main>
       <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div aria-current={index + 1 === progress ? 'step' : undefined} className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
       {storageError && <div className="storage-error" role="alert"><p>{storageError}</p>{unsaved && <button type="button" className="secondary" onClick={() => persistDraft(draft)}>{locale === 'ms' ? 'Cuba simpan lagi' : 'Retry saving'}</button>}</div>}
       {caseRecovered && <div className="storage-error" role="status"><p>{locale === 'ms' ? 'Simpanan kes terdahulu dipulihkan kerana rekod terkini tidak dapat dibaca. Semak butiran kes yang dipulihkan sebelum meneruskan.' : 'A previous case autosave was restored because the latest record could not be read. Review the restored case details before continuing.'}</p><button type="button" className="secondary" onClick={() => setCaseRecovered(false)}>{locale === 'ms' ? 'Tutup' : 'Dismiss'}</button></div>}
+
+      {step === 'workspace' && readCase() && <CaseWorkspace locale={locale} record={readCase()!} onResume={() => void runAction(resumeCase)} onEdit={() => setStep('case')} onEvidence={() => setStep('evidence')} onData={openDataControls} />}
 
       {step === 'welcome' && <section className="page welcome-page">
         <div className="welcome-hero"><div className="hero-copy"><div className="eyebrow"><span />{text.welcome.eyebrow}</div><h1>{renderLines(text.welcome.title)}</h1>

@@ -14,10 +14,14 @@ This directory contains the first interactive Aduen prototype. It currently supp
 - versioned merchant-first routing;
 - user-reviewed PDF complaint packs;
 - submission and outcome tracking;
+- a returning-user case workspace with guided resumption, progress, purchase summary, searchable evidence, missing-item counts, pack version history, and recent case activity;
+- local follow-up reminders on the workspace, using the user's chosen date and hidden after a recorded outcome;
 - complete ZIP export, local activity history, and explicit local deletion; and
 - recovery of the previous valid case autosave if the latest local case record becomes unreadable, with a visible notice and activity entry.
 
 The prototype has no server or account system. Structured case data is stored in browser `localStorage`; evidence originals and metadata use separate IndexedDB stores. Do not use it for real consumer evidence.
+
+Returning users with a saved case and accepted consent open directly into their workspace. Use **My case / Kes saya** to return from the workflow. Evidence counts use the existing completeness rules; they do not replace the full fact, scope, and route review. Pack history describes saved versions, including older approvals, without treating them as approval of subsequent edits. Follow-up reminders appear when the app is open; they are not background notifications or official deadlines.
 
 ## Run locally
 
