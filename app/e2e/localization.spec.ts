@@ -107,6 +107,15 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await expect(page.locator('.request-preview')).toContainText('masih belum diterima')
   await expect(page.locator('.request-preview')).not.toContainText('I am writing')
   await expect(page.getByLabel(/Saya telah menyemak pek ini/)).toBeVisible()
+  await page.getByLabel('Kod penyemak').fill('SYNTH-OPERATOR-BM')
+  for (const label of [
+    'Identiti transaksi dan jumlah sepadan dengan bukti',
+    'Kelayakan dan ketidakpastian laluan disemak',
+    'Tarikh dan andaian tarikh akhir disemak',
+    'Tuduhan dan kesimpulan tanpa sokongan dibuang',
+    'Pemilihan dan redaksi bukti disemak',
+  ]) await page.getByLabel(label).check()
+  await page.getByRole('button', { name: 'Rekod semakan operator' }).click()
   await page.getByLabel(/Saya telah menyemak pek ini/).check()
   const pdfDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: /Luluskan dan eksport PDF/ }).click()

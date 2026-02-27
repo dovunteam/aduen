@@ -5,6 +5,7 @@ import { getEvidenceOriginal, listEvidence, listExtractions } from './evidenceRe
 import { readConsent } from './consentRepository'
 import { readCase, readCaseBackup } from './caseRepository'
 import { listPacks } from './packRepository'
+import { listOperatorReviews } from './operatorReviewRepository'
 import { createAuditEvent, listAuditEvents, persistAuditEvent } from './auditRepository'
 import type { LocalAuditEvent } from './auditRepository'
 
@@ -20,6 +21,7 @@ export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionR
     caseRecord: readCase(),
     caseRecoveryBackup: readCaseBackup(),
     packVersions: listPacks(),
+    operatorReviews: listOperatorReviews(),
     consent: readConsent(),
     submission,
     auditLog: [...listAuditEvents(), ...additionalAuditEvents],
