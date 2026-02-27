@@ -47,7 +47,7 @@ export function assessTtpmPrerequisites(draft: CaseDraft, now = new Date()): Ttp
 }
 
 export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[], now = new Date()): RouteEvaluation {
-  const route = evaluateRoute(draft, checks)
+  const route = evaluateRoute(draft, checks, now)
   if (route.confidence !== 'supported' || isSourceCurrent(route.sourceChecked, now)) return route
   return {
     ...route,
@@ -60,7 +60,7 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[], now 
   }
 }
 
-function evaluateRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
+function evaluateRoute(draft: CaseDraft, checks: CheckItem[], now = new Date()): RouteEvaluation {
   const missing = checks.filter((item) => item.level === 'required' && !item.satisfied).map((item) => item.label)
   const base = {
     source: 'Aduen Case Routing Rules - R-010 Merchant-first',
@@ -118,8 +118,8 @@ function evaluateRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
   }
   return {
     ...base, routeName: 'Manual route review', recommendedAction: 'Review the merchant contact and response before choosing any external escalation channel.',
-    matchingFacts: [`Merchant contact recorded: ${draft.contactHistory}`, ...(draft.contactDate ? [`Contact date: ${draft.contactDate}`] : []), assessTtpmPrerequisites(draft).reason],
-    unmetPrerequisites: [...missing, ...(!draft.contactDate ? ['Date of merchant contact'] : []), ...(assessTtpmPrerequisites(draft).status === 'uncertain' ? ['TTPM claim amount and accrual date require official verification'] : [])], exclusionsChecked: ['Merchant-first prerequisite considered'], confidence: 'uncertain',
+    matchingFacts: [`Merchant contact recorded: ${draft.contactHistory}`, ...(draft.contactDate ? [`Contact date: ${draft.contactDate}`] : []), assessTtpmPrerequisites(draft, now).reason],
+    unmetPrerequisites: [...missing, ...(!draft.contactDate ? ['Date of merchant contact'] : []), ...(assessTtpmPrerequisites(draft, now).status === 'uncertain' ? ['TTPM claim amount and accrual date require official verification'] : [])], exclusionsChecked: ['Merchant-first prerequisite considered'], confidence: 'uncertain',
     officialLinks: [
       { label: 'KPDN e-Aduan', url: 'https://eaduan.kpdn.gov.my/' },
       { label: 'TTPM e-Tribunal', url: 'https://ttpm.kpdn.gov.my/?lang=en' },
