@@ -44,6 +44,8 @@ npm run build
 npm run test:e2e
 ```
 
+`npm run test:e2e` runs the local Chromium suite. Use `npm run test:e2e:all` for the full configured browser matrix or `npm run test:e2e:firefox` for Firefox only.
+
 ## Current boundary
 
 Accounts, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. Image and scanned-PDF OCR runs on-device with bundled English and Bahasa Malaysia models; OCR can misread or miss content, so every extracted candidate requires review and every page still needs manual inspection for sensitive content. The OCR engine and language data are copied from locked npm dependencies during development startup and production builds. PDF redaction renders pages locally and produces an image-only copy; inspect every page because text selection and vector detail are lost. English and Bahasa Malaysia are available for the prototype interface; source evidence and generated material retain their original language. See the [implementation ledger](../docs/Aduen_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
