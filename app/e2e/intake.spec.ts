@@ -88,7 +88,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await expect(page.getByText('TUNTIVA CASE PACK')).toBeVisible()
   await page.getByLabel(/I reviewed this pack/).check()
   const downloadPromise = page.waitForEvent('download')
-  await page.getByRole('button', { name: /Export PDF/ }).click()
+  await page.getByRole('button', { name: /Approve and export PDF/ }).click()
   const download = await downloadPromise
   expect(download.suggestedFilename()).toBe('tuntiva-synthetic-store-v1.pdf')
   await page.getByRole('button', { name: /Track external status/ }).click()
