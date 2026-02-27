@@ -117,9 +117,9 @@ function isCaseRecord(value: CaseRecord): boolean {
 }
 
 function isCaseDraft(value: CaseDraft): boolean {
-  const strings = ['consumerName', 'seller', 'platform', 'purchaseDate', 'amount', 'paymentMethod', 'orderReference', 'remedyAmount', 'promisedDate', 'contactDate'] as const
+  const strings = ['consumerName', 'seller', 'platform', 'purchaseDate', 'amount', 'claimAmount', 'claimAccruedDate', 'paymentMethod', 'orderReference', 'remedyAmount', 'promisedDate', 'contactDate'] as const
   const textFields = ['consumerName', 'seller', 'platform', 'paymentMethod', 'orderReference'] as const
-  return strings.every((key) => typeof value[key] === 'string') && textFields.every((key) => isBoundedText(value[key], 500)) && (Object.keys(ENUM_FIELDS) as Array<keyof typeof ENUM_FIELDS>).every((key) => ENUM_FIELDS[key].includes(value[key] as never)) && isDateOnlyOrEmpty(value.purchaseDate) && isDateOnlyOrEmpty(value.promisedDate) && isDateOnlyOrEmpty(value.contactDate) && isNonNegativeAmountOrEmpty(value.amount) && isNonNegativeAmountOrEmpty(value.remedyAmount)
+  return strings.every((key) => typeof value[key] === 'string') && textFields.every((key) => isBoundedText(value[key], 500)) && (Object.keys(ENUM_FIELDS) as Array<keyof typeof ENUM_FIELDS>).every((key) => ENUM_FIELDS[key].includes(value[key] as never)) && isDateOnlyOrEmpty(value.purchaseDate) && isDateOnlyOrEmpty(value.claimAccruedDate) && isDateOnlyOrEmpty(value.promisedDate) && isDateOnlyOrEmpty(value.contactDate) && isNonNegativeAmountOrEmpty(value.amount) && isNonNegativeAmountOrEmpty(value.claimAmount) && isNonNegativeAmountOrEmpty(value.remedyAmount)
 }
 
 function isBoundedText(value: unknown, maxLength: number, requireNonEmpty = false): value is string {
