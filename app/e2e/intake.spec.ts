@@ -17,20 +17,23 @@ async function reachCaseDetails(page: import('@playwright/test').Page) {
   await expect(page.getByRole('heading', { name: 'Describe the purchase.' })).toBeVisible()
 }
 
-async function fillCase(page: import('@playwright/test').Page, overrides: { purpose?: string; category?: string; consumerLocation?: string; amount?: string; refundAmount?: string } = {}) {
+async function fillCase(page: import('@playwright/test').Page, overrides: { purpose?: string; category?: string; consumerLocation?: string; amount?: string; refundAmount?: string; claimAmount?: string; claimAccruedDate?: string; contactHistory?: string; contactDate?: string } = {}) {
   await page.getByLabel('Your name or chosen case name').fill('Synthetic Test Consumer')
   await page.getByLabel('Your location').selectOption(overrides.consumerLocation ?? 'malaysia')
   await page.getByLabel('Seller or merchant').fill('Synthetic Store')
   await page.getByLabel('Seller location').selectOption('malaysia')
   await page.getByLabel('Purchase date').fill('2026-08-01')
   await page.getByLabel('Amount paid (MYR)').fill(overrides.amount ?? '125.50')
+  if (overrides.claimAmount) await page.getByLabel('Estimated legal claim amount (MYR)').fill(overrides.claimAmount)
+  if (overrides.claimAccruedDate) await page.getByLabel('Date the claim accrued').fill(overrides.claimAccruedDate)
   await page.getByLabel('Payment method').selectOption({ label: 'Card' })
   await page.getByLabel('Purchase purpose').selectOption(overrides.purpose ?? 'personal')
   await page.getByLabel('Purchase category').selectOption(overrides.category ?? 'general_goods')
   await page.getByLabel('What went wrong?').selectOption('non_delivery')
   await page.getByLabel('Primary remedy').selectOption('refund')
   await page.getByLabel('Refund amount (RM)').fill(overrides.refundAmount ?? '125.50')
-  await page.getByLabel('Merchant contact').selectOption('none')
+  await page.getByLabel('Merchant contact').selectOption(overrides.contactHistory ?? 'none')
+  if (overrides.contactDate) await page.getByLabel('Date of latest contact').fill(overrides.contactDate)
   await page.getByRole('button', { name: /Save case draft/ }).click()
 }
 
@@ -89,6 +92,21 @@ test('an overdue route source pauses supported route preparation', async ({ page
   await expect(page.getByRole('heading', { name: 'Semakan sumber manual' })).toBeVisible()
   await expect(page.getByText('Semakan sumber laluan ini sudah melebihi tempoh. Semak panduan rasmi semasa sebelum mengambil langkah seterusnya.')).toBeVisible()
   await expect(page.getByText('Semak sumber laluan semasa')).toBeVisible()
+})
+
+test('TTPM pre-check records claim amount and accrual date without claiming eligibility', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-09-24T12:00:00Z') })
+  await reachCaseDetails(page)
+  await fillCase(page, { claimAmount: '50000.01', claimAccruedDate: '2022-09-20', contactHistory: 'contacted', contactDate: '2026-09-20' })
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await addEvidence(page, 'receipt', 'ttpm-receipt.txt', 'receipt')
+  await addEvidence(page, 'payment', 'ttpm-payment.txt', 'payment record')
+  await addEvidence(page, 'listing', 'ttpm-listing.txt', 'delivery promise')
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Manual route review' })).toBeVisible()
+  await expect(page.getByText('above RM50,000')).toBeVisible()
+  await expect(page.getByText('more than three years ago')).toBeVisible()
+  await expect(page.getByText('TTPM claim amount and accrual date require official verification')).toBeVisible()
 })
 
 test('urgent risk blocks the ordinary intake path', async ({ page }) => {
