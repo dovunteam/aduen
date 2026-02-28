@@ -6,12 +6,12 @@ import { createComplaintPackPdf } from './packPdf'
 import { safeFileName } from './caseArchive'
 import { createAuditEvent, listAuditEvents, persistAuditEvent } from './auditRepository'
 import type { LocalAuditEvent } from './auditRepository'
-import { readOperatorReview } from './operatorReviewRepository'
+import { isCompleteOperatorReview, readOperatorReview } from './operatorReviewRepository'
 
 export async function buildHandoffArchive(pack: ComplaintPack, additionalAuditEvents: LocalAuditEvent[] = []): Promise<Uint8Array> {
   if (!pack.approvedAt) throw new Error('Approve the pack before exporting it.')
   const operatorReview = readOperatorReview(pack.id)
-  if (!operatorReview) throw new Error('Record the operator review before exporting the handoff.')
+  if (!isCompleteOperatorReview(operatorReview)) throw new Error('Record the operator review before exporting the handoff.')
   const zip = new JSZip()
   zip.file(packFileName(pack), createComplaintPackPdf(pack).output('arraybuffer'))
   const evidenceFolder = zip.folder('selected-evidence')
