@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearRetention, isRetentionDue, readRetention, saveRetention } from './retentionRepository'
+import { listAuditEvents } from './auditRepository'
 
 describe('retention settings', () => {
   beforeEach(() => {
@@ -15,6 +16,7 @@ describe('retention settings', () => {
     expect(readRetention()).toEqual(record)
     expect(isRetentionDue(record, new Date('2026-10-23T23:59:59.999Z'))).toBe(false)
     expect(isRetentionDue(record, new Date('2026-10-24T00:00:00.000Z'))).toBe(true)
+    expect(listAuditEvents()).toMatchObject([{ action: 'retention_updated', targetId: 'retention' }])
     clearRetention()
     expect(readRetention()).toBeNull()
   })
