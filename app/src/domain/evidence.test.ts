@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evidenceTypeLabel, formatFileSize, MAX_EVIDENCE_BYTES, validateEvidenceFile } from './evidence'
+import { evidenceTypeLabel, formatFileSize, MAX_EVIDENCE_BYTES, validateEvidenceFile, validateEvidenceSignature } from './evidence'
 
 describe('evidence validation', () => {
   it('accepts supported evidence files', () => {
@@ -17,5 +17,12 @@ describe('evidence validation', () => {
     expect(formatFileSize(2048)).toBe('2.0 KB')
     expect(formatFileSize(2 * 1024 * 1024)).toBe('2.0 MB')
     expect(evidenceTypeLabel('merchant_response')).toBe('Merchant response')
+  })
+
+  it('checks signatures instead of trusting MIME labels', () => {
+    expect(validateEvidenceSignature('application/pdf', new TextEncoder().encode('%PDF-1.7'))).toBeNull()
+    expect(validateEvidenceSignature('application/pdf', new TextEncoder().encode('<html>'))).toContain('do not match')
+    expect(validateEvidenceSignature('image/png', new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBeNull()
+    expect(validateEvidenceSignature('text/plain', new Uint8Array([65, 0, 66]))).toContain('do not match')
   })
 })
