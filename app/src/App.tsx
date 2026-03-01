@@ -20,6 +20,7 @@ import { clearCase, readCase, recordCaseTransition, saveCaseDraft, wasCaseRestor
 import { clearAuditEvents } from './data/auditRepository'
 import { clearOperatorReviews } from './data/operatorReviewRepository'
 import { clearPacks, listPacks, nextPackVersion, savePack } from './data/packRepository'
+import { clearRetention, expireLocalDataIfDue } from './data/retentionRepository'
 import { assessScope } from './domain/scope'
 import type { ScopeAssessment } from './domain/scope'
 import type { EvidenceExtraction } from './domain/extraction'
@@ -46,6 +47,7 @@ function App() {
   const [extractions, setExtractions] = useState<EvidenceExtraction[]>([])
   const [storageError, setStorageError] = useState('')
   const [unsaved, setUnsaved] = useState(false)
+  const [retentionReady, setRetentionReady] = useState(false)
   const isUrgent = urgentReasons.length > 0
   const text = messages[locale]
   const caseText = text.caseDetails
@@ -55,6 +57,13 @@ function App() {
     try { saveLocale(locale) } catch { /* Language can still be changed for this session. */ }
     document.documentElement.lang = locale
   }, [locale])
+
+  useEffect(() => {
+    void expireLocalDataIfDue().then((expired) => {
+      if (!expired) return
+      setDraft(EMPTY_DRAFT); setConsent(false); setCaseRecovered(false); setComplaintPack(null); setReviewEvidence([]); setExtractions([]); setScopeAssessment(null); setStep('welcome')
+    }).catch(() => undefined).finally(() => setRetentionReady(true))
+  }, [])
 
   useEffect(() => {
     const heading = document.querySelector<HTMLElement>('main h1')
@@ -99,7 +108,7 @@ function App() {
   async function startOver() {
     const prompt = locale === 'ms' ? 'Padam draf kes, setiap fail asal bukti, pek tersimpan, dan rekod status daripada pelayar ini? Tindakan ini tidak boleh dibatalkan.' : 'Delete the case draft, every evidence original, saved packs, and status record from this browser? This cannot be undone.'
     if (!window.confirm(prompt)) return
-    await clearEvidence(); clearSubmission(); clearPacks(); clearOperatorReviews(); clearConsent(); clearAuditEvents(); clearCase()
+    await clearEvidence(); clearSubmission(); clearPacks(); clearOperatorReviews(); clearRetention(); clearConsent(); clearAuditEvents(); clearCase()
     setUnsaved(false); setStorageError(''); setCaseRecovered(false)
     setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setReviewEvidence([]); setExtractions([]); setScopeAssessment(null); setStep('welcome')
   }
@@ -124,6 +133,8 @@ function App() {
     }
     setStep('saved')
   }
+
+  if (!retentionReady) return <div className="app-shell is-welcome"><main><p className="lede">Loading Aduen...</p></main></div>
 
   return <div className={`app-shell ${step === 'welcome' || step === 'workspace' ? 'is-welcome' : 'is-workflow'}`}>
     <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M7 5h10l5 5v13H7V5Z" /><path d="M3 9v16m10-10h5m-5 4h5M17 5v6h5" /></svg></span>Aduen<span className="brand-period" aria-hidden="true">.</span></button><div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
