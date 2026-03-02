@@ -38,6 +38,8 @@ exit /b %errorlevel%
 :verify
 call npm run check:encoding
 if errorlevel 1 exit /b %errorlevel%
+call npm run check:docs
+if errorlevel 1 exit /b %errorlevel%
 call "%~f0" lint
 if errorlevel 1 exit /b %errorlevel%
 call "%~f0" test
