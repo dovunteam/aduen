@@ -11,9 +11,9 @@ export const messages = {
     progress: ['Understand', 'Safety check', 'Case details', 'Evidence', 'Confirm facts', 'Check', 'Pack', 'Status'],
     progressLabel: 'Case setup progress',
     welcome: {
-      eyebrow: 'A clearer recovery path',
-      title: 'A failed purchase.\nA clearer next step.',
-      lede: 'Aduen helps you organise what happened, what you can prove, and what to do next. You stay in control of every detail and every submission.',
+      eyebrow: 'For Malaysian consumers',
+      title: 'Turn a failed purchase\ninto a clear recovery path.',
+      lede: 'Organise your evidence, understand what is missing, and prepare the right next step.',
       cards: [
         ['Build the record', 'Keep transaction details, dates, messages, and evidence together.'],
         ['Check what is missing', 'See gaps and uncertainties before approaching a merchant or official channel.'],
@@ -63,9 +63,9 @@ export const messages = {
     progress: ['Fahami', 'Semakan keselamatan', 'Butiran kes', 'Bukti', 'Sahkan fakta', 'Semak', 'Pek', 'Status'],
     progressLabel: 'Kemajuan penyediaan kes',
     welcome: {
-      eyebrow: 'Laluan pemulihan yang lebih jelas',
-      title: 'Susun semula\npembelian yang bermasalah.',
-      lede: 'Aduen membantu anda menyusun perkara yang berlaku, bukti yang ada, dan tindakan seterusnya. Anda kekal mengawal setiap butiran dan setiap penyerahan.',
+      eyebrow: 'Untuk pengguna Malaysia',
+      title: 'Ubah pembelian bermasalah\nmenjadi laluan pemulihan yang jelas.',
+      lede: 'Susun bukti anda, fahami perkara yang masih tiada, dan sediakan langkah seterusnya yang sesuai.',
       cards: [
         ['Bina rekod', 'Simpan butiran transaksi, tarikh, mesej, dan bukti bersama-sama.'],
         ['Semak perkara yang tiada', 'Lihat jurang dan ketidakpastian sebelum menghubungi peniaga atau saluran rasmi.'],
