@@ -73,7 +73,7 @@ test('retention controls schedule and enforce local deletion', async ({ page }) 
 
   await page.addInitScript(() => localStorage.setItem('Aduen.retention.v1', JSON.stringify({ setAt: '2026-08-01T00:00:00.000Z', expiresAt: '2026-08-02T00:00:00.000Z', days: 30 })))
   await page.reload()
-  await expect(page.getByRole('heading', { name: /A failed purchase/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Turn a failed purchase/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /Resume saved case/ })).toHaveCount(0)
   expect(await page.evaluate(() => localStorage.getItem('Aduen.case-record.v1'))).toBeNull()
   expect(await page.evaluate(() => localStorage.getItem('Aduen.consent.v1'))).toBeNull()
