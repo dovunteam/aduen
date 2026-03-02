@@ -156,6 +156,9 @@ describe('fact conflicts', () => {
 
     expect(findFactConflicts(EMPTY_DRAFT, [purchase, promised, delivery])).toEqual([])
   })
+  it('flags a claim-accrual date that predates the purchase', () => {
+    expect(findFactConflicts({ ...EMPTY_DRAFT, purchaseDate: '2026-08-01', claimAccruedDate: '2026-07-31' }, [])).toContain('The entered claim-accrual date occurs before the recorded purchase date.')
+  })
   it('flags a confirmed consumer name that differs from the case record', () => {
     const extraction = createEvidenceExtraction('e1', 'Customer name: Another Synthetic Consumer.')
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
