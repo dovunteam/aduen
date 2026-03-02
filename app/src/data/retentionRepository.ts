@@ -28,7 +28,10 @@ export function saveRetention(days: RetentionRecord['days'], now = new Date()): 
   return record
 }
 
-export function clearRetention(): void { localStorage.removeItem(STORAGE_KEY) }
+export function clearRetention(audit = true): void {
+  localStorage.removeItem(STORAGE_KEY)
+  if (audit) recordAuditEvent('retention_updated', 'retention', 'local retention disabled')
+}
 
 export function isRetentionDue(record: RetentionRecord | null, now = new Date()): boolean {
   return Boolean(record && record.expiresAt <= now.toISOString())
@@ -44,7 +47,7 @@ export async function expireLocalDataIfDue(now = new Date()): Promise<boolean> {
   clearConsent()
   clearAuditEvents()
   clearCase()
-  clearRetention()
+  clearRetention(false)
   return true
 }
 
