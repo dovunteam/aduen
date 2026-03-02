@@ -17,19 +17,19 @@ async function reachCaseDetails(page: import('@playwright/test').Page) {
   await expect(page.getByRole('heading', { name: 'Describe the purchase.' })).toBeVisible()
 }
 
-async function fillCase(page: import('@playwright/test').Page, overrides: { purpose?: string; category?: string; consumerLocation?: string } = {}) {
+async function fillCase(page: import('@playwright/test').Page, overrides: { purpose?: string; category?: string; consumerLocation?: string; amount?: string; refundAmount?: string } = {}) {
   await page.getByLabel('Your name or chosen case name').fill('Synthetic Test Consumer')
   await page.getByLabel('Your location').selectOption(overrides.consumerLocation ?? 'malaysia')
   await page.getByLabel('Seller or merchant').fill('Synthetic Store')
   await page.getByLabel('Seller location').selectOption('malaysia')
   await page.getByLabel('Purchase date').fill('2026-08-01')
-  await page.getByLabel('Amount paid (MYR)').fill('125.50')
+  await page.getByLabel('Amount paid (MYR)').fill(overrides.amount ?? '125.50')
   await page.getByLabel('Payment method').selectOption({ label: 'Card' })
   await page.getByLabel('Purchase purpose').selectOption(overrides.purpose ?? 'personal')
   await page.getByLabel('Purchase category').selectOption(overrides.category ?? 'general_goods')
   await page.getByLabel('What went wrong?').selectOption('non_delivery')
   await page.getByLabel('Primary remedy').selectOption('refund')
-  await page.getByLabel('Refund amount (RM)').fill('125.50')
+  await page.getByLabel('Refund amount (RM)').fill(overrides.refundAmount ?? '125.50')
   await page.getByLabel('Merchant contact').selectOption('none')
   await page.getByRole('button', { name: /Save case draft/ }).click()
 }
@@ -690,6 +690,19 @@ test('confirmed amounts that disagree across evidence block request preparation'
   await page.getByRole('button', { name: /Continue to Aduen Check/ }).click()
   await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
   await expect(page.getByRole('alert')).toContainText('Confirmed evidence contains different transaction amounts.')
+  await expect(page.getByRole('button', { name: 'Resolve fact conflicts' })).toBeDisabled()
+})
+
+test('a refund above the transaction amount requires clarification', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page, { amount: '100.00', refundAmount: '125.00' })
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await addEvidence(page, 'receipt', 'oversized-refund-receipt.txt', 'receipt')
+  await addEvidence(page, 'payment', 'oversized-refund-payment.txt', 'payment record')
+  await addEvidence(page, 'listing', 'oversized-refund-listing.txt', 'delivery promise')
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('The requested refund amount is greater than the recorded transaction amount.')
   await expect(page.getByRole('button', { name: 'Resolve fact conflicts' })).toBeDisabled()
 })
 
