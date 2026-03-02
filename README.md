@@ -47,4 +47,4 @@ An early local-first web prototype is available in [`app`](app/README.md). It no
 
 ## Quick run and verify
 
-On Windows, double-click [`run-aduen.bat`](run-aduen.bat) to start the development server. To run a specific command from Command Prompt, use `run-aduen.bat test`, `run-aduen.bat lint`, `run-aduen.bat build`, `run-aduen.bat e2e`, or `run-aduen.bat verify`. Verification checks the tracked tree for em dashes and validates the product-document index. The batch file's browser checks use Chromium; run `npm run test:e2e` from `app` when you want the full configured browser matrix.
+On Windows, double-click [`run-aduen.bat`](run-aduen.bat) to start the development server and open the local page. To run a specific command from Command Prompt, use `run-aduen.bat test`, `run-aduen.bat lint`, `run-aduen.bat build`, `run-aduen.bat e2e`, or `run-aduen.bat verify`. Verification checks the tracked tree for em dashes and validates the product-document index. The batch file's browser checks use Chromium; run `npm run test:e2e` from `app` when you want the full configured browser matrix.
