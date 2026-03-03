@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+service/api/node_modules/
+service/api/dist/
+service/api/coverage/
