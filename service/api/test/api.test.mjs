@@ -31,7 +31,7 @@ before(async () => {
   jwksUrl = `http://127.0.0.1:${address.port}/jwks`
   authenticator = createAuthenticator({ issuer: 'https://identity.example.test/', jwksUrl, audience: 'aduen-api' })
   store = new MemoryCaseStore()
-  app = createApp(store, authenticator)
+  app = createApp(store, authenticator, ['https://app.example.test'])
   await app.ready()
 })
 
@@ -49,11 +49,25 @@ test('health is public and API responses disable caching and browser embedding',
   assert.equal(response.headers['x-frame-options'], 'DENY')
 })
 
+test('browser access requires an exact allowed origin and exposes revision headers', async () => {
+  const preflight = await app.inject({ method: 'OPTIONS', url: '/v1/cases', headers: { origin: 'https://app.example.test', 'access-control-request-method': 'PUT', 'access-control-request-headers': 'authorization,if-match' } })
+  assert.equal(preflight.statusCode, 204)
+  assert.equal(preflight.headers['access-control-allow-origin'], 'https://app.example.test')
+  assert.match(preflight.headers['access-control-allow-headers'], /authorization/iu)
+  assert.match(preflight.headers['access-control-allow-headers'], /if-match/iu)
+  assert.match(preflight.headers['access-control-expose-headers'], /etag/iu)
+
+  const disallowed = await app.inject({ method: 'GET', url: '/v1/cases', headers: { origin: 'https://attacker.example.test' } })
+  assert.equal(disallowed.headers['access-control-allow-origin'], undefined)
+})
+
 test('production refuses missing database TLS and insecure identity endpoints', () => {
-  const config = { NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost/aduen', AUTH_ISSUER: 'http://identity.example.test/', AUTH_JWKS_URL: 'http://identity.example.test/jwks', AUTH_AUDIENCE: 'aduen-api', DATABASE_SSL: 'false' }
+  const config = { NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost/aduen', AUTH_ISSUER: 'http://identity.example.test/', AUTH_JWKS_URL: 'http://identity.example.test/jwks', AUTH_AUDIENCE: 'aduen-api', CORS_ORIGINS: 'https://app.example.test', DATABASE_SSL: 'false' }
   assert.throws(() => readConfig(config), /DATABASE_SSL=true is required/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true' }), /must use HTTPS/u)
   assert.throws(() => readConfig({ ...config, NODE_ENV: 'prod' }), /NODE_ENV must/u)
+  assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'https://app.example.test/path' }), /exact HTTP\(S\) origins/u)
+  assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'http://app.example.test' }), /must use HTTPS/u)
 })
 
 test('case endpoints reject missing, forged, and wrong-audience bearer tokens', async () => {

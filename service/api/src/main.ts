@@ -13,7 +13,7 @@ const pool = new Pool({
   idleTimeoutMillis: 30_000,
   application_name: 'aduen-case-api',
 })
-const app = createApp(new PgCaseStore(pool), createAuthenticator({ issuer: config.issuer, jwksUrl: config.jwksUrl, audience: config.audience }))
+const app = createApp(new PgCaseStore(pool), createAuthenticator({ issuer: config.issuer, jwksUrl: config.jwksUrl, audience: config.audience }), config.corsOrigins)
 
 let closing = false
 async function shutdown(signal: string): Promise<void> {

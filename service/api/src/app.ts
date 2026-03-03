@@ -1,4 +1,5 @@
 import rateLimit from '@fastify/rate-limit'
+import cors from '@fastify/cors'
 import Fastify from 'fastify'
 import { z } from 'zod'
 import { caseRecordSchema } from './caseRecord.js'
@@ -12,8 +13,9 @@ const pageSchema = z.object({
   cursor: z.string().max(512).optional(),
 }).strict()
 
-export function createApp(store: CaseStore, authenticate: Authenticate) {
+export function createApp(store: CaseStore, authenticate: Authenticate, corsOrigins: string[] = []) {
   const app = Fastify({ logger: false, bodyLimit: 128 * 1024, trustProxy: false })
+  void app.register(cors, { origin: corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Authorization', 'Content-Type', 'If-Match'], exposedHeaders: ['ETag'], credentials: false, maxAge: 600 })
   void app.register(rateLimit, { max: 120, timeWindow: '1 minute' })
   app.addHook('onSend', async (_request, reply) => {
     reply.header('Cache-Control', 'no-store')
