@@ -108,30 +108,31 @@ describe('initial routing', () => {
 describe('TTPM prerequisite check', () => {
   const base = { ...EMPTY_DRAFT, purpose: 'personal' as const, category: 'general_goods' as const, amount: '120.00', purchaseDate: '2026-01-01' }
 
-  it('keeps timing uncertain because purchase date is not claim-accrual date', () => {
+  it('keeps the TTPM result uncertain while reporting missing legal inputs', () => {
     const result = assessTtpmPrerequisites(base)
     expect(result.status).toBe('uncertain')
     expect(result.reason).toContain('when the claim accrued')
-    expect(result.reason).toContain('claim amount')
+    expect(result.reason).toContain('legal claim amount has not been entered')
+    expect(result.reason).toContain('claim-accrual date has not been entered')
   })
 
-  it('does not treat transaction value above RM50,000 as proof the claim amount exceeds the limit', () => {
-    const result = assessTtpmPrerequisites({ ...base, amount: '50000.01' })
+  it('reports an entered legal claim amount above the published limit without deciding eligibility', () => {
+    const result = assessTtpmPrerequisites({ ...base, claimAmount: '50000.01' }, new Date('2026-09-24T00:00:00Z'))
     expect(result.status).toBe('uncertain')
-    expect(result.reason).toContain('cannot assess either limit')
+    expect(result.reason).toContain('above RM50,000')
   })
 
-  it('does not treat an old purchase date as proof that the claim is time-barred', () => {
-    const result = assessTtpmPrerequisites({ ...base, purchaseDate: '2018-01-01' })
+  it('reports an entered accrual date outside the three-year window without deciding eligibility', () => {
+    const result = assessTtpmPrerequisites({ ...base, claimAccruedDate: '2022-09-20' }, new Date('2026-09-24T00:00:00Z'))
     expect(result.status).toBe('uncertain')
-    expect(result.reason).toContain('purchase date only')
+    expect(result.reason).toContain('more than three years ago')
   })
 
   it.each([
     [{ ...base, purpose: 'business' as const }, 'excluded'],
     ...(['healthcare', 'professional_service', 'land', 'aviation', 'personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'] as const).map((category) => [{ ...base, category }, 'excluded'] as const),
-    [{ ...base, amount: '50000.01' }, 'uncertain'],
-    [{ ...base, purchaseDate: '2022-09-20' }, 'uncertain'],
+    [{ ...base, claimAmount: '50000.01' }, 'uncertain'],
+    [{ ...base, claimAccruedDate: '2022-09-20' }, 'uncertain'],
     [{ ...base, purchaseDate: '2026-02-30' }, 'uncertain'],
     [{ ...base, amount: '' }, 'uncertain'],
     [{ ...base, purpose: '' as const }, 'uncertain'],

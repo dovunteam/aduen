@@ -6,6 +6,8 @@ export type CaseDraft = {
   platform: string
   purchaseDate: string
   amount: string
+  claimAmount: string
+  claimAccruedDate: string
   currency: 'MYR'
   paymentMethod: string
   orderReference: string
@@ -20,7 +22,7 @@ export type CaseDraft = {
 }
 
 export const EMPTY_DRAFT: CaseDraft = {
-  consumerName: '', consumerLocation: '', seller: '', sellerLocation: '', platform: '', purchaseDate: '', amount: '', currency: 'MYR', paymentMethod: '', orderReference: '',
+  consumerName: '', consumerLocation: '', seller: '', sellerLocation: '', platform: '', purchaseDate: '', amount: '', claimAmount: '', claimAccruedDate: '', currency: 'MYR', paymentMethod: '', orderReference: '',
   purpose: '', issue: '', category: '', remedy: '', remedyAmount: '', promisedDate: '', contactHistory: '', contactDate: '',
 }
 
