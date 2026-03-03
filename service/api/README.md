@@ -23,7 +23,7 @@ The example identity-provider URLs deliberately use the reserved `.invalid` doma
 - `PUT /v1/cases/:id` replaces a case only with its current `If-Match: "revision"` ETag.
 - `DELETE /v1/cases/:id` requires the current ETag and removes the case row.
 
-All `/v1` routes require an `Authorization: Bearer` token signed with RS256 or ES256 by the configured issuer, with the configured audience, `sub`, and `exp`. Responses set `Cache-Control: no-store`; mutation events store only the issuer subject, case UUID, action, and timestamp. Invalid tokens are rejected; an unavailable JWKS endpoint returns 503 and the case request is not processed.
+All `/v1` routes require an `Authorization: Bearer` token signed with RS256 or ES256 by the configured issuer, with the configured audience, `sub`, and `exp`. Responses set `Cache-Control: no-store` and a random `X-Request-Id`. Structured request logs contain only that ID, the route template, method, status, and duration; they omit case IDs, query strings, IP addresses, tokens, user subjects, and request bodies. Mutation events store only the issuer subject, case UUID, action, and timestamp. Invalid tokens are rejected; an unavailable JWKS endpoint returns 503 and the case request is not processed.
 
 ## Configuration
 
