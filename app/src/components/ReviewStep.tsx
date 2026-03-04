@@ -117,6 +117,23 @@ function localizeRouteFact(value: string, sourceChecked: string): string {
     'TTPM applies the RM50,000 limit to the claim amount and its three-year limit to when the claim accrued. Aduen records transaction amount and purchase date only, so it cannot assess either limit; verify both with TTPM.': 'TTPM menetapkan had RM50,000 bagi jumlah tuntutan dan had tiga tahun dari tarikh tuntutan bermula. Aduen hanya merekodkan jumlah transaksi dan tarikh pembelian, maka kedua-dua had ini tidak dapat dinilai; sila sahkan dengan TTPM.',
   }
   if (fixed[value]) return fixed[value]
+  if (value.startsWith('TTPM publishes ')) {
+    const notes: Record<string, string> = {
+      'The legal claim amount has not been entered.': 'Jumlah tuntutan undang-undang belum dimasukkan.',
+      'The legal claim amount is invalid.': 'Jumlah tuntutan undang-undang tidak sah.',
+      'The entered legal claim amount is above RM50,000.': 'Jumlah tuntutan undang-undang yang dimasukkan melebihi RM50,000.',
+      'The entered legal claim amount is at or below RM50,000.': 'Jumlah tuntutan undang-undang yang dimasukkan ialah RM50,000 atau kurang.',
+      'The claim-accrual date has not been entered.': 'Tarikh tuntutan bermula belum dimasukkan.',
+      'The claim-accrual date is invalid.': 'Tarikh tuntutan bermula tidak sah.',
+      'The entered claim-accrual date is more than three years ago.': 'Tarikh tuntutan bermula yang dimasukkan adalah lebih daripada tiga tahun lalu.',
+      'The entered claim-accrual date is within three years.': 'Tarikh tuntutan bermula yang dimasukkan adalah dalam tempoh tiga tahun.',
+      'Treat this as a pre-check only and verify the current position with TTPM.': 'Anggap ini sebagai semakan awal sahaja dan sahkan kedudukan semasa dengan TTPM.',
+    }
+    const prefix = 'TTPM publishes a RM50,000 claim-amount limit and a three-year limit measured from when the claim accrued. '
+    if (value.startsWith(prefix)) {
+      return `TTPM menerbitkan had RM50,000 bagi jumlah tuntutan dan had tiga tahun yang diukur dari tarikh tuntutan bermula. ${value.slice(prefix.length).split('. ').map((part) => notes[`${part}.`] ?? part).join('. ')}`
+    }
+  }
   if (value.startsWith('Consumer location: ')) return `Lokasi pengguna: ${{ malaysia: 'Malaysia', outside: 'di luar Malaysia', 'not confirmed': 'belum disahkan' }[value.slice('Consumer location: '.length)] ?? value.slice('Consumer location: '.length)}`
   if (value.startsWith('Purchase category: ')) {
     const category = value.slice('Purchase category: '.length).replaceAll('_', ' ')
