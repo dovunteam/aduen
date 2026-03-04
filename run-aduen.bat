@@ -9,9 +9,10 @@ if /i "%~1"=="test" goto test
 if /i "%~1"=="lint" goto lint
 if /i "%~1"=="build" goto build
 if /i "%~1"=="e2e" goto e2e
+if /i "%~1"=="pilot-score" goto pilot-score
 if /i "%~1"=="verify" goto verify
 
-echo Usage: run-aduen.bat [dev^|test^|lint^|build^|e2e^|verify]
+echo Usage: run-aduen.bat [dev^|test^|lint^|build^|e2e^|pilot-score^|verify]
 exit /b 1
 
 :dev
@@ -33,6 +34,14 @@ exit /b %errorlevel%
 
 :e2e
 npm run test:e2e
+exit /b %errorlevel%
+
+:pilot-score
+if "%~2"=="" (
+  echo Usage: run-aduen.bat pilot-score "C:\path\to\anonymised-case-log.csv" [--operator-rate=RM/hour] [--institution-commitment=yes]
+  exit /b 1
+)
+npm run score:pilot -- "%~2" %~3 %~4
 exit /b %errorlevel%
 
 :verify
