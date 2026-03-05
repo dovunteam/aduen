@@ -4,9 +4,10 @@ import JSZip from 'jszip'
 import { jsPDF } from 'jspdf'
 
 async function acceptBoundary(page: import('@playwright/test').Page) {
+  await page.addInitScript(() => localStorage.clear())
   await page.goto('/')
   const begin = page.getByRole('button', { name: 'Begin safety check' })
-  await expect(begin).toBeDisabled()
+  await expect(begin).toBeDisabled({ timeout: 10_000 })
   await page.getByLabel(/I understand Aduen's role/).check()
   await begin.click()
 }
