@@ -4,6 +4,7 @@
 .wordmark span { color: #d5844e; margin-left: 5px; }
 .pilot-label, .save-state { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; }
 .header-actions { display: flex; align-items: center; gap: 22px; }.data-link { border: 0; border-bottom: 1px solid #99a49f; background: transparent; padding: 3px 0; color: var(--muted); cursor: pointer; font-size: 12px; }.data-link:hover { color: var(--ink); border-color: var(--ink); }
+.locale-switch { display: flex; border: 1px solid #aeb8b3; }.locale-switch button { min-width: 34px; min-height: 30px; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 600; }.locale-switch button + button { border-left: 1px solid #aeb8b3; }.locale-switch button[aria-pressed='true'] { background: var(--ink); color: white; }
 .pilot-label span, .save-state span { width: 7px; height: 7px; border-radius: 50%; background: #559c80; box-shadow: 0 0 0 4px rgba(85,156,128,.12); }
 main { flex: 1; }
 .progress { padding: 22px clamp(22px, 5vw, 72px); display: flex; gap: 34px; border-bottom: 1px solid var(--line); }
