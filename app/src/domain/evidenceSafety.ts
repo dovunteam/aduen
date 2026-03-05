@@ -66,7 +66,7 @@ export async function scanEvidenceFile(file: File): Promise<EvidenceRisk[]> {
       let text = await extractPdfText(file)
       const { extractLocalOcrText, OCR_MAX_PDF_PAGES, OCR_MAX_TEXT_CHARACTERS } = await import('./localOcr')
       const hybrid = await extractLocalOcrText(file, file.type)
-      if (hybrid.usedOcr && hybrid.text) return [...detectEvidenceRisks(hybrid.text), { code: 'ocr_partial', message: `Local OCR checked image-bearing pages up to ${OCR_MAX_TEXT_CHARACTERS.toLocaleString('en-MY')} characters across ${OCR_MAX_PDF_PAGES} pages. OCR may miss sensitive content; review every page manually.` }]
+      if (hybrid.usedOcr) return [...detectEvidenceRisks(hybrid.text), { code: 'ocr_partial', message: `Local OCR checked image-bearing pages up to ${OCR_MAX_TEXT_CHARACTERS.toLocaleString('en-MY')} characters across ${OCR_MAX_PDF_PAGES} pages. OCR may miss sensitive content; review every page manually.` }]
       if (text) return [...detectEvidenceRisks(text), { code: 'pdf_text_partial', message: `Searchable PDF text (up to ${PDF_TEXT_MAX_CHARACTERS.toLocaleString('en-MY')} characters across ${PDF_TEXT_MAX_PAGES} pages) was checked for common sensitive patterns. Scanned, image-only, and remaining content may not be covered; review every page manually.` }]
     } catch { /* Keep the manual-review warning if the PDF cannot be parsed. */ }
   }
