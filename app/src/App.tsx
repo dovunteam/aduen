@@ -29,6 +29,10 @@ import { messages, readLocale, saveLocale } from './i18n'
 import type { Locale } from './i18n'
 import { CasePreview } from './components/CasePreview'
 import { FeatureIcon } from './components/FeatureIcon'
+import { createCaseApi } from './data/caseApi'
+import { createIdentityClient, identitySettingsFromEnvironment } from './data/identityClient'
+import { recordAuditEvent } from './data/auditRepository'
+import { saveHostedCase } from './data/hostedCaseSync'
 import './App.css'
 import './visual.css'
 import './reference.css'
@@ -36,6 +40,17 @@ import './reference.css'
 type Step = 'workspace' | 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
 function App() {
   const [locale, setLocale] = useState<Locale>(readLocale)
+  const hosted = useMemo(() => {
+    try {
+      const identitySettings = identitySettingsFromEnvironment()
+      const apiUrl = import.meta.env.VITE_API_BASE_URL
+      if (!identitySettings || !apiUrl) return null
+      const identity = createIdentityClient(identitySettings)
+      return { identity, api: createCaseApi({ baseUrl: apiUrl, getAccessToken: () => identity.getAccessToken() }) }
+    } catch { return null }
+  }, [])
+  const [identitySignedIn, setIdentitySignedIn] = useState(false)
+  const [identityError, setIdentityError] = useState(false)
   const [step, setStep] = useState<Step>(() => readCase() && readConsent() ? 'workspace' : 'welcome')
   const [consent, setConsent] = useState(() => Boolean(readConsent()))
   const [urgentReasons, setUrgentReasons] = useState<string[]>([])
@@ -54,6 +69,42 @@ function App() {
   const text = messages[locale]
   const caseText = text.caseDetails
   const progress = useMemo(() => ({ workspace: 0, welcome: 1, triage: 2, case: 3, scope: 3, saved: 3, evidence: 4, extraction: 5, review: 6, pack: 7, status: 8, data: 0 }[step]), [step])
+
+  useEffect(() => {
+    if (!hosted) return
+    const checkIdentity = async () => {
+      try {
+        const redirectPath = new URL(import.meta.env.VITE_OIDC_REDIRECT_URI, window.location.origin).pathname
+        if (window.location.pathname === redirectPath && (window.location.search.includes('code=') || window.location.search.includes('error='))) {
+          await hosted.identity.completeSignIn()
+          window.history.replaceState({}, document.title, '/')
+        }
+        setIdentitySignedIn(Boolean(await hosted.identity.getAccessToken()))
+      } catch {
+        window.history.replaceState({}, document.title, '/')
+        setIdentityError(true)
+      }
+    }
+    void checkIdentity()
+  }, [hosted])
+
+  async function syncHostedCase() {
+    if (!hosted || !identitySignedIn) throw new Error('Hosted case storage is unavailable.')
+    const record = readCase()
+    if (!record) throw new Error('There is no saved case to send.')
+    await saveHostedCase(hosted.api, record)
+    recordAuditEvent('hosted_case_saved', record.id, 'structured case record saved to hosted account')
+  }
+
+  async function beginHostedSignIn() {
+    if (!hosted) return
+    try { await hosted.identity.beginSignIn() } catch { setIdentityError(true) }
+  }
+
+  async function beginHostedSignOut() {
+    if (!hosted) return
+    try { await hosted.identity.beginSignOut() } catch { setIdentityError(true) }
+  }
 
   useEffect(() => {
     try { saveLocale(locale) } catch { /* Language can still be changed for this session. */ }
@@ -139,7 +190,7 @@ function App() {
   if (!retentionReady) return <div className="app-shell is-welcome"><main><p className="lede">Loading Aduen...</p></main></div>
 
   return <div className={`app-shell ${step === 'welcome' || step === 'workspace' ? 'is-welcome' : 'is-workflow'}`}>
-    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><AduenBrand /></button>{step === 'welcome' && <nav className="header-nav" aria-label={locale === 'ms' ? 'Navigasi utama' : 'Main navigation'}><a href="#how-it-works">{locale === 'ms' ? 'Cara ia berfungsi' : 'How it works'}</a><a href="#before-title">{locale === 'ms' ? 'Apa yang kami bantu' : 'What we cover'}</a></nav>}<div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
+    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><AduenBrand /></button>{step === 'welcome' && <nav className="header-nav" aria-label={locale === 'ms' ? 'Navigasi utama' : 'Main navigation'}><a href="#how-it-works">{locale === 'ms' ? 'Cara ia berfungsi' : 'How it works'}</a><a href="#before-title">{locale === 'ms' ? 'Apa yang kami bantu' : 'What we cover'}</a></nav>}<div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button>{hosted && <button className="data-link" type="button" onClick={() => identitySignedIn ? void beginHostedSignOut() : void beginHostedSignIn()}>{identitySignedIn ? (locale === 'ms' ? 'Log keluar' : 'Sign out') : (locale === 'ms' ? 'Log masuk' : 'Sign in')}</button>}<div className="pilot-label"><span /> {text.prototype}</div></div></header>
     <main>
       <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div aria-current={index + 1 === progress ? 'step' : undefined} className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
       {storageError && <div className="storage-error" role="alert"><p>{storageError}</p>{unsaved && <button type="button" className="secondary" onClick={() => persistDraft(draft)}>{locale === 'ms' ? 'Cuba simpan lagi' : 'Retry saving'}</button>}</div>}
@@ -181,7 +232,7 @@ function App() {
       {step === 'review' && <ReviewStep locale={locale} caseId={readCase()?.id ?? 'case'} draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => void runAction(() => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions, locale); savePack(pack); setComplaintPack(pack); setStep('pack') })} />}
       {step === 'pack' && complaintPack && <PackStep locale={locale} initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`); setComplaintPack(approved) }} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep locale={locale} onBack={() => setStep(complaintPack ? 'pack' : 'review')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
-      {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
+      {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} hostedConfigured={Boolean(hosted)} signedIn={identitySignedIn} identityError={identityError} onSignIn={beginHostedSignIn} onSaveHosted={syncHostedCase} />}
     </main>
     <footer><div className="footer-brand"><AduenBrand compact /><span>{locale === 'ms' ? 'Susun. Jelaskan. Ambil langkah seterusnya.' : 'Organise. Clarify. Take the next step.'}</span></div><p>{text.footer}</p></footer>
   </div>
