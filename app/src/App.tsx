@@ -31,6 +31,7 @@ import { CasePreview } from './components/CasePreview'
 import { FeatureIcon } from './components/FeatureIcon'
 import './App.css'
 import './visual.css'
+import './reference.css'
 
 type Step = 'workspace' | 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
 function App() {
@@ -138,7 +139,7 @@ function App() {
   if (!retentionReady) return <div className="app-shell is-welcome"><main><p className="lede">Loading Aduen...</p></main></div>
 
   return <div className={`app-shell ${step === 'welcome' || step === 'workspace' ? 'is-welcome' : 'is-workflow'}`}>
-    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><AduenBrand /></button><div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
+    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><AduenBrand /></button>{step === 'welcome' && <nav className="header-nav" aria-label={locale === 'ms' ? 'Navigasi utama' : 'Main navigation'}><a href="#how-it-works">{locale === 'ms' ? 'Cara ia berfungsi' : 'How it works'}</a><a href="#before-title">{locale === 'ms' ? 'Apa yang kami bantu' : 'What we cover'}</a></nav>}<div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
     <main>
       <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div aria-current={index + 1 === progress ? 'step' : undefined} className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
       {storageError && <div className="storage-error" role="alert"><p>{storageError}</p>{unsaved && <button type="button" className="secondary" onClick={() => persistDraft(draft)}>{locale === 'ms' ? 'Cuba simpan lagi' : 'Retry saving'}</button>}</div>}
@@ -148,8 +149,8 @@ function App() {
 
       {step === 'welcome' && <section className="page welcome-page">
         <div className="welcome-hero"><div className="hero-copy"><div className="eyebrow"><span />{text.welcome.eyebrow}</div><h1>{renderLines(text.welcome.title)}</h1>
-        <p className="lede">{text.welcome.lede}</p><div className="hero-actions"><a className="primary hero-start" href="#before-title">{locale === 'ms' ? 'Susun kes anda' : 'Organise your case'}<span aria-hidden="true">↗</span></a><span className="hero-reassurance">{locale === 'ms' ? 'Tiada akaun diperlukan' : 'No account needed'}<span>{locale === 'ms' ? 'Disimpan dalam pelayar anda' : 'Stored in your browser'}</span></span></div><div className="hero-footnote"><span aria-hidden="true">◎</span>{locale === 'ms' ? 'Untuk pembelian pengguna di Malaysia' : 'For consumer purchases in Malaysia'}</div></div><CasePreview locale={locale} /></div>
-        <div className="section-intro"><span>{locale === 'ms' ? 'SEDIKIT STRUKTUR. LEBIH KEJELASAN.' : 'A LITTLE STRUCTURE. A LOT MORE CLARITY.'}</span><span>{locale === 'ms' ? 'Cara Aduen membantu' : 'How Aduen helps'}<span aria-hidden="true">↓</span></span></div>
+        <p className="lede">{text.welcome.lede}</p><div className="hero-actions"><a className="primary hero-start" href="#before-title">{locale === 'ms' ? 'Susun kes anda' : 'Organise your case'}<span aria-hidden="true">&rarr;</span></a><a className="secondary hero-learn" href="#how-it-works">{locale === 'ms' ? 'Lihat cara Aduen membantu' : 'See how Aduen helps'} <span aria-hidden="true">&rarr;</span></a></div><div className="hero-footnote">{locale === 'ms' ? 'Untuk pembelian pengguna di Malaysia' : 'For consumer purchases in Malaysia'} <span aria-hidden="true">&middot;</span> {locale === 'ms' ? 'Disimpan dalam pelayar anda' : 'Stored in your browser'}</div></div><CasePreview locale={locale} /></div>
+        <div className="section-intro" id="how-it-works"><span>{locale === 'ms' ? 'CARA ADUEN MEMBANTU' : 'HOW ADUEN HELPS'}</span></div>
         <div className="boundary-grid">{text.welcome.cards.map(([title, copy], index) => <article key={title}><div className="feature-card-top"><FeatureIcon index={index} /><span className="card-number">{String(index + 1).padStart(2, '0')}</span></div><h2>{title}</h2><p>{copy}</p></article>)}</div>
         <div className="welcome-consent"><aside className="notice" aria-labelledby="before-title"><div><span className="notice-mark">i</span><div><h2 id="before-title">{text.welcome.before}</h2><p>{text.welcome.notice}</p></div></div><label className="check-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>{text.welcome.consent}</span></label></aside>
         <div className="actions">{readCase() ? <button className="primary" disabled={!consent} onClick={() => void runAction(resumeCase)}>{text.welcome.resume} <span>→</span></button> : <button className="primary" disabled={!consent} onClick={() => void runAction(() => { acceptConsent(); setStep('triage') })}>{text.welcome.begin} <span>→</span></button>}<span className="consent-caption">{locale === 'ms' ? 'Semak dahulu. Kongsi apabila bersedia.' : 'Review first. Share when you’re ready.'}</span></div></div>
@@ -182,7 +183,7 @@ function App() {
       {step === 'status' && <StatusStep locale={locale} onBack={() => setStep(complaintPack ? 'pack' : 'review')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
       {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} />}
     </main>
-    <footer><p>Aduen by DOVUN</p><p>{text.footer}</p></footer>
+    <footer><div className="footer-brand"><AduenBrand compact /><span>{locale === 'ms' ? 'Susun. Jelaskan. Ambil langkah seterusnya.' : 'Organise. Clarify. Take the next step.'}</span></div><p>{text.footer}</p></footer>
   </div>
 }
 
