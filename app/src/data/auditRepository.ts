@@ -1,13 +1,13 @@
 export type LocalAuditEvent = {
   id: string
   at: string
-  action: 'consent_accepted' | 'case_created' | 'case_edited' | 'case_recovered' | 'submission_edited' | 'derived_fact_reviewed' | 'request_copied' | 'pack_viewed' | 'pack_approved' | 'evidence_added' | 'evidence_inclusion_changed' | 'evidence_previewed' | 'evidence_downloaded' | 'redacted_copy_exported' | 'evidence_deleted' | 'case_transitioned' | 'case_exported' | 'hosted_case_saved' | 'pack_exported' | 'handoff_exported' | 'review_brief_exported' | 'operator_review_recorded' | 'follow_up_exported' | 'retention_updated'
+  action: 'consent_accepted' | 'case_created' | 'case_edited' | 'case_recovered' | 'submission_edited' | 'derived_fact_reviewed' | 'request_copied' | 'pack_viewed' | 'pack_approved' | 'evidence_added' | 'evidence_inclusion_changed' | 'evidence_previewed' | 'evidence_downloaded' | 'redacted_copy_exported' | 'evidence_deleted' | 'case_transitioned' | 'case_exported' | 'hosted_case_saved' | 'hosted_case_deleted' | 'pack_exported' | 'handoff_exported' | 'review_brief_exported' | 'operator_review_recorded' | 'follow_up_exported' | 'retention_updated'
   targetId: string
   detail: string
 }
 
 const STORAGE_KEY = 'Aduen.audit-log.v1'
-const ACTIONS: LocalAuditEvent['action'][] = ['consent_accepted', 'case_created', 'case_edited', 'case_recovered', 'submission_edited', 'derived_fact_reviewed', 'request_copied', 'pack_viewed', 'pack_approved', 'evidence_added', 'evidence_inclusion_changed', 'evidence_previewed', 'evidence_downloaded', 'redacted_copy_exported', 'evidence_deleted', 'case_transitioned', 'case_exported', 'hosted_case_saved', 'pack_exported', 'handoff_exported', 'review_brief_exported', 'operator_review_recorded', 'follow_up_exported', 'retention_updated']
+const ACTIONS: LocalAuditEvent['action'][] = ['consent_accepted', 'case_created', 'case_edited', 'case_recovered', 'submission_edited', 'derived_fact_reviewed', 'request_copied', 'pack_viewed', 'pack_approved', 'evidence_added', 'evidence_inclusion_changed', 'evidence_previewed', 'evidence_downloaded', 'redacted_copy_exported', 'evidence_deleted', 'case_transitioned', 'case_exported', 'hosted_case_saved', 'hosted_case_deleted', 'pack_exported', 'handoff_exported', 'review_brief_exported', 'operator_review_recorded', 'follow_up_exported', 'retention_updated']
 
 export function listAuditEvents(): LocalAuditEvent[] {
   try {
