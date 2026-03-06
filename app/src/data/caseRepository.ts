@@ -112,6 +112,10 @@ function normaliseLegacyCaseRecord(value: unknown): CaseRecord | null {
   return normaliseCaseRecord({ ...parsed, history })
 }
 
+export function isValidCaseRecord(value: unknown): value is CaseRecord {
+  try { return Boolean(value && typeof value === 'object' && isCaseRecord(value as CaseRecord)) } catch { return false }
+}
+
 function isCaseRecord(value: CaseRecord): boolean {
   return isBoundedText(value.id, 100, true) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string' && isIsoTimestamp(value.createdAt) && isIsoTimestamp(value.updatedAt) && CASE_STATUSES.includes(value.status) && isCaseDraft(value.draft) && Array.isArray(value.history) && value.history.length > 0 && value.history.every((event) => isIsoTimestamp(event.at) && (event.actor === 'user' || event.actor === 'system') && isBoundedText(event.action, 160, true) && CASE_STATUSES.includes(event.status))
 }
