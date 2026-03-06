@@ -50,6 +50,30 @@ test('health is public and API responses disable caching and browser embedding',
   assert.match(response.headers['x-request-id'], /^[\da-f-]{36}$/iu)
 })
 
+test('production limiter keys requests by the client IP from explicitly trusted proxies', async () => {
+  const keys = new Map()
+  class SharedTestStore {
+    incr(key, callback, timeWindow) {
+      const current = (keys.get(key) ?? 0) + 1
+      keys.set(key, current)
+      callback(null, { current, ttl: timeWindow })
+    }
+    child() { return this }
+  }
+  const limitedApp = createApp(new MemoryCaseStore(), authenticator, [], () => {}, { trustedProxies: ['127.0.0.1'], rateLimitStore: SharedTestStore })
+  await limitedApp.ready()
+  try {
+    const headers = bearer(await signToken({ sub: 'rate-limit-test' }))
+    await limitedApp.inject({ method: 'GET', url: '/health/live', headers: { 'x-forwarded-for': '198.51.100.10' } })
+    assert.equal(keys.size, 0)
+    const response = await limitedApp.inject({ method: 'GET', url: '/v1/cases', headers: { ...headers, 'x-forwarded-for': '198.51.100.10' } })
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual([...keys.keys()], ['198.51.100.10'])
+    await limitedApp.inject({ method: 'GET', url: '/v1/cases', headers: { ...headers, 'x-forwarded-for': '198.51.100.11' } })
+    assert.equal(keys.has('198.51.100.11'), true)
+  } finally { await limitedApp.close() }
+})
+
 test('browser access requires an exact allowed origin and exposes revision headers', async () => {
   const preflight = await app.inject({ method: 'OPTIONS', url: '/v1/cases', headers: { origin: 'https://app.example.test', 'access-control-request-method': 'PUT', 'access-control-request-headers': 'authorization,if-match' } })
   assert.equal(preflight.statusCode, 204)
@@ -95,6 +119,12 @@ test('production refuses missing database TLS and insecure identity endpoints', 
   assert.throws(() => readConfig({ ...config, NODE_ENV: 'prod' }), /NODE_ENV must/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'https://app.example.test/path' }), /exact HTTP\(S\) origins/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'http://app.example.test' }), /must use HTTPS/u)
+  const secure = { ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', TRUSTED_PROXIES: '10.20.0.0/16,2001:db8::1', RATE_LIMIT_HMAC_KEY: 'synthetic-shared-rate-limit-secret-123456' }
+  assert.throws(() => readConfig({ ...secure, TRUSTED_PROXIES: '' }), /TRUSTED_PROXIES must list/u)
+  assert.throws(() => readConfig({ ...secure, TRUSTED_PROXIES: 'ingress.example.test' }), /IP addresses or CIDR/u)
+  assert.throws(() => readConfig({ ...secure, RATE_LIMIT_HMAC_KEY: '' }), /RATE_LIMIT_HMAC_KEY is required/u)
+  assert.throws(() => readConfig({ ...secure, RATE_LIMIT_HMAC_KEY: 'too-short' }), /at least 32 UTF-8 bytes/u)
+  assert.deepEqual(readConfig(secure).trustedProxies, ['10.20.0.0/16', '2001:db8::1'])
 })
 
 test('case endpoints reject missing, forged, and wrong-audience bearer tokens', async () => {

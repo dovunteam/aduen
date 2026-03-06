@@ -7,6 +7,7 @@ import { caseRecordSchema } from './caseRecord.js'
 import { AuthenticationUnavailable } from './auth.js'
 import type { Authenticate } from './auth.js'
 import type { CaseStore } from './caseStore.js'
+import type { RateLimitStoreConstructor } from './postgresRateLimitStore.js'
 
 const idSchema = z.uuid()
 const pageSchema = z.object({
@@ -14,11 +15,26 @@ const pageSchema = z.object({
   cursor: z.string().max(512).optional(),
 }).strict()
 
-export function createApp(store: CaseStore, authenticate: Authenticate, corsOrigins: string[] = [], writeRequestLog: (entry: object) => void = (entry) => console.info(JSON.stringify(entry))) {
-  const app = Fastify({ logger: false, bodyLimit: 128 * 1024, trustProxy: false, requestIdHeader: false, genReqId: () => randomUUID() })
+export type AppOptions = { trustedProxies?: string[]; rateLimitStore?: RateLimitStoreConstructor }
+
+export function createApp(store: CaseStore, authenticate: Authenticate, corsOrigins: string[] = [], writeRequestLog: (entry: object) => void = (entry) => console.info(JSON.stringify(entry)), options: AppOptions = {}) {
+  const trustedProxies = options.trustedProxies ?? []
+  const app = Fastify({ logger: false, bodyLimit: 128 * 1024, trustProxy: trustedProxies.length ? trustedProxies : false, requestIdHeader: false, genReqId: () => randomUUID() })
   const requestStarted = new WeakMap<object, bigint>()
   void app.register(cors, { origin: corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Authorization', 'Content-Type', 'If-Match'], exposedHeaders: ['ETag', 'X-Request-Id'], credentials: false, maxAge: 600 })
-  void app.register(rateLimit, { max: 120, timeWindow: '1 minute' })
+  if (options.rateLimitStore) {
+    const sharedStore = new options.rateLimitStore({ max: 120, timeWindow: 60_000 } as never)
+    app.addHook('onRequest', async (request, reply) => {
+      if (request.url === '/health/live' || request.url === '/health/ready') return
+      const result = await new Promise<{ current: number; ttl: number }>((resolve, reject) => {
+        sharedStore.incr(request.ip, (error, value) => error ? reject(error) : resolve(value!), 60_000, 120)
+      }).catch(() => null)
+      if (!result) return reply.code(503).send({ error: 'rate_limit_unavailable' })
+      if (result.current > 120) return reply.code(429).header('Retry-After', String(Math.max(1, Math.ceil(result.ttl / 1000)))).send({ error: 'rate_limited' })
+    })
+  } else {
+    void app.register(rateLimit, { max: 120, timeWindow: '1 minute' })
+  }
   app.addHook('onSend', async (request, reply) => {
     reply.header('X-Request-Id', request.id)
     reply.header('Cache-Control', 'no-store')
@@ -37,8 +53,8 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
   })
   app.addHook('onRequest', async (request) => { requestStarted.set(request, process.hrtime.bigint()) })
 
-  app.get('/health/live', async () => ({ status: 'ok' }))
-  app.get('/health/ready', async (_request, reply) => {
+  app.get('/health/live', { config: { rateLimit: false } }, async () => ({ status: 'ok' }))
+  app.get('/health/ready', { config: { rateLimit: false } }, async (_request, reply) => {
     try { await store.ping(); return { status: 'ready' } }
     catch { return reply.code(503).send({ error: 'not_ready' }) }
   })
