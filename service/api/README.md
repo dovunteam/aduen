@@ -11,7 +11,7 @@ This Node.js 24 service is the first hosted-service slice. It validates an exter
 5. Start the API: `docker compose up --build api`.
 6. Check `http://127.0.0.1:8080/health/ready`.
 
-The example identity-provider URLs deliberately use the reserved `.invalid` domain. Configure a real OIDC issuer, JWKS URI, and API audience before testing authenticated routes. The local Compose ports bind to loopback only. Do not place real consumer records in this development environment.
+The example identity-provider URLs deliberately use the reserved `.invalid` domain. Configure a real OIDC issuer, JWKS URI, and API audience before testing authenticated routes. The local Compose API and one-shot database jobs run with a read-only root filesystem, a restricted `/tmp`, no Linux capabilities, no privilege escalation, and a PID limit. The local Compose ports bind to loopback only. Do not place real consumer records in this development environment.
 
 ## Endpoints
 
