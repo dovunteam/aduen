@@ -117,6 +117,21 @@ export async function getEvidenceOriginal(id: string): Promise<Blob | null> {
   } finally { database.close() }
 }
 
+export async function hasAnyEvidenceData(): Promise<boolean> {
+  const database = await openDatabase()
+  const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE, EXTRACTION_STORE], 'readonly')
+  const done = transactionDone(transaction)
+  try {
+    const counts = await Promise.all([METADATA_STORE, ORIGINAL_STORE, EXTRACTION_STORE].map((storeName) => new Promise<number>((resolve, reject) => {
+      const request = transaction.objectStore(storeName).count()
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error ?? new Error('Could not inspect evidence storage.'))
+    })))
+    await done
+    return counts.some((count) => count > 0)
+  } finally { database.close() }
+}
+
 export async function listExtractions(): Promise<EvidenceExtraction[]> {
   const database = await openDatabase()
   const transaction = database.transaction(EXTRACTION_STORE, 'readonly')

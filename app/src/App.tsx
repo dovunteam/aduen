@@ -9,7 +9,7 @@ import { DataControls } from './components/DataControls'
 import { AduenBrand } from './components/AduenBrand'
 import { OutOfScopeStep } from './components/OutOfScopeStep'
 import { ExtractionStep } from './components/ExtractionStep'
-import { clearEvidence, listEvidence, listExtractions } from './data/evidenceRepository'
+import { clearEvidence, hasAnyEvidenceData, listEvidence, listExtractions } from './data/evidenceRepository'
 import { EMPTY_DRAFT } from './domain/case'
 import type { CaseDraft } from './domain/case'
 import type { EvidenceMetadata } from './domain/evidence'
@@ -17,9 +17,9 @@ import { createComplaintPack } from './domain/complaintPack'
 import type { ComplaintPack } from './domain/complaintPack'
 import { clearSubmission } from './data/statusRepository'
 import { acceptConsent, clearConsent, readConsent } from './data/consentRepository'
-import { clearCase, readCase, recordCaseTransition, saveCaseDraft, wasCaseRestored } from './data/caseRepository'
+import { clearCase, hasAnyStoredCase, importHostedCaseAsLocalDraft, readCase, recordCaseTransition, saveCaseDraft, wasCaseRestored } from './data/caseRepository'
 import { clearAuditEvents } from './data/auditRepository'
-import { clearOperatorReviews } from './data/operatorReviewRepository'
+import { clearOperatorReviews, listOperatorReviews } from './data/operatorReviewRepository'
 import { clearPacks, listPacks, nextPackVersion, savePack } from './data/packRepository'
 import { clearRetention, expireLocalDataIfDue } from './data/retentionRepository'
 import { assessScope } from './domain/scope'
@@ -33,6 +33,7 @@ import { createCaseApi } from './data/caseApi'
 import { createIdentityClient, identitySettingsFromEnvironment } from './data/identityClient'
 import { recordAuditEvent } from './data/auditRepository'
 import { saveHostedCase } from './data/hostedCaseSync'
+import type { StoredCase } from './data/caseApi'
 import './App.css'
 import './visual.css'
 import './reference.css'
@@ -105,6 +106,18 @@ function App() {
     if (!hosted || !identitySignedIn) throw new Error('Hosted case storage is unavailable.')
     await hosted.api.delete(id, revision)
     recordAuditEvent('hosted_case_deleted', id, 'hosted case record deleted from account')
+  }
+
+  async function importHostedCase(stored: StoredCase) {
+    if (!hosted || !identitySignedIn) throw new Error('Hosted case storage is unavailable.')
+    if (!readConsent()) throw new Error('Accept the privacy notice before using hosted case data.')
+    if (hasAnyStoredCase()) throw new Error('This browser already contains a case record.')
+    if (Object.entries(draft).some(([key, value]) => key !== 'currency' && Boolean(value))) throw new Error('This browser has an unsaved case draft.')
+    const hasEvidence = await hasAnyEvidenceData()
+    const localWorkflowKeys = ['Aduen.pack-versions.v1', 'tuntiva.pack-versions.v1', 'Aduen.submission-record.v1', 'tuntiva.submission-record.v1', 'Aduen.operator-reviews.v1']
+    if (hasEvidence || localWorkflowKeys.some((key) => localStorage.getItem(key) !== null) || Object.keys(listOperatorReviews()).length > 0) throw new Error('This browser already contains case-related data.')
+    const imported = importHostedCaseAsLocalDraft(stored.record)
+    setDraft(imported.draft); setConsent(true); setCaseRecovered(false); setComplaintPack(null); setReviewEvidence([]); setExtractions([]); setScopeAssessment(null); setUnsaved(false); setStorageError(''); setStep('workspace')
   }
 
   async function beginHostedSignIn() {
@@ -243,7 +256,7 @@ function App() {
       {step === 'review' && <ReviewStep locale={locale} caseId={readCase()?.id ?? 'case'} draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => void runAction(() => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions, locale); savePack(pack); setComplaintPack(pack); setStep('pack') })} />}
       {step === 'pack' && complaintPack && <PackStep locale={locale} initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`); setComplaintPack(approved) }} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep locale={locale} onBack={() => setStep(complaintPack ? 'pack' : 'review')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
-      {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} hostedConfigured={Boolean(hosted)} signedIn={identitySignedIn} identityError={identityError} onSignIn={beginHostedSignIn} onSaveHosted={syncHostedCase} onListHosted={loadHostedCases} onDeleteHosted={deleteHostedCase} />}
+      {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} hostedConfigured={Boolean(hosted)} signedIn={identitySignedIn} identityError={identityError} onSignIn={beginHostedSignIn} onSaveHosted={syncHostedCase} onListHosted={loadHostedCases} onDeleteHosted={deleteHostedCase} onImportHosted={importHostedCase} />}
     </main>
     <footer><div className="footer-brand"><AduenBrand compact /><span>{locale === 'ms' ? 'Susun. Jelaskan. Ambil langkah seterusnya.' : 'Organise. Clarify. Take the next step.'}</span></div><p>{text.footer}</p></footer>
   </div>

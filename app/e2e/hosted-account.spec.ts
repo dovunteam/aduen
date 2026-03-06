@@ -20,6 +20,15 @@ async function seedSignedInCase(page: Page) {
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
 }
 
+async function seedSignedInEmptyCase(page: Page) {
+  await page.addInitScript(({ authority, clientId }) => {
+    localStorage.setItem('Aduen.consent.v1', JSON.stringify({ noticeVersion: 'prototype-privacy-and-role-v1', acceptedAt: '2026-09-24T00:00:00.000Z', purpose: 'case-preparation-and-local-storage', withdrawalPath: 'data-controls' }))
+    sessionStorage.setItem(`oidc.user:${authority}:${clientId}`, JSON.stringify({ access_token: 'synthetic-e2e-access-token', expires_at: Math.floor(Date.now() / 1000) + 3600, profile: { sub: 'synthetic-hosted-user' }, token_type: 'Bearer', scope: 'openid aduen-api' }))
+  }, { authority, clientId })
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
+}
+
 test('hosted save requires consent and account copies can be listed and deleted with their revision', async ({ page }) => {
   const requests: Array<{ method: string; url: string; revision?: string }> = []
   const owned = new Map<string, { record: typeof primaryCase; revision: number }>()
@@ -80,6 +89,7 @@ test('hosted save requires consent and account copies can be listed and deleted 
   await expect(page.getByText('Synthetic Local Store', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Load more' }).click()
   await expect(page.getByText('Synthetic Account Store', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use as local draft: Synthetic Account Store' })).toBeDisabled()
   await page.setViewportSize({ width: 390, height: 844 })
   const violations = await new AxeBuilder({ page }).analyze()
   expect(violations.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''))).toEqual([])
@@ -98,4 +108,41 @@ test('hosted save requires consent and account copies can be listed and deleted 
   const audit = await page.evaluate(() => JSON.parse(localStorage.getItem('Aduen.audit-log.v1') ?? '[]') as Array<{ action: string }>)
   expect(audit.some((event) => event.action === 'hosted_case_saved')).toBe(true)
   expect(audit.some((event) => event.action === 'hosted_case_deleted')).toBe(true)
+})
+
+test('hosted structured case can start a separate local draft when this browser has no case data', async ({ page }) => {
+  const owned = new Map([[anotherCase.id, { record: anotherCase, revision: 2 }]])
+  const methods: string[] = []
+  await page.route('https://api.example.test/v1/cases**', async (route) => {
+    const request = route.request()
+    const headers = {
+      'access-control-allow-origin': origin,
+      'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'access-control-allow-headers': 'Authorization, Content-Type, If-Match',
+      'access-control-expose-headers': 'ETag',
+    }
+    if (request.method() === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return }
+    methods.push(request.method())
+    if (request.method() === 'GET') { await route.fulfill({ status: 200, headers, json: { cases: [...owned.values()], nextCursor: null } }); return }
+    await route.fulfill({ status: 404, headers, json: { error: 'not_found' } })
+  })
+
+  await seedSignedInEmptyCase(page)
+  await page.getByRole('button', { name: 'Data controls', exact: true }).click()
+  await page.getByRole('button', { name: 'Load hosted copies' }).click()
+  const useCopy = page.getByRole('button', { name: 'Use as local draft: Synthetic Account Store' })
+  await expect(useCopy).toBeEnabled()
+  page.once('dialog', (dialog) => dialog.accept())
+  await useCopy.click()
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Synthetic Account Store' })).toBeVisible()
+  await expect(page.getByText('Synthetic Account Store', { exact: true })).toBeVisible()
+  const local = await page.evaluate(() => JSON.parse(localStorage.getItem('Aduen.case-record.v1') ?? 'null') as { id: string; status: string; draft: { seller: string }; history: Array<{ action: string }> } | null)
+  expect(local?.id).not.toBe(anotherCase.id)
+  expect(local?.draft.seller).toBe('Synthetic Account Store')
+  expect(local?.status).toBe('draft')
+  expect(local?.history.at(-1)?.action).toBe('hosted_copy_imported_as_new_local_draft')
+  expect(methods).toEqual(['GET'])
+  const audit = await page.evaluate(() => JSON.parse(localStorage.getItem('Aduen.audit-log.v1') ?? '[]') as Array<{ action: string; targetId: string }>)
+  expect(audit.some((event) => event.action === 'hosted_case_imported' && event.targetId === anotherCase.id)).toBe(true)
 })
