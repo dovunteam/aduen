@@ -22,6 +22,9 @@ CREATE POLICY aduen_api_rate_limits_update_policy ON aduen_api_rate_limits
 DROP POLICY IF EXISTS aduen_api_rate_limits_delete_policy ON aduen_api_rate_limits;
 CREATE POLICY aduen_api_rate_limits_delete_policy ON aduen_api_rate_limits
   FOR DELETE TO aduen_api USING (expires_at <= now());
+DROP POLICY IF EXISTS aduen_api_rate_limits_retention_select_policy ON aduen_api_rate_limits;
+CREATE POLICY aduen_api_rate_limits_retention_select_policy ON aduen_api_rate_limits
+  FOR SELECT TO aduen_retention USING (expires_at <= now());
 DROP POLICY IF EXISTS aduen_api_rate_limits_retention_policy ON aduen_api_rate_limits;
 CREATE POLICY aduen_api_rate_limits_retention_policy ON aduen_api_rate_limits
   FOR DELETE TO aduen_retention
