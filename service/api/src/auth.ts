@@ -1,7 +1,7 @@
 import { createRemoteJWKSet, errors, jwtVerify } from 'jose'
 
 export type Authenticate = (authorization: string | undefined) => Promise<string>
-export type AuthOptions = { issuer: string; jwksUrl: string; audience: string }
+export type AuthOptions = { issuer: string; jwksUrl: string; audience: string; maxTokenAgeSeconds?: number }
 
 export class AuthenticationUnavailable extends Error {
   constructor() { super('Authentication provider unavailable.'); this.name = 'AuthenticationUnavailable' }
@@ -19,7 +19,8 @@ export function createAuthenticator(options: AuthOptions): Authenticate {
         issuer: options.issuer,
         audience: options.audience,
         algorithms: ['RS256', 'ES256'],
-        requiredClaims: ['iss', 'sub', 'aud', 'exp'],
+        requiredClaims: ['iss', 'sub', 'aud', 'exp', 'iat'],
+        maxTokenAge: options.maxTokenAgeSeconds ?? 3_600,
       })
       if (typeof payload.sub !== 'string' || !/^[\x21-\x7e]{1,255}$/u.test(payload.sub)) throw new Error('invalid subject')
       return payload.sub
