@@ -8,6 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_MIGRATOR_USER:-aduen_migrator}
       POSTGRES_PASSWORD: ${POSTGRES_MIGRATOR_PASSWORD:?Set POSTGRES_MIGRATOR_PASSWORD in .env}
       ADUEN_API_PASSWORD: ${ADUEN_API_PASSWORD:?Set ADUEN_API_PASSWORD in .env}
+      ADUEN_RETENTION_PASSWORD: ${ADUEN_RETENTION_PASSWORD:?Set ADUEN_RETENTION_PASSWORD in .env}
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     ports:
       - 127.0.0.1:${POSTGRES_PORT:-54329}:5432
@@ -32,6 +33,20 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       DATABASE_URL_MIGRATOR: ${DATABASE_URL_MIGRATOR:?Set DATABASE_URL_MIGRATOR in .env}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+    depends_on:
+      database:
+        condition: service_healthy
+
+  prune-audit:
+    profiles: [maintenance]
+    build:
+      context: ./service/api
+    command: [node, dist/pruneAudit.js]
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL_MAINTENANCE: ${DATABASE_URL_MAINTENANCE:?Set DATABASE_URL_MAINTENANCE in .env}
+      AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:?Set AUDIT_RETENTION_DAYS after approving an audit retention schedule}
       DATABASE_SSL: ${DATABASE_SSL:-false}
     depends_on:
       database:

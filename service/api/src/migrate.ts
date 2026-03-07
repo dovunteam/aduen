@@ -14,9 +14,11 @@ const pool = new Pool({
 })
 
 try {
-  const migration = await readFile(new URL('../migrations/001_case_records.sql', import.meta.url), 'utf8')
-  await pool.query(migration)
-  console.info('Aduen case database migration 001 applied.')
+  for (const name of ['001_case_records.sql', '002_audit_retention.sql']) {
+    const migration = await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8')
+    await pool.query(migration)
+    console.info(`Aduen database migration ${name.slice(0, 3)} applied.`)
+  }
 } catch {
   console.error('Aduen case database migration failed.')
   process.exitCode = 1
