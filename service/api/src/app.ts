@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import rateLimit from '@fastify/rate-limit'
 import cors from '@fastify/cors'
 import Fastify from 'fastify'
@@ -13,11 +14,13 @@ const pageSchema = z.object({
   cursor: z.string().max(512).optional(),
 }).strict()
 
-export function createApp(store: CaseStore, authenticate: Authenticate, corsOrigins: string[] = []) {
-  const app = Fastify({ logger: false, bodyLimit: 128 * 1024, trustProxy: false })
-  void app.register(cors, { origin: corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Authorization', 'Content-Type', 'If-Match'], exposedHeaders: ['ETag'], credentials: false, maxAge: 600 })
+export function createApp(store: CaseStore, authenticate: Authenticate, corsOrigins: string[] = [], writeRequestLog: (entry: object) => void = (entry) => console.info(JSON.stringify(entry))) {
+  const app = Fastify({ logger: false, bodyLimit: 128 * 1024, trustProxy: false, requestIdHeader: false, genReqId: () => randomUUID() })
+  const requestStarted = new WeakMap<object, bigint>()
+  void app.register(cors, { origin: corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Authorization', 'Content-Type', 'If-Match'], exposedHeaders: ['ETag', 'X-Request-Id'], credentials: false, maxAge: 600 })
   void app.register(rateLimit, { max: 120, timeWindow: '1 minute' })
-  app.addHook('onSend', async (_request, reply) => {
+  app.addHook('onSend', async (request, reply) => {
+    reply.header('X-Request-Id', request.id)
     reply.header('Cache-Control', 'no-store')
     reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
     reply.header('Cross-Origin-Resource-Policy', 'same-origin')
@@ -26,6 +29,13 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
     reply.header('X-Content-Type-Options', 'nosniff')
     reply.header('X-Frame-Options', 'DENY')
   })
+  app.addHook('onResponse', async (request, reply) => {
+    const route = request.routeOptions.url ?? 'unmatched'
+    const startedAt = requestStarted.get(request)
+    const durationMs = startedAt === undefined ? 0 : Number(process.hrtime.bigint() - startedAt) / 1_000_000
+    writeRequestLog({ event: 'api_request', requestId: request.id, method: request.method, route, statusCode: reply.statusCode, durationMs: Math.round(durationMs * 100) / 100 })
+  })
+  app.addHook('onRequest', async (request) => { requestStarted.set(request, process.hrtime.bigint()) })
 
   app.get('/health/live', async () => ({ status: 'ok' }))
   app.get('/health/ready', async (_request, reply) => {
