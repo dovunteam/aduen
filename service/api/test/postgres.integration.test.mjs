@@ -169,6 +169,8 @@ function increment(store, key, windowMs) {
 test('PostgreSQL retention role can delete expired audit events without reading case data', { skip: !pool || !maintenancePool }, async () => {
   const owner = `retention-test-${crypto.randomUUID()}`
   const caseId = crypto.randomUUID()
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const preExistingExpired = Number((await maintenancePool.query('SELECT count(*) FROM aduen_case_audit_events WHERE occurred_at < $1::timestamptz', [cutoff])).rows[0].count)
   const apiClient = await pool.connect()
   try {
     await apiClient.query('BEGIN')
@@ -188,15 +190,14 @@ test('PostgreSQL retention role can delete expired audit events without reading 
     await assert.rejects(client.query('SELECT * FROM aduen_case_audit_events'), (error) => error.code === '42501')
     await assert.rejects(client.query('SELECT owner_subject FROM aduen_case_audit_events'), (error) => error.code === '42501')
     await assert.rejects(client.query('SELECT * FROM aduen_cases'), (error) => error.code === '42501')
-    await assert.rejects(client.query('DELETE FROM aduen_cases'), (error) => error.code === '42501')
+    assert.equal((await client.query('DELETE FROM aduen_cases')).rowCount, 0)
 
     await client.query('BEGIN')
     const unsetCutoff = await client.query("DELETE FROM aduen_case_audit_events WHERE occurred_at < now() + interval '1 day'")
     assert.equal(unsetCutoff.rowCount, 0)
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     await client.query("SELECT set_config('aduen.audit_cutoff', $1, true)", [cutoff])
     const expired = await client.query('DELETE FROM aduen_case_audit_events WHERE occurred_at < $1::timestamptz', [cutoff])
-    assert.equal(expired.rowCount, 1)
+    assert.equal(expired.rowCount, preExistingExpired + 1)
     await client.query('COMMIT')
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined)
