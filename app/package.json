@@ -23,6 +23,7 @@
     "@tesseract.js-data/msa": "^1.0.0",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
+    "oidc-client-ts": "3.5.0",
     "pdfjs-dist": "^6.3.289",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
