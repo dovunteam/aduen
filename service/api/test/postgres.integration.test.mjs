@@ -4,6 +4,7 @@ import { Pool } from 'pg'
 import { PgCaseStore } from '../dist/caseStore.js'
 import { createPostgresRateLimitStore } from '../dist/postgresRateLimitStore.js'
 import { pruneExpiredHostedCases } from '../dist/pruneHostedCases.js'
+import { assertRestrictedRuntimeRole } from '../dist/runtimeRole.js'
 
 const databaseUrl = process.env.DATABASE_URL
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl, max: 1 }) : null
@@ -11,6 +12,10 @@ const maintenanceUrl = process.env.DATABASE_URL_MAINTENANCE
 const maintenancePool = maintenanceUrl ? new Pool({ connectionString: maintenanceUrl, max: 1 }) : null
 
 after(async () => { await Promise.all([pool?.end(), maintenancePool?.end()]) })
+
+test('production runtime role is restricted and does not own policy-protected tables', { skip: !pool }, async () => {
+  await assertRestrictedRuntimeRole(pool)
+})
 
 test('PostgreSQL RLS isolates case reads, writes, and owner reassignment', { skip: !pool }, async () => {
   const id = crypto.randomUUID()

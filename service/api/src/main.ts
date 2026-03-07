@@ -4,6 +4,7 @@ import { createApp } from './app.js'
 import { readConfig } from './config.js'
 import { PgCaseStore } from './caseStore.js'
 import { createPostgresRateLimitStore } from './postgresRateLimitStore.js'
+import { assertRestrictedRuntimeRole } from './runtimeRole.js'
 
 const config = readConfig()
 const pool = new Pool({
@@ -35,6 +36,7 @@ process.once('SIGINT', () => { void shutdown('SIGINT').finally(() => { process.e
 process.once('SIGTERM', () => { void shutdown('SIGTERM').finally(() => { process.exitCode = 0 }) })
 
 try {
+  if (config.nodeEnv === 'production') await assertRestrictedRuntimeRole(pool)
   await app.listen({ host: config.host, port: config.port })
   console.info(`Aduen case API listening on ${config.host}:${config.port}`)
 } catch {
