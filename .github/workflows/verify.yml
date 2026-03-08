@@ -36,6 +36,7 @@ jobs:
         run: npm run test:postgres
         env:
           DATABASE_URL: postgres://aduen_api:replace-with-another-local-only-password@127.0.0.1:54329/aduen
+          DATABASE_URL_MIGRATOR: postgres://aduen_migrator:replace-with-a-local-only-password@127.0.0.1:54329/aduen
           DATABASE_URL_MAINTENANCE: postgres://aduen_retention:replace-with-a-third-local-only-password@127.0.0.1:54329/aduen
       - name: Seed an expired synthetic audit event
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example exec --no-TTY database psql --username aduen_migrator --dbname aduen --set=ON_ERROR_STOP=1 --command="INSERT INTO aduen_case_audit_events (owner_subject, case_id, action, occurred_at) VALUES ('synthetic-retention-job-check', '550e8400-e29b-41d4-a716-446655440099', 'case_updated', now() - interval '40 days')"
