@@ -1,6 +1,5 @@
-import { readFile } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
 import { Pool } from 'pg'
+import { readMigrations } from './migrationManifest.js'
 
 const databaseUrl = process.env.DATABASE_URL_MIGRATOR
 if (!databaseUrl) throw new Error('DATABASE_URL_MIGRATOR is required.')
@@ -14,7 +13,6 @@ const pool = new Pool({
   application_name: 'aduen-case-api-migrator',
 })
 
-const migrationNames = ['001_case_records.sql', '002_audit_retention.sql', '003_shared_rate_limits.sql', '004_hosted_case_retention.sql']
 const migrationLockId = '73651294810273'
 
 class MigrationHistoryError extends Error {}
@@ -31,15 +29,15 @@ try {
       applied_at timestamptz NOT NULL DEFAULT now()
     )`)
 
+    await client.query('GRANT SELECT (name, checksum) ON aduen_schema_migrations TO aduen_api')
+    const migrations = await readMigrations()
     const recorded = await client.query<{ name: string; checksum: string }>('SELECT name, checksum FROM aduen_schema_migrations')
-    const expected = new Set(migrationNames)
+    const expected = new Set(migrations.map((migration) => migration.name))
     const unexpected = recorded.rows.find((row) => !expected.has(row.name))
     if (unexpected) throw new MigrationHistoryError('Database contains a migration newer than this service.')
 
     const applied = new Map(recorded.rows.map((row) => [row.name, row.checksum]))
-    for (const name of migrationNames) {
-      const migration = await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8')
-      const checksum = createHash('sha256').update(migration.replace(/\r\n?/gu, '\n'), 'utf8').digest('hex')
+    for (const { name, checksum, sql } of migrations) {
       const previousChecksum = applied.get(name)
       if (previousChecksum) {
         if (previousChecksum !== checksum) throw new MigrationHistoryError(`Applied migration ${name} has changed.`)
@@ -49,7 +47,7 @@ try {
 
       await client.query('BEGIN')
       try {
-        await client.query(migration)
+        await client.query(sql)
         await client.query('INSERT INTO aduen_schema_migrations (name, checksum) VALUES ($1, $2)', [name, checksum])
         await client.query('COMMIT')
       } catch (error) {
