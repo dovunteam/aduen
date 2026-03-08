@@ -96,7 +96,8 @@ test('PostgreSQL rate-limit buckets are shared, HMAC-keyed, and pruned after exp
 })
 
 test('PostgreSQL retention role can delete expired rate-limit buckets only', { skip: !pool || !maintenancePool }, async () => {
-  const keyHash = 'a'.repeat(64)
+  const keyHash = crypto.randomUUID().replaceAll('-', '').repeat(2)
+  const preExistingExpired = Number((await maintenancePool.query('SELECT count(*) FROM aduen_api_rate_limits WHERE expires_at <= now()')).rows[0].count)
   await pool.query('INSERT INTO aduen_api_rate_limits (key_hash, window_start, request_count, expires_at) VALUES ($1, now(), 1, now() + interval \'1 hour\') ON CONFLICT DO NOTHING', [keyHash])
   const client = await maintenancePool.connect()
   try {
@@ -104,8 +105,8 @@ test('PostgreSQL retention role can delete expired rate-limit buckets only', { s
     assert.equal((await client.query('SELECT expires_at FROM aduen_api_rate_limits WHERE expires_at > now()')).rowCount, 0)
     assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at > now()')).rowCount, 0)
     await pool.query('UPDATE aduen_api_rate_limits SET window_start = now() - interval \'1 hour\', expires_at = now() - interval \'1 second\' WHERE key_hash = $1', [keyHash])
-    assert.equal((await client.query('SELECT expires_at FROM aduen_api_rate_limits')).rowCount, 1)
-    assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at <= now()')).rowCount, 1)
+    assert.equal((await client.query('SELECT expires_at FROM aduen_api_rate_limits')).rowCount, preExistingExpired + 1)
+    assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at <= now()')).rowCount, preExistingExpired + 1)
   } finally { client.release() }
 })
 
