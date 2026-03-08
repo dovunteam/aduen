@@ -14,6 +14,7 @@
     "score:pilot": "node scripts/score-pilot.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test --project=chromium",
+    "test:e2e:hosted": "playwright test e2e/hosted-account.spec.ts --project=chromium",
     "test:e2e:all": "playwright test",
     "test:e2e:firefox": "playwright test --project=firefox",
     "preview": "vite preview"
