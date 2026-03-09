@@ -1,3 +1,5 @@
+import { isIP } from 'node:net'
+
 export type ApiConfig = {
   host: string
   port: number
@@ -7,6 +9,8 @@ export type ApiConfig = {
   jwksUrl: string
   audience: string
   corsOrigins: string[]
+  trustedProxies: string[]
+  rateLimitHmacKey: string | null
   nodeEnv: string
 }
 
@@ -33,7 +37,25 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const port = Number(env.PORT ?? '8080')
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer from 1 to 65535.')
 
-  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, corsOrigins: [...new Set(corsOrigins)], nodeEnv }
+  const trustedProxies = (env.TRUSTED_PROXIES ?? '').split(',').map((value) => value.trim()).filter(Boolean)
+  if (trustedProxies.some((value) => !isIpOrCidr(value))) throw new Error('TRUSTED_PROXIES must contain IP addresses or CIDR ranges.')
+  if (nodeEnv === 'production' && trustedProxies.length === 0) throw new Error('TRUSTED_PROXIES must list the trusted TLS ingress addresses in production.')
+  const rateLimitHmacKey = env.RATE_LIMIT_HMAC_KEY?.trim() || null
+  if (rateLimitHmacKey && Buffer.byteLength(rateLimitHmacKey, 'utf8') < 32) throw new Error('RATE_LIMIT_HMAC_KEY must contain at least 32 UTF-8 bytes.')
+  if (nodeEnv === 'production' && !rateLimitHmacKey) throw new Error('RATE_LIMIT_HMAC_KEY is required for shared production rate limiting.')
+
+  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, nodeEnv }
+}
+
+function isIpOrCidr(value: string): boolean {
+  const [address, prefix, ...rest] = value.split('/')
+  if (rest.length || !address) return false
+  const family = isIP(address)
+  if (!family) return false
+  if (prefix === undefined) return true
+  if (!/^\d+$/u.test(prefix)) return false
+  const bits = Number(prefix)
+  return Number.isInteger(bits) && bits >= 0 && bits <= (family === 4 ? 32 : 128)
 }
 
 function isOrigin(value: string): boolean {

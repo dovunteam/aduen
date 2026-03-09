@@ -3,6 +3,7 @@ import { createAuthenticator } from './auth.js'
 import { createApp } from './app.js'
 import { readConfig } from './config.js'
 import { PgCaseStore } from './caseStore.js'
+import { createPostgresRateLimitStore } from './postgresRateLimitStore.js'
 
 const config = readConfig()
 const pool = new Pool({
@@ -13,7 +14,10 @@ const pool = new Pool({
   idleTimeoutMillis: 30_000,
   application_name: 'aduen-case-api',
 })
-const app = createApp(new PgCaseStore(pool), createAuthenticator({ issuer: config.issuer, jwksUrl: config.jwksUrl, audience: config.audience }), config.corsOrigins)
+const app = createApp(new PgCaseStore(pool), createAuthenticator({ issuer: config.issuer, jwksUrl: config.jwksUrl, audience: config.audience }), config.corsOrigins, undefined, {
+  trustedProxies: config.trustedProxies,
+  ...(config.rateLimitHmacKey ? { rateLimitStore: createPostgresRateLimitStore(pool, config.rateLimitHmacKey) } : {}),
+})
 
 let closing = false
 async function shutdown(signal: string): Promise<void> {
