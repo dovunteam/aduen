@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EMPTY_DRAFT } from '../domain/case'
-import { clearCase, readCase, saveCaseDraft, wasCaseRestored } from './caseRepository'
+import { createCaseRecord, EMPTY_DRAFT } from '../domain/case'
+import { clearCase, hasAnyStoredCase, importHostedCaseAsLocalDraft, readCase, saveCaseDraft, wasCaseRestored } from './caseRepository'
 import { listAuditEvents } from './auditRepository'
 
 beforeEach(() => {
@@ -90,5 +90,27 @@ describe('case repository', () => {
     expect(listAuditEvents().map((event) => event.action)).toEqual(['case_created'])
     saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Updated synthetic seller' })
     expect(listAuditEvents().map((event) => event.action)).toEqual(['case_created', 'case_edited'])
+  })
+
+  it('copies a hosted case into a new local draft while preserving the source history', () => {
+    const hosted = createCaseRecord({ ...EMPTY_DRAFT, seller: 'Synthetic hosted seller' }, new Date('2026-09-20T00:00:00.000Z'))
+    const imported = importHostedCaseAsLocalDraft(hosted)
+
+    expect(imported.id).not.toBe(hosted.id)
+    expect(imported.draft).toEqual(hosted.draft)
+    expect(imported.status).toBe('draft')
+    expect(imported.history.slice(0, -1)).toEqual(hosted.history)
+    expect(imported.history.at(-1)).toMatchObject({ actor: 'system', action: 'hosted_copy_imported_as_new_local_draft', status: 'draft' })
+    expect(readCase()).toEqual(imported)
+    expect(listAuditEvents().map((event) => event.action)).toContain('hosted_case_imported')
+  })
+
+  it('refuses to replace even an unreadable local case record with hosted data', () => {
+    const hosted = createCaseRecord(EMPTY_DRAFT)
+    localStorage.setItem('Aduen.case-record.v1', '{broken json')
+
+    expect(hasAnyStoredCase()).toBe(true)
+    expect(() => importHostedCaseAsLocalDraft(hosted)).toThrow('already contains a local case record')
+    expect(localStorage.getItem('Aduen.case-record.v1')).toBe('{broken json')
   })
 })
