@@ -161,3 +161,16 @@ h2 { color: var(--ink); font-weight: 700; }
   .hero-actions { flex-direction: column; }
   .hero-start, .hero-learn { flex-basis: auto; }
 }
+.progress-mobile { display: none; }
+@media (max-width: 760px) {
+  .progress { display: block; padding: 12px 20px 14px; }
+  .progress-mobile { display: grid; gap: 8px; }
+  .progress-mobile > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .progress-mobile span { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .progress-mobile strong { color: var(--ink); font-size: 13px; text-align: right; }
+  .progress-mobile progress { display: block; width: 100%; height: 5px; overflow: hidden; appearance: none; border: 0; border-radius: 5px; background: #dce5e8; }
+  .progress-mobile progress::-webkit-progress-bar { border-radius: 5px; background: #dce5e8; }
+  .progress-mobile progress::-webkit-progress-value { border-radius: 5px; background: var(--teal); }
+  .progress-mobile progress::-moz-progress-bar { border-radius: 5px; background: var(--teal); }
+  .progress-item { display: none; }
+}
