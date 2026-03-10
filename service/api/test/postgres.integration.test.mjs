@@ -90,7 +90,7 @@ test('PostgreSQL retention role can delete expired rate-limit buckets only', { s
   try {
     await assert.rejects(client.query('SELECT key_hash FROM aduen_api_rate_limits'), (error) => error.code === '42501')
     assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at > now()')).rowCount, 0)
-    await pool.query('UPDATE aduen_api_rate_limits SET expires_at = now() - interval \'1 second\' WHERE key_hash = $1', [keyHash])
+    await pool.query('UPDATE aduen_api_rate_limits SET window_start = now() - interval \'1 hour\', expires_at = now() - interval \'1 second\' WHERE key_hash = $1', [keyHash])
     assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at <= now()')).rowCount, 1)
   } finally { client.release() }
 })
