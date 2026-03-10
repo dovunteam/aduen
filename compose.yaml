@@ -64,6 +64,21 @@ services:
       database:
         condition: service_healthy
 
+  prune-hosted-cases:
+    profiles: [maintenance]
+    <<: *api-runtime-hardening
+    build:
+      context: ./service/api
+    command: [node, dist/pruneHostedCases.js]
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL_MAINTENANCE: ${DATABASE_URL_MAINTENANCE:?Set DATABASE_URL_MAINTENANCE in .env}
+      HOSTED_CASE_RETENTION_DAYS: ${HOSTED_CASE_RETENTION_DAYS:-}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+    depends_on:
+      database:
+        condition: service_healthy
+
   api:
     <<: *api-runtime-hardening
     build:
@@ -78,6 +93,7 @@ services:
       AUTH_JWKS_URL: ${AUTH_JWKS_URL:?Set AUTH_JWKS_URL in .env}
       AUTH_AUDIENCE: ${AUTH_AUDIENCE:-aduen-api}
       AUTH_MAX_TOKEN_AGE_SECONDS: ${AUTH_MAX_TOKEN_AGE_SECONDS:-3600}
+      HOSTED_CASE_RETENTION_DAYS: ${HOSTED_CASE_RETENTION_DAYS:-}
       CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to the exact browser application origins}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
       RATE_LIMIT_HMAC_KEY: ${RATE_LIMIT_HMAC_KEY:-}

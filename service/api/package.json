@@ -12,6 +12,7 @@
     "start": "node dist/main.js",
     "migrate": "node dist/migrate.js",
     "prune:audit": "npm run build && node dist/pruneAudit.js",
+    "prune:hosted-cases": "npm run build && node dist/pruneHostedCases.js",
     "test": "npm run build && node --test test/*.test.mjs",
     "test:postgres": "npm run build && node --test test/postgres.integration.test.mjs"
   },

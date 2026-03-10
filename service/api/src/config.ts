@@ -9,6 +9,7 @@ export type ApiConfig = {
   jwksUrl: string
   audience: string
   authMaxTokenAgeSeconds: number
+  hostedCaseRetentionDays: number | null
   corsOrigins: string[]
   trustedProxies: string[]
   rateLimitHmacKey: string | null
@@ -24,6 +25,9 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const audience = required(env.AUTH_AUDIENCE, 'AUTH_AUDIENCE')
   const authMaxTokenAgeSeconds = Number(env.AUTH_MAX_TOKEN_AGE_SECONDS ?? '3600')
   if (!Number.isInteger(authMaxTokenAgeSeconds) || authMaxTokenAgeSeconds < 60 || authMaxTokenAgeSeconds > 86_400) throw new Error('AUTH_MAX_TOKEN_AGE_SECONDS must be a whole number from 60 to 86400.')
+  const hostedCaseRetentionValue = env.HOSTED_CASE_RETENTION_DAYS?.trim() ?? ''
+  const hostedCaseRetentionDays = hostedCaseRetentionValue ? Number(hostedCaseRetentionValue) : null
+  if (hostedCaseRetentionDays !== null && (!/^\d+$/u.test(hostedCaseRetentionValue) || !Number.isSafeInteger(hostedCaseRetentionDays) || hostedCaseRetentionDays < 1 || hostedCaseRetentionDays > 3650)) throw new Error('HOSTED_CASE_RETENTION_DAYS must be a whole number from 1 to 3650.')
   const corsOrigins = required(env.CORS_ORIGINS, 'CORS_ORIGINS').split(',').map((origin) => origin.trim()).filter(Boolean)
   if (corsOrigins.length === 0 || corsOrigins.some((origin) => !isOrigin(origin))) throw new Error('CORS_ORIGINS must be a comma-separated list of exact HTTP(S) origins.')
   if (nodeEnv === 'production' && corsOrigins.some((origin) => !origin.startsWith('https://'))) throw new Error('CORS_ORIGINS must use HTTPS in production.')
@@ -36,6 +40,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   }
   if (nodeEnv !== 'production' && !['http:', 'https:'].includes(new URL(issuer).protocol)) throw new Error('AUTH_ISSUER must be an HTTP(S) URL.')
   if (nodeEnv !== 'production' && !['http:', 'https:'].includes(new URL(jwksUrl).protocol)) throw new Error('AUTH_JWKS_URL must be an HTTP(S) URL.')
+  if (nodeEnv === 'production' && hostedCaseRetentionDays === null) throw new Error('HOSTED_CASE_RETENTION_DAYS must be explicitly selected in production.')
 
   const port = Number(env.PORT ?? '8080')
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer from 1 to 65535.')
@@ -47,7 +52,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   if (rateLimitHmacKey && Buffer.byteLength(rateLimitHmacKey, 'utf8') < 32) throw new Error('RATE_LIMIT_HMAC_KEY must contain at least 32 UTF-8 bytes.')
   if (nodeEnv === 'production' && !rateLimitHmacKey) throw new Error('RATE_LIMIT_HMAC_KEY is required for shared production rate limiting.')
 
-  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, nodeEnv }
+  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, nodeEnv }
 }
 
 function isIpOrCidr(value: string): boolean {
