@@ -1,5 +1,15 @@
 name: aduen-local-service
 
+x-api-runtime-hardening: &api-runtime-hardening
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=16m
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 100
+
 services:
   database:
     image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
@@ -27,6 +37,7 @@ services:
 
   migrate:
     profiles: [tools]
+    <<: *api-runtime-hardening
     build:
       context: ./service/api
     command: [node, dist/migrate.js]
@@ -40,6 +51,7 @@ services:
 
   prune-audit:
     profiles: [maintenance]
+    <<: *api-runtime-hardening
     build:
       context: ./service/api
     command: [node, dist/pruneAudit.js]
@@ -53,6 +65,7 @@ services:
         condition: service_healthy
 
   api:
+    <<: *api-runtime-hardening
     build:
       context: ./service/api
     environment:
