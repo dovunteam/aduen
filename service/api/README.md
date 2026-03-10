@@ -15,6 +15,8 @@ The example identity-provider URLs deliberately use the reserved `.invalid` doma
 
 The API image exposes port `8080` and includes a container health check against `/health/ready`. It reports healthy only when the process can reach PostgreSQL; a deployment runtime should use this signal for readiness and remove unhealthy instances from traffic. Keep the API port private behind a TLS-terminating ingress and preserve the image's non-root user. The probe does not validate OIDC discovery or ingress configuration.
 
+For the provider-neutral OCI runtime contract, role provisioning, release order, and production readiness gates, see [DEPLOYMENT.md](./DEPLOYMENT.md). No production hosting target or runtime configuration is selected by this repository.
+
 ## Endpoints
 
 - `GET /health/live` reports that the process is accepting requests.
