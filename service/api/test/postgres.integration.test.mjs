@@ -12,8 +12,10 @@ const migratorUrl = process.env.DATABASE_URL_MIGRATOR
 const migratorPool = migratorUrl ? new Pool({ connectionString: migratorUrl, max: 1 }) : null
 const maintenanceUrl = process.env.DATABASE_URL_MAINTENANCE
 const maintenancePool = maintenanceUrl ? new Pool({ connectionString: maintenanceUrl, max: 1 }) : null
+const testAdminUrl = process.env.DATABASE_URL_TEST_ADMIN
+const testAdminPool = testAdminUrl ? new Pool({ connectionString: testAdminUrl, max: 1 }) : null
 
-after(async () => { await Promise.all([pool?.end(), migratorPool?.end(), maintenancePool?.end()]) })
+after(async () => { await Promise.all([pool?.end(), migratorPool?.end(), maintenancePool?.end(), testAdminPool?.end()]) })
 
 test('production runtime role is restricted and does not own policy-protected tables', { skip: !pool }, async () => {
   await assertRestrictedRuntimeRole(pool)
@@ -76,7 +78,7 @@ test('PostgreSQL store scopes CRUD and records minimized mutation events', { ski
   assert.equal(await store.get(owner, id), null)
 })
 
-test('PostgreSQL account deletion removes only that subject cases and audit rows', { skip: !pool || !migratorPool }, async () => {
+test('PostgreSQL account deletion removes only that subject cases and audit rows', { skip: !pool || !testAdminPool }, async () => {
   const store = new PgCaseStore(pool)
   const owner = `account-delete-${crypto.randomUUID()}`
   const otherOwner = `account-retain-${crypto.randomUUID()}`
@@ -90,8 +92,8 @@ test('PostgreSQL account deletion removes only that subject cases and audit rows
   await store.deleteAccountData(owner)
   assert.equal((await store.list(owner, 50)).cases.length, 0)
   assert.equal((await store.get(otherOwner, otherId))?.record.id, otherId)
-  assert.equal((await migratorPool.query('SELECT id FROM aduen_case_audit_events WHERE owner_subject = $1', [owner])).rowCount, 0)
-  assert.ok((await migratorPool.query('SELECT id FROM aduen_case_audit_events WHERE owner_subject = $1', [otherOwner])).rowCount > 0)
+  assert.equal((await testAdminPool.query('SELECT id FROM aduen_case_audit_events WHERE owner_subject = $1', [owner])).rowCount, 0)
+  assert.ok((await testAdminPool.query('SELECT id FROM aduen_case_audit_events WHERE owner_subject = $1', [otherOwner])).rowCount > 0)
 
   await store.deleteAccountData(otherOwner)
 })
