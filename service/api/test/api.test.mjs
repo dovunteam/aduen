@@ -120,6 +120,9 @@ test('production refuses missing database TLS and insecure identity endpoints', 
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'https://app.example.test/path' }), /exact HTTP\(S\) origins/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'http://app.example.test' }), /must use HTTPS/u)
   const secure = { ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', TRUSTED_PROXIES: '10.20.0.0/16,2001:db8::1', RATE_LIMIT_HMAC_KEY: 'synthetic-shared-rate-limit-secret-123456' }
+  assert.throws(() => readConfig({ ...secure, AUTH_MAX_TOKEN_AGE_SECONDS: '59' }), /from 60 to 86400/u)
+  assert.throws(() => readConfig({ ...secure, AUTH_MAX_TOKEN_AGE_SECONDS: '1.5' }), /whole number/u)
+  assert.equal(readConfig(secure).authMaxTokenAgeSeconds, 3600)
   assert.throws(() => readConfig({ ...secure, TRUSTED_PROXIES: '' }), /TRUSTED_PROXIES must list/u)
   assert.throws(() => readConfig({ ...secure, TRUSTED_PROXIES: 'ingress.example.test' }), /IP addresses or CIDR/u)
   assert.throws(() => readConfig({ ...secure, RATE_LIMIT_HMAC_KEY: '' }), /RATE_LIMIT_HMAC_KEY is required/u)
@@ -133,6 +136,8 @@ test('case endpoints reject missing, forged, and wrong-audience bearer tokens', 
   const token = await signToken({ sub: 'user-a', audience: 'other-api' })
   assert.equal((await app.inject({ method: 'GET', url: '/v1/cases', headers: bearer(token) })).statusCode, 401)
   assert.equal((await app.inject({ method: 'GET', url: '/v1/cases', headers: bearer(await signToken({ sub: 'bad\u0000subject' })) })).statusCode, 401)
+  assert.equal((await app.inject({ method: 'GET', url: '/v1/cases', headers: bearer(await signToken({ ageSeconds: 3700, lifetimeSeconds: 7200 })) })).statusCode, 401)
+  assert.equal((await app.inject({ method: 'GET', url: '/v1/cases', headers: bearer(await signToken({ issuedAt: false })) })).statusCode, 401)
 })
 
 test('identity-provider outages return unavailable instead of rejecting valid users', async () => {
@@ -197,15 +202,15 @@ test('case deletion is owner scoped and requires an exact revision', async () =>
   assert.equal((await app.inject({ method: 'GET', url: `/v1/cases/${record.id}`, headers: bearer(aliceToken) })).statusCode, 404)
 })
 
-async function signToken({ sub = 'user-a', audience = 'aduen-api', tokenIssuer = 'https://identity.example.test/' } = {}) {
-  return new SignJWT({})
+async function signToken({ sub = 'user-a', audience = 'aduen-api', tokenIssuer = 'https://identity.example.test/', ageSeconds = 0, lifetimeSeconds = 300, issuedAt = true } = {}) {
+  const now = Math.floor(Date.now() / 1000)
+  const token = new SignJWT({})
     .setProtectedHeader({ alg: 'RS256', kid: keyId })
     .setIssuer(tokenIssuer)
     .setSubject(sub)
     .setAudience(audience)
-    .setIssuedAt()
-    .setExpirationTime('5m')
-    .sign(signingKey)
+  if (issuedAt) token.setIssuedAt(now - ageSeconds)
+  return token.setExpirationTime(now - ageSeconds + lifetimeSeconds).sign(signingKey)
 }
 
 function bearer(token) { return { authorization: `Bearer ${token}` } }

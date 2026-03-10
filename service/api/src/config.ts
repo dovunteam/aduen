@@ -8,6 +8,7 @@ export type ApiConfig = {
   issuer: string
   jwksUrl: string
   audience: string
+  authMaxTokenAgeSeconds: number
   corsOrigins: string[]
   trustedProxies: string[]
   rateLimitHmacKey: string | null
@@ -21,6 +22,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const issuer = required(env.AUTH_ISSUER, 'AUTH_ISSUER')
   const jwksUrl = required(env.AUTH_JWKS_URL, 'AUTH_JWKS_URL')
   const audience = required(env.AUTH_AUDIENCE, 'AUTH_AUDIENCE')
+  const authMaxTokenAgeSeconds = Number(env.AUTH_MAX_TOKEN_AGE_SECONDS ?? '3600')
+  if (!Number.isInteger(authMaxTokenAgeSeconds) || authMaxTokenAgeSeconds < 60 || authMaxTokenAgeSeconds > 86_400) throw new Error('AUTH_MAX_TOKEN_AGE_SECONDS must be a whole number from 60 to 86400.')
   const corsOrigins = required(env.CORS_ORIGINS, 'CORS_ORIGINS').split(',').map((origin) => origin.trim()).filter(Boolean)
   if (corsOrigins.length === 0 || corsOrigins.some((origin) => !isOrigin(origin))) throw new Error('CORS_ORIGINS must be a comma-separated list of exact HTTP(S) origins.')
   if (nodeEnv === 'production' && corsOrigins.some((origin) => !origin.startsWith('https://'))) throw new Error('CORS_ORIGINS must use HTTPS in production.')
@@ -44,7 +47,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   if (rateLimitHmacKey && Buffer.byteLength(rateLimitHmacKey, 'utf8') < 32) throw new Error('RATE_LIMIT_HMAC_KEY must contain at least 32 UTF-8 bytes.')
   if (nodeEnv === 'production' && !rateLimitHmacKey) throw new Error('RATE_LIMIT_HMAC_KEY is required for shared production rate limiting.')
 
-  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, nodeEnv }
+  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, nodeEnv }
 }
 
 function isIpOrCidr(value: string): boolean {
