@@ -12,9 +12,9 @@ import type { CasePage, StoredCase } from '../data/caseApi'
 import { listOperatorReviews } from '../data/operatorReviewRepository'
 import type { Locale } from '../i18n'
 
-type Props = { locale: Locale; draft: CaseDraft; onBack: () => void; onDelete: () => Promise<void>; hostedConfigured: boolean; signedIn: boolean; identityError: boolean; onSignIn: () => void | Promise<void>; onSaveHosted: () => Promise<void>; onListHosted: (cursor?: string) => Promise<CasePage>; onDeleteHosted: (id: string, revision: number) => Promise<void>; onImportHosted: (item: StoredCase) => Promise<void> }
+type Props = { locale: Locale; draft: CaseDraft; onBack: () => void; onDelete: () => Promise<void>; hostedConfigured: boolean; signedIn: boolean; identityError: boolean; onSignIn: () => void | Promise<void>; onSaveHosted: () => Promise<void>; onListHosted: (cursor?: string) => Promise<CasePage>; onDeleteHosted: (id: string, revision: number) => Promise<void>; onDeleteHostedAccountData: () => Promise<void>; onImportHosted: (item: StoredCase) => Promise<void> }
 
-export function DataControls({ locale, draft, onBack, onDelete, hostedConfigured, signedIn, identityError, onSignIn, onSaveHosted, onListHosted, onDeleteHosted, onImportHosted }: Props) {
+export function DataControls({ locale, draft, onBack, onDelete, hostedConfigured, signedIn, identityError, onSignIn, onSaveHosted, onListHosted, onDeleteHosted, onDeleteHostedAccountData, onImportHosted }: Props) {
   const text = dataText[locale]
   const [evidenceCount, setEvidenceCount] = useState(0)
   const [candidateCount, setCandidateCount] = useState(0)
@@ -82,7 +82,7 @@ export function DataControls({ locale, draft, onBack, onDelete, hostedConfigured
     <section className="data-action"><div><h2>{text.retentionTitle}</h2><p>{retention ? text.retentionSet(new Date(retention.expiresAt).toLocaleDateString(locale === 'ms' ? 'ms-MY' : 'en-MY')) : text.retentionNone}</p></div><label>{text.retentionChoice}<select value={retentionChoice} onChange={(event) => updateRetention(event.target.value)}><option value="">{text.retentionOff}</option><option value="30">{text.retention30}</option><option value="90">{text.retention90}</option><option value="365">{text.retention365}</option></select></label></section>
     <section className="data-action"><div><h2>{text.auditTitle}</h2><p>{text.auditCopy}</p></div>{auditEvents.length ? <details><summary>{text.auditView(auditEvents.length)}</summary><ol className="audit-list">{auditEvents.map((event) => <li key={event.id}><time>{new Date(event.at).toLocaleString(locale === 'ms' ? 'ms-MY' : 'en-MY')}</time><strong>{auditLabel(event, locale)}</strong><span>{event.detail}</span></li>)}</ol></details> : <p>{text.auditEmpty}</p>}</section>
     <section className="data-action"><div><h2>{text.hostedTitle}</h2><p>{hostedConfigured ? text.hostedCopy : text.hostedUnavailable}</p>{identityError && <p className="form-error" role="alert">{text.identityFailed}</p>}{hostedResult && <p role="status">{hostedResult}</p>}{hostedConfigured && signedIn && <label className="check-row"><input type="checkbox" checked={hostedConsent} onChange={(event) => setHostedConsent(event.target.checked)} /><span>{text.hostedConsent}</span></label>}</div>{!hostedConfigured ? <button className="secondary" type="button" disabled>{text.hostedUnavailableButton}</button> : signedIn ? <button className="primary" type="button" disabled={!hostedConsent || !hasDraft || hostedSaving || exporting || deleting} onClick={() => void saveHostedCopy()}>{hostedSaving ? text.hostedSaving : text.hostedSave}</button> : <button className="secondary" type="button" onClick={() => void onSignIn()}>{text.hostedSignIn}</button>}</section>
-    {hostedConfigured && signedIn && <HostedAccountControls locale={locale} busy={hostedSaving || exporting || deleting} canImport={hostedImportAvailable} onList={onListHosted} onDelete={onDeleteHosted} onImport={onImportHosted} />}
+    {hostedConfigured && signedIn && <HostedAccountControls locale={locale} busy={hostedSaving || exporting || deleting} canImport={hostedImportAvailable} onList={onListHosted} onDelete={onDeleteHosted} onDeleteAll={onDeleteHostedAccountData} onImport={onImportHosted} />}
     {error && <p className="form-error" role="alert">{error}</p>}
     <section className="data-action"><div><h2>{text.exportTitle}</h2><p>{text.exportCopy}</p></div><button className="primary" disabled={(!hasData && !inventoryFailed) || exporting || deleting} onClick={exportData}>{exporting ? text.preparing : text.export} <span>↓</span></button></section>
     <section className="data-action destructive"><div><h2>{text.deleteTitle}</h2><p>{text.deleteCopy}</p></div><button className="danger-button" disabled={(!hasData && !inventoryFailed) || deleting || exporting} onClick={deleteData}>{text.delete}</button></section>
@@ -90,15 +90,20 @@ export function DataControls({ locale, draft, onBack, onDelete, hostedConfigured
   </section>
 }
 
-function HostedAccountControls({ locale, busy, canImport, onList, onDelete, onImport }: { locale: Locale; busy: boolean; canImport: boolean; onList: (cursor?: string) => Promise<CasePage>; onDelete: (id: string, revision: number) => Promise<void>; onImport: (item: StoredCase) => Promise<void> }) {
+function HostedAccountControls({ locale, busy, canImport, onList, onDelete, onDeleteAll, onImport }: { locale: Locale; busy: boolean; canImport: boolean; onList: (cursor?: string) => Promise<CasePage>; onDelete: (id: string, revision: number) => Promise<void>; onDeleteAll: () => Promise<void>; onImport: (item: StoredCase) => Promise<void> }) {
   const text = dataText[locale]
   const [cases, setCases] = useState<StoredCase[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState('')
+  const [deletingAll, setDeletingAll] = useState(false)
   const [importingId, setImportingId] = useState('')
   const [error, setError] = useState('')
+  const [deletedAll, setDeletedAll] = useState(false)
+  const accountDeletionText = locale === 'ms'
+    ? { button: 'Padam semua data dihoskan', confirm: 'Padam secara kekal semua rekod kes dan sejarah mutasi dihoskan dalam akaun Aduen ini? Ini tidak memadam data dalam pelayar ini atau akaun log masuk luaran anda.', busy: 'Memadam data dihoskan?', done: 'Semua data kes dan sejarah mutasi dihoskan telah dipadam. Akaun log masuk luaran dan data dalam pelayar ini kekal.', failed: 'Data dihoskan tidak dapat dipadam. Cuba lagi.' }
+    : { button: 'Delete all hosted data', confirm: 'Permanently delete every hosted case record and mutation history for this Aduen account? This does not delete data in this browser or your external sign-in account.', busy: 'Deleting hosted data?', done: 'All hosted case data and mutation history were deleted. Your external sign-in account and browser data remain.', failed: 'Hosted data could not be deleted. Please retry.' }
 
   async function loadCopies(nextCursor?: string) {
     setLoading(true); setError('')
@@ -121,6 +126,16 @@ function HostedAccountControls({ locale, busy, canImport, onList, onDelete, onIm
     finally { setDeletingId('') }
   }
 
+  async function deleteAllCopies() {
+    if (!window.confirm(accountDeletionText.confirm)) return
+    setDeletingAll(true); setError(''); setDeletedAll(false)
+    try {
+      await onDeleteAll()
+      setCases([]); setCursor(null); setLoaded(true); setDeletedAll(true)
+    } catch { setError(accountDeletionText.failed) }
+    finally { setDeletingAll(false) }
+  }
+
   async function importCopy(item: StoredCase) {
     if (!window.confirm(text.hostedImportConfirm)) return
     setImportingId(item.record.id); setError('')
@@ -128,7 +143,15 @@ function HostedAccountControls({ locale, busy, canImport, onList, onDelete, onIm
     finally { setImportingId('') }
   }
 
-  return <section className="hosted-account" aria-labelledby="hosted-account-title"><div className="hosted-account-heading"><div><h2 id="hosted-account-title">{text.hostedAccountTitle}</h2><p>{text.hostedAccountCopy}</p></div><button className="secondary" type="button" disabled={loading || busy} onClick={() => void loadCopies()}>{loading ? text.hostedLoading : text.hostedLoad}</button></div>{error && <p className="form-error" role="alert">{error}</p>}{loaded && cases.length === 0 && <p role="status">{text.hostedEmpty}</p>}{cases.length > 0 && <ul className="hosted-case-list">{cases.map((item) => <li key={item.record.id}><div><strong>{item.record.draft.seller || text.hostedUnnamed}</strong><span>{text.hostedPurchase}: {item.record.draft.purchaseDate || text.unknownDate} · MYR {item.record.draft.amount || '0.00'}</span><span>{text.hostedStatus}: {item.record.status.replaceAll('_', ' ')}</span></div><div className="hosted-case-actions"><button className="secondary" type="button" aria-label={`${text.hostedImport}: ${item.record.draft.seller || text.hostedUnnamed}`} disabled={!canImport || Boolean(deletingId) || Boolean(importingId) || busy} onClick={() => void importCopy(item)}>{importingId === item.record.id ? text.hostedImporting : text.hostedImport}</button><button className="danger-button" type="button" aria-label={`${text.hostedDelete}: ${item.record.draft.seller || text.hostedUnnamed}`} disabled={Boolean(deletingId) || Boolean(importingId) || busy} onClick={() => void deleteCopy(item)}>{deletingId === item.record.id ? text.hostedDeleting : text.hostedDelete}</button></div></li>)}</ul>}{cursor && <button className="secondary hosted-more" type="button" disabled={loading || busy} onClick={() => void loadCopies(cursor)}>{loading ? text.hostedLoading : text.hostedLoadMore}</button>}</section>
+  return <section className="hosted-account" aria-labelledby="hosted-account-title">
+    <div className="hosted-account-heading"><div><h2 id="hosted-account-title">{text.hostedAccountTitle}</h2><p>{text.hostedAccountCopy}</p></div><button className="secondary" type="button" disabled={loading || busy || deletingAll} onClick={() => void loadCopies()}>{loading ? text.hostedLoading : text.hostedLoad}</button></div>
+    {error && <p className="form-error" role="alert">{error}</p>}
+    {deletedAll && <p role="status">{accountDeletionText.done}</p>}
+    {loaded && cases.length === 0 && <p role="status">{text.hostedEmpty}</p>}
+    {cases.length > 0 && <ul className="hosted-case-list">{cases.map((item) => <li key={item.record.id}><div><strong>{item.record.draft.seller || text.hostedUnnamed}</strong><span>{text.hostedPurchase}: {item.record.draft.purchaseDate || text.unknownDate} ? MYR {item.record.draft.amount || '0.00'}</span><span>{text.hostedStatus}: {item.record.status.replaceAll('_', ' ')}</span></div><div className="hosted-case-actions"><button className="secondary" type="button" aria-label={`${text.hostedImport}: ${item.record.draft.seller || text.hostedUnnamed}`} disabled={!canImport || Boolean(deletingId) || Boolean(importingId) || busy || deletingAll} onClick={() => void importCopy(item)}>{importingId === item.record.id ? text.hostedImporting : text.hostedImport}</button><button className="danger-button" type="button" aria-label={`${text.hostedDelete}: ${item.record.draft.seller || text.hostedUnnamed}`} disabled={Boolean(deletingId) || Boolean(importingId) || busy || deletingAll} onClick={() => void deleteCopy(item)}>{deletingId === item.record.id ? text.hostedDeleting : text.hostedDelete}</button></div></li>)}</ul>}
+    {cursor && <button className="secondary hosted-more" type="button" disabled={loading || busy || deletingAll} onClick={() => void loadCopies(cursor)}>{loading ? text.hostedLoading : text.hostedLoadMore}</button>}
+    <div className="hosted-account-actions"><button className="danger-button" type="button" disabled={busy || loading || Boolean(deletingId) || Boolean(importingId) || deletingAll} onClick={() => void deleteAllCopies()}>{deletingAll ? accountDeletionText.busy : accountDeletionText.button}</button></div>
+  </section>
 }
 
 const dataText = {
@@ -139,6 +162,7 @@ const dataText = {
 function auditLabel(event: LocalAuditEvent, locale: Locale): string {
   if (event.action === 'hosted_case_saved') return locale === 'ms' ? 'Simpan rekod kes dihoskan' : 'Hosted case saved'
   if (event.action === 'hosted_case_deleted') return locale === 'ms' ? 'Padam rekod kes dihoskan' : 'Hosted case deleted'
+  if (event.action === 'hosted_account_data_deleted') return locale === 'ms' ? 'Padam semua data dihoskan' : 'All hosted account data deleted'
   if (event.action === 'hosted_case_imported') return locale === 'ms' ? 'Salin rekod dihoskan ke draf setempat' : 'Hosted case copied to local draft'
   const labels = locale === 'ms'
     ? { consent_accepted: 'Terima notis privasi', case_created: 'Cipta kes', case_edited: 'Edit kes', case_recovered: 'Pulihkan simpanan kes terdahulu', submission_edited: 'Edit serahan', derived_fact_reviewed: 'Semakan fakta terbitan', request_copied: 'Salin permintaan', pack_viewed: 'Lihat pek', pack_approved: 'Luluskan pek', evidence_added: 'Tambah bukti', evidence_inclusion_changed: 'Tukar penyertaan bukti', evidence_previewed: 'Pratonton bukti', evidence_downloaded: 'Muat turun bukti asal', redacted_copy_exported: 'Eksport salinan redaksi', evidence_deleted: 'Padam bukti', case_transitioned: 'Peralihan kes', case_exported: 'Eksport kes', pack_exported: 'Eksport pek', handoff_exported: 'Eksport serahan', review_brief_exported: 'Eksport ringkasan semakan manual', operator_review_recorded: 'Rekod semakan operator', follow_up_exported: 'Eksport peringatan susulan', retention_updated: 'Kemas kini tempoh simpanan' }

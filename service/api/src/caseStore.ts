@@ -10,6 +10,7 @@ export type CaseStore = {
   create(subject: string, record: CaseRecord): Promise<StoredCase>
   replace(subject: string, id: string, record: CaseRecord, revision: number): Promise<StoredCase | null>
   delete(subject: string, id: string, revision: number): Promise<boolean>
+  deleteAccountData(subject: string): Promise<void>
   ping(): Promise<void>
 }
 
@@ -82,6 +83,13 @@ export class PgCaseStore implements CaseStore {
       if (result.rowCount !== 1) return false
       await writeAudit(client, subject, id, 'case_deleted')
       return true
+    })
+  }
+
+  async deleteAccountData(subject: string): Promise<void> {
+    await this.withSubject(subject, async (client) => {
+      await client.query('DELETE FROM aduen_cases')
+      await client.query('DELETE FROM aduen_case_audit_events')
     })
   }
 

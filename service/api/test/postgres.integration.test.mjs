@@ -76,6 +76,24 @@ test('PostgreSQL store scopes CRUD and records minimized mutation events', { ski
   assert.equal(await store.get(owner, id), null)
 })
 
+test('PostgreSQL account deletion removes only that subject cases and audit rows', { skip: !pool || !migratorPool }, async () => {
+  const store = new PgCaseStore(pool)
+  const owner = `account-delete-${crypto.randomUUID()}`
+  const otherOwner = `account-retain-${crypto.randomUUID()}`
+  const ownerId = crypto.randomUUID()
+  const otherId = crypto.randomUUID()
+  await store.create(owner, makeRecord(ownerId))
+  await store.create(otherOwner, makeRecord(otherId))
+
+  await store.deleteAccountData(owner)
+  assert.equal((await store.list(owner, 50)).cases.length, 0)
+  assert.equal((await store.get(otherOwner, otherId))?.record.id, otherId)
+  assert.equal((await migratorPool.query('SELECT id FROM aduen_case_audit_events WHERE owner_subject = $1', [owner])).rowCount, 0)
+  assert.ok((await migratorPool.query('SELECT id FROM aduen_case_audit_events WHERE owner_subject = $1', [otherOwner])).rowCount > 0)
+
+  await store.deleteAccountData(otherOwner)
+})
+
 test('PostgreSQL rate-limit buckets are shared, HMAC-keyed, and pruned after expiry', { skip: !pool }, async () => {
   const hmacKey = 'integration-test-rate-limit-secret-key-32-bytes-minimum'
   const StoreA = createPostgresRateLimitStore(pool, hmacKey)

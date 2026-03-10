@@ -33,7 +33,7 @@ test('hosted save requires consent and account copies can be listed and deleted 
   const requests: Array<{ method: string; url: string; revision?: string }> = []
   const owned = new Map<string, { record: typeof primaryCase; revision: number }>()
   let forceStaleRevision = true
-  await page.route('https://api.example.test/v1/cases**', async (route) => {
+  await page.route('https://api.example.test/v1/**', async (route) => {
     const request = route.request()
     const method = request.method()
     const url = new URL(request.url())
@@ -72,6 +72,10 @@ test('hosted save requires consent and account copies can be listed and deleted 
       owned.delete(primaryCase.id)
       await route.fulfill({ status: 204, headers }); return
     }
+    if (method === 'DELETE' && url.pathname === '/v1/account/data') {
+      owned.clear()
+      await route.fulfill({ status: 204, headers }); return
+    }
     await route.fulfill({ status: 404, headers, json: { error: 'not_found' } })
   })
 
@@ -108,12 +112,20 @@ test('hosted save requires consent and account copies can be listed and deleted 
   const audit = await page.evaluate(() => JSON.parse(localStorage.getItem('Aduen.audit-log.v1') ?? '[]') as Array<{ action: string }>)
   expect(audit.some((event) => event.action === 'hosted_case_saved')).toBe(true)
   expect(audit.some((event) => event.action === 'hosted_case_deleted')).toBe(true)
+
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Delete all hosted data' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'All hosted case data and mutation history were deleted' })).toBeVisible()
+  expect(requests.some((request) => request.method === 'DELETE' && request.url.endsWith('/v1/account/data'))).toBe(true)
+  expect(await page.evaluate(() => localStorage.getItem('Aduen.case-record.v1') !== null)).toBe(true)
+  const fullAudit = await page.evaluate(() => JSON.parse(localStorage.getItem('Aduen.audit-log.v1') ?? '[]') as Array<{ action: string }> )
+  expect(fullAudit.some((event) => event.action === 'hosted_account_data_deleted')).toBe(true)
 })
 
 test('hosted structured case can start a separate local draft when this browser has no case data', async ({ page }) => {
   const owned = new Map([[anotherCase.id, { record: anotherCase, revision: 2 }]])
   const methods: string[] = []
-  await page.route('https://api.example.test/v1/cases**', async (route) => {
+  await page.route('https://api.example.test/v1/**', async (route) => {
     const request = route.request()
     const headers = {
       'access-control-allow-origin': origin,
