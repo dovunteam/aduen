@@ -75,6 +75,13 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
     catch (error) { return error instanceof Error && error.message === 'invalid_cursor' ? reply.code(400).send({ error: 'invalid_cursor' }) : reply.code(500).send({ error: 'internal_error' }) }
   })
 
+  app.get('/v1/account/data/export', async (request, reply) => {
+    try {
+      const cases = await store.exportAll(request.userSubject!)
+      return { exportedAt: new Date().toISOString(), cases }
+    } catch { return reply.code(500).send({ error: 'internal_error' }) }
+  })
+
   app.post('/v1/cases', async (request, reply) => {
     const parsed = caseRecordSchema.safeParse(request.body)
     if (!parsed.success) return reply.code(400).send({ error: 'invalid_case_record', fields: parsed.error.flatten().fieldErrors })

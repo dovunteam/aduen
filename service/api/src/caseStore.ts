@@ -6,6 +6,7 @@ export type StoredCase = { record: CaseRecord; revision: number }
 export type CasePage = { cases: StoredCase[]; nextCursor: string | null }
 export type CaseStore = {
   list(subject: string, limit: number, cursor?: string): Promise<CasePage>
+  exportAll(subject: string): Promise<StoredCase[]>
   get(subject: string, id: string): Promise<StoredCase | null>
   create(subject: string, record: CaseRecord): Promise<StoredCase>
   replace(subject: string, id: string, record: CaseRecord, revision: number): Promise<StoredCase | null>
@@ -32,6 +33,15 @@ export class PgCaseStore implements CaseStore {
       const last = rows.at(-1)
       const hasMore = result.rows.length > limit
       return { cases: rows, nextCursor: hasMore && last ? encodeCursor(last) : null }
+    })
+  }
+
+  async exportAll(subject: string): Promise<StoredCase[]> {
+    return this.withSubject(subject, async (client) => {
+      const result = await client.query<{ record: CaseRecord; revision: number }>(
+        'SELECT record, revision FROM aduen_cases ORDER BY updated_at DESC, id DESC',
+      )
+      return result.rows.map(toStoredCase)
     })
   }
 
