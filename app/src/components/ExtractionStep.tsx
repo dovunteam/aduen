@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { reviewExtractionCandidate } from '../data/evidenceRepository'
 import type { EvidenceExtraction, ExtractionCandidate } from '../domain/extraction'
 import type { EvidenceMetadata } from '../domain/evidence'
+import type { Locale } from '../i18n'
 
-type Props = { initialExtractions: EvidenceExtraction[]; evidence: EvidenceMetadata[]; onBack: () => void; onContinue: (records: EvidenceExtraction[]) => void }
+type Props = { locale: Locale; initialExtractions: EvidenceExtraction[]; evidence: EvidenceMetadata[]; onBack: () => void; onContinue: (records: EvidenceExtraction[]) => void }
 
-export function ExtractionStep({ initialExtractions, evidence, onBack, onContinue }: Props) {
+export function ExtractionStep({ locale, initialExtractions, evidence, onBack, onContinue }: Props) {
+  const text = extractionText[locale]
   const [records, setRecords] = useState(initialExtractions)
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState('')
   const candidates = records.flatMap((record) => record.candidates.map((item) => ({ record, item })))
   const pending = candidates.filter(({ item }) => item.status === 'unconfirmed').length
-  const fileName = (evidenceId: string) => evidence.find((item) => item.id === evidenceId)?.fileName ?? 'Evidence file'
+  const fileName = (evidenceId: string) => evidence.find((item) => item.id === evidenceId)?.fileName ?? text.evidenceFile
 
   async function decide(record: EvidenceExtraction, item: ExtractionCandidate, status: 'confirmed' | 'rejected') {
     setBusyId(item.id)
@@ -22,15 +24,25 @@ export function ExtractionStep({ initialExtractions, evidence, onBack, onContinu
   }
 
   return <section className="page form-page extraction-page">
-    <div className="eyebrow">Extracted-fact confirmation</div><h1>Check every candidate.</h1>
-    <p className="lede">Tuntiva found possible facts in plain-text evidence. They are derived suggestions—not case facts—until you confirm or correct them.</p>
-    <div className="extraction-summary"><div><strong>{candidates.length}</strong><span>candidates found</span></div><div><strong>{pending}</strong><span>awaiting your decision</span></div><div><strong>plain-text-v1</strong><span>extractor version</span></div></div>
+    <div className="eyebrow">{text.eyebrow}</div><h1>{text.title}</h1>
+    <p className="lede">{text.lede}</p>
+    <div className="extraction-summary"><div><strong>{candidates.length}</strong><span>{text.candidates}</span></div><div><strong>{pending}</strong><span>{text.awaiting}</span></div><div><strong>plain-text-v1</strong><span>{text.version}</span></div></div>
     <div className="candidate-list">{candidates.map(({ record, item }) => <article className={`candidate ${item.status}`} key={item.id}>
-      <div className="candidate-meta"><span>{item.field}</span><strong>{fileName(record.evidenceId)}</strong><small>{Math.round(item.confidence * 100)}% pattern confidence · unverified</small></div>
-      <div className="candidate-value"><label>Candidate value<input value={edits[item.id] ?? item.confirmedValue ?? item.value} disabled={item.status !== 'unconfirmed'} onChange={(event) => setEdits((current) => ({ ...current, [item.id]: event.target.value }))} /></label><blockquote>“…{item.sourceExcerpt}…”</blockquote>{item.status !== 'unconfirmed' && <p className="decision-label">{item.status === 'confirmed' ? `Confirmed as ${item.confirmedValue}` : 'Rejected — not used as a fact'}</p>}</div>
-      <div className="candidate-actions"><button type="button" disabled={item.status !== 'unconfirmed' || busyId === item.id} onClick={() => void decide(record, item, 'confirmed')}>Confirm{edits[item.id] && edits[item.id] !== item.value ? ' correction' : ''}</button><button type="button" disabled={item.status !== 'unconfirmed' || busyId === item.id} onClick={() => void decide(record, item, 'rejected')}>Reject</button></div>
+      <div className="candidate-meta"><span>{fieldLabel(item.field, locale)}</span><strong>{fileName(record.evidenceId)}</strong><small>{Math.round(item.confidence * 100)}% {text.confidence}</small></div>
+      <div className="candidate-value"><label>{text.candidateValue}<input value={edits[item.id] ?? item.confirmedValue ?? item.value} disabled={item.status !== 'unconfirmed'} onChange={(event) => setEdits((current) => ({ ...current, [item.id]: event.target.value }))} /></label><blockquote>“…{item.sourceExcerpt}…”</blockquote>{item.status !== 'unconfirmed' && <p className="decision-label">{item.status === 'confirmed' ? text.confirmed(item.confirmedValue ?? item.value) : text.rejected}</p>}</div>
+      <div className="candidate-actions"><button type="button" disabled={item.status !== 'unconfirmed' || busyId === item.id} onClick={() => void decide(record, item, 'confirmed')}>{text.confirm}{edits[item.id] && edits[item.id] !== item.value ? text.correction : ''}</button><button type="button" disabled={item.status !== 'unconfirmed' || busyId === item.id} onClick={() => void decide(record, item, 'rejected')}>{text.reject}</button></div>
     </article>)}</div>
-    <div className="privacy-line"><strong>Originals are unchanged.</strong> Your decision is stored on the derived candidate with both the extracted value and any corrected value retained.</div>
-    <div className="actions split"><button className="secondary" onClick={onBack}>← Evidence</button><button className="primary" disabled={pending > 0} onClick={() => onContinue(records)}>Continue to Tuntiva Check <span>→</span></button></div>
+    <div className="privacy-line"><strong>{text.privacyLead}</strong> {text.privacy}</div>
+    <div className="actions split"><button className="secondary" onClick={onBack}>{text.back}</button><button className="primary" disabled={pending > 0} onClick={() => onContinue(records)}>{text.continue} <span>→</span></button></div>
   </section>
+}
+
+const extractionText = {
+  en: { eyebrow: 'Extracted-fact confirmation', title: 'Check every candidate.', lede: 'Tuntiva found possible facts in plain-text evidence. They are derived suggestions—not case facts—until you confirm or correct them.', candidates: 'candidates found', awaiting: 'awaiting your decision', version: 'extractor version', evidenceFile: 'Evidence file', confidence: 'pattern confidence · unverified', candidateValue: 'Candidate value', confirmed: (value: string) => `Confirmed as ${value}`, rejected: 'Rejected — not used as a fact', confirm: 'Confirm', correction: ' correction', reject: 'Reject', privacyLead: 'Originals are unchanged.', privacy: 'Your decision is stored on the derived candidate with both the extracted value and any corrected value retained.', back: '← Evidence', continue: 'Continue to Tuntiva Check' },
+  ms: { eyebrow: 'Pengesahan fakta diekstrak', title: 'Semak setiap calon.', lede: 'Tuntiva menemui kemungkinan fakta dalam bukti teks biasa. Ia ialah cadangan terbitan—bukan fakta kes—sehingga anda mengesahkan atau membetulkannya.', candidates: 'calon ditemui', awaiting: 'menunggu keputusan anda', version: 'versi pengekstrak', evidenceFile: 'Fail bukti', confidence: 'keyakinan corak · belum disahkan', candidateValue: 'Nilai calon', confirmed: (value: string) => `Disahkan sebagai ${value}`, rejected: 'Ditolak — tidak digunakan sebagai fakta', confirm: 'Sahkan', correction: ' pembetulan', reject: 'Tolak', privacyLead: 'Fail asal tidak berubah.', privacy: 'Keputusan anda disimpan pada calon terbitan dengan nilai yang diekstrak dan sebarang nilai yang dibetulkan dikekalkan.', back: '← Bukti', continue: 'Teruskan ke Semakan Tuntiva' },
+} as const
+
+function fieldLabel(field: ExtractionCandidate['field'], locale: Locale) {
+  const labels = locale === 'ms' ? { amount: 'Jumlah', date: 'Tarikh', reference: 'Rujukan' } : { amount: 'Amount', date: 'Date', reference: 'Reference' }
+  return labels[field]
 }
