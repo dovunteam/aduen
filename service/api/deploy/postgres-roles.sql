@@ -25,4 +25,7 @@ SELECT format(
 GRANT CONNECT ON DATABASE :"database_name" TO aduen_migrator, aduen_api, aduen_retention, aduen_backup;
 GRANT USAGE, CREATE ON SCHEMA public TO aduen_migrator;
 GRANT USAGE ON SCHEMA public TO aduen_api, aduen_retention, aduen_backup;
-GRANT pg_read_all_data TO aduen_backup;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO aduen_backup;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO aduen_backup;
+ALTER DEFAULT PRIVILEGES FOR ROLE aduen_migrator IN SCHEMA public GRANT SELECT ON TABLES TO aduen_backup;
+ALTER DEFAULT PRIVILEGES FOR ROLE aduen_migrator IN SCHEMA public GRANT SELECT ON SEQUENCES TO aduen_backup;
