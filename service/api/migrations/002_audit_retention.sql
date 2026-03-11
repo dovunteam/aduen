@@ -3,7 +3,7 @@ CREATE INDEX IF NOT EXISTS aduen_case_audit_occurred_idx ON aduen_case_audit_eve
 DROP POLICY IF EXISTS aduen_case_audit_retention_delete_policy ON aduen_case_audit_events;
 CREATE POLICY aduen_case_audit_retention_delete_policy ON aduen_case_audit_events
   FOR DELETE TO aduen_retention
-  USING (occurred_at < current_setting('aduen.audit_cutoff', true)::timestamptz);
+  USING (occurred_at < NULLIF(current_setting('aduen.audit_cutoff', true), '')::timestamptz);
 
 DROP POLICY IF EXISTS aduen_case_audit_retention_select_policy ON aduen_case_audit_events;
 CREATE POLICY aduen_case_audit_retention_select_policy ON aduen_case_audit_events
