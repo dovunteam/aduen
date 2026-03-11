@@ -11,6 +11,9 @@ const pool = new Pool({
   ssl: config.databaseSsl ? { rejectUnauthorized: true } : false,
   max: 10,
   connectionTimeoutMillis: 3_000,
+  statement_timeout: 10_000,
+  query_timeout: 12_000,
+  idle_in_transaction_session_timeout: 30_000,
   idleTimeoutMillis: 30_000,
   application_name: 'aduen-case-api',
 })
