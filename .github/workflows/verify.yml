@@ -88,6 +88,17 @@ jobs:
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example up --detach database
       - name: Apply the case schema
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example --profile tools run --build --rm migrate
+      - name: Start the hardened API container and verify health
+        run: |
+          docker compose --file ../../compose.yaml --env-file ../../.env.example up --detach --build --wait --wait-timeout 60 api
+          api_container=$(docker compose --file ../../compose.yaml --env-file ../../.env.example ps --quiet api)
+          test -n "$api_container"
+          test "$(docker inspect --format '{{.Config.User}}' "$api_container")" = node
+          test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$api_container")" = true
+          test "$(docker inspect --format '{{json .HostConfig.CapDrop}}' "$api_container")" = '["ALL"]'
+          test "$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$api_container")" = '["no-new-privileges:true"]'
+          curl --fail --silent http://127.0.0.1:8080/health/live
+          curl --fail --silent http://127.0.0.1:8080/health/ready
       - name: Verify migration ledger skips completed migrations
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example --profile tools run --build --rm migrate
       - name: Verify PostgreSQL owner isolation
