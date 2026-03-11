@@ -31,6 +31,21 @@ test('production runtime guard rejects the privileged migration role', { skip: !
   await assert.rejects(assertRestrictedRuntimeRole(migratorPool), /must be restricted/u)
 })
 
+test('production runtime guard rejects TRUNCATE and public-schema CREATE grants', { skip: !pool || !migratorPool }, async () => {
+  try {
+    await migratorPool.query('GRANT TRUNCATE ON aduen_cases TO aduen_api')
+    await assert.rejects(assertRestrictedRuntimeRole(pool), /must be restricted/u)
+    await migratorPool.query('REVOKE TRUNCATE ON aduen_cases FROM aduen_api')
+
+    await migratorPool.query('GRANT CREATE ON SCHEMA public TO aduen_api')
+    await assert.rejects(assertRestrictedRuntimeRole(pool), /must be restricted/u)
+  } finally {
+    await migratorPool.query('REVOKE TRUNCATE ON aduen_cases FROM aduen_api')
+    await migratorPool.query('REVOKE CREATE ON SCHEMA public FROM aduen_api')
+  }
+  await assertRestrictedRuntimeRole(pool)
+})
+
 test('PostgreSQL RLS isolates case reads, writes, and owner reassignment', { skip: !pool }, async () => {
   const id = crypto.randomUUID()
   const client = await pool.connect()

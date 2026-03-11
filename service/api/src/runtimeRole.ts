@@ -10,7 +10,9 @@ type RuntimeRoleRow = {
   rolcreaterole: boolean
   rolreplication: boolean
   role_membership_count: number
+  can_create_in_public_schema: boolean
   protected_table_count: number
+  has_unsafe_protected_table_privileges: boolean
   owns_protected_table: boolean
 }
 
@@ -28,12 +30,24 @@ export async function assertRestrictedRuntimeRole(pool: Pick<Pool, 'query'>): Pr
            (SELECT count(*)::int
               FROM pg_auth_members AS membership
              WHERE membership.member = role.oid) AS role_membership_count,
+           has_schema_privilege(role.oid, 'public', 'CREATE') AS can_create_in_public_schema,
            (SELECT count(*)::int
               FROM pg_class AS relation
               JOIN pg_namespace AS namespace ON namespace.oid = relation.relnamespace
              WHERE namespace.nspname = 'public'
                AND relation.relname = ANY($1::text[])
                AND relation.relkind IN ('r', 'p')) AS protected_table_count,
+           EXISTS (
+             SELECT 1
+               FROM pg_class AS relation
+               JOIN pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+              WHERE namespace.nspname = 'public'
+                AND relation.relname = ANY($1::text[])
+                AND relation.relkind IN ('r', 'p')
+                AND (has_table_privilege(role.oid, relation.oid, 'TRUNCATE')
+                  OR has_table_privilege(role.oid, relation.oid, 'TRIGGER')
+                  OR has_table_privilege(role.oid, relation.oid, 'REFERENCES'))
+           ) AS has_unsafe_protected_table_privileges,
            EXISTS (
              SELECT 1
                FROM pg_class AS relation
@@ -48,7 +62,7 @@ export async function assertRestrictedRuntimeRole(pool: Pick<Pool, 'query'>): Pr
   `, [protectedTables])
 
   const role = result.rows[0]
-  if (!role || role.protected_table_count !== protectedTables.length || role.rolsuper || role.rolbypassrls || role.rolcreatedb || role.rolcreaterole || role.rolreplication || role.role_membership_count !== 0 || role.owns_protected_table) {
+  if (!role || role.protected_table_count !== protectedTables.length || role.rolsuper || role.rolbypassrls || role.rolcreatedb || role.rolcreaterole || role.rolreplication || role.role_membership_count !== 0 || role.can_create_in_public_schema || role.has_unsafe_protected_table_privileges || role.owns_protected_table) {
     throw new ProductionDatabaseGuardError('The production API database role must be restricted and must not own protected tables.')
   }
 }
