@@ -8,13 +8,19 @@ import { assertRestrictedRuntimeRole } from '../dist/runtimeRole.js'
 
 const databaseUrl = process.env.DATABASE_URL
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl, max: 1 }) : null
+const migratorUrl = process.env.DATABASE_URL_MIGRATOR
+const migratorPool = migratorUrl ? new Pool({ connectionString: migratorUrl, max: 1 }) : null
 const maintenanceUrl = process.env.DATABASE_URL_MAINTENANCE
 const maintenancePool = maintenanceUrl ? new Pool({ connectionString: maintenanceUrl, max: 1 }) : null
 
-after(async () => { await Promise.all([pool?.end(), maintenancePool?.end()]) })
+after(async () => { await Promise.all([pool?.end(), migratorPool?.end(), maintenancePool?.end()]) })
 
 test('production runtime role is restricted and does not own policy-protected tables', { skip: !pool }, async () => {
   await assertRestrictedRuntimeRole(pool)
+})
+
+test('production runtime guard rejects the privileged migration role', { skip: !migratorPool }, async () => {
+  await assert.rejects(assertRestrictedRuntimeRole(migratorPool), /must be restricted/u)
 })
 
 test('PostgreSQL RLS isolates case reads, writes, and owner reassignment', { skip: !pool }, async () => {
