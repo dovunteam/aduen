@@ -9,6 +9,7 @@ const safeRole = {
   rolcreatedb: false,
   rolcreaterole: false,
   rolreplication: false,
+  role_membership_count: 0,
   protected_table_count: 3,
   owns_protected_table: false,
 }
@@ -32,6 +33,7 @@ test('production runtime role rejects elevated privileges, protected table owner
     { rolcreatedb: true },
     { rolcreaterole: true },
     { rolreplication: true },
+    { role_membership_count: 1 },
     { owns_protected_table: true },
     { protected_table_count: 2 },
   ]) {
