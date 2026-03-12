@@ -13,6 +13,8 @@ This Node.js 24 service is the first hosted-service slice. It validates an exter
 
 The example identity-provider URLs deliberately use the reserved `.invalid` domain. Configure a real OIDC issuer, JWKS URI, and API audience before testing authenticated routes. The local Compose API and one-shot database jobs run with a read-only root filesystem, a restricted `/tmp`, no Linux capabilities, no privilege escalation, and a PID limit. The local Compose ports bind to loopback only. Do not place real consumer records in this development environment.
 
+The API image exposes port `8080` and includes a container health check against `/health/ready`. It reports healthy only when the process can reach PostgreSQL; a deployment runtime should use this signal for readiness and remove unhealthy instances from traffic. Keep the API port private behind a TLS-terminating ingress and preserve the image's non-root user. The probe does not validate OIDC discovery or ingress configuration.
+
 ## Endpoints
 
 - `GET /health/live` reports that the process is accepting requests.
