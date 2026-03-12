@@ -32,6 +32,8 @@ jobs:
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example up --detach database
       - name: Apply the case schema
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example --profile tools run --build --rm migrate
+      - name: Verify migration ledger skips completed migrations
+        run: docker compose --file ../../compose.yaml --env-file ../../.env.example --profile tools run --build --rm migrate
       - name: Verify PostgreSQL owner isolation
         run: npm run test:postgres
         env:
