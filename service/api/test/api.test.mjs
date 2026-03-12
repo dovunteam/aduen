@@ -6,6 +6,7 @@ import { createApp } from '../dist/app.js'
 import { AuthenticationUnavailable, createAuthenticator } from '../dist/auth.js'
 import { caseRecordSchema } from '../dist/caseRecord.js'
 import { readConfig } from '../dist/config.js'
+import { assertDatabaseTlsUrl } from '../dist/databaseTls.js'
 
 let signingKey
 const keyId = 'test-key'
@@ -131,6 +132,15 @@ test('production refuses missing database TLS and insecure identity endpoints', 
   assert.throws(() => readConfig({ ...secure, RATE_LIMIT_HMAC_KEY: '' }), /RATE_LIMIT_HMAC_KEY is required/u)
   assert.throws(() => readConfig({ ...secure, RATE_LIMIT_HMAC_KEY: 'too-short' }), /at least 32 UTF-8 bytes/u)
   assert.deepEqual(readConfig(secure).trustedProxies, ['10.20.0.0/16', '2001:db8::1'])
+})
+
+test('validated database TLS rejects connection-string parameters that override certificate checks', () => {
+  assert.doesNotThrow(() => assertDatabaseTlsUrl('postgres://user:secret@db.example.test/aduen', true))
+  for (const parameter of ['ssl=no-verify', 'sslmode=no-verify', 'sslmode=disable', 'sslcert=%2Ftmp%2Fcert', 'sslkey=%2Ftmp%2Fkey', 'sslrootcert=%2Ftmp%2Fca', 'sslnegotiation=direct', 'uselibpqcompat=true']) {
+    assert.throws(() => assertDatabaseTlsUrl(`postgres://db.example.test/aduen?${parameter}`, true), /must not contain TLS parameters/u, parameter)
+  }
+  assert.doesNotThrow(() => assertDatabaseTlsUrl('postgres://db.example.test/aduen?sslmode=no-verify', false))
+  assert.throws(() => assertDatabaseTlsUrl('https://example.test/db', true), /must use PostgreSQL/u)
 })
 
 test('case endpoints reject missing, forged, and wrong-audience bearer tokens', async () => {

@@ -1,4 +1,5 @@
 import { isIP } from 'node:net'
+import { assertDatabaseTlsUrl } from './databaseTls.js'
 
 export type ApiConfig = {
   host: string
@@ -33,6 +34,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   if (nodeEnv === 'production' && corsOrigins.some((origin) => !origin.startsWith('https://'))) throw new Error('CORS_ORIGINS must use HTTPS in production.')
   if (env.DATABASE_SSL !== undefined && !['true', 'false'].includes(env.DATABASE_SSL)) throw new Error('DATABASE_SSL must be true or false.')
   const databaseSsl = env.DATABASE_SSL === 'true'
+  assertDatabaseTlsUrl(databaseUrl, databaseSsl)
 
   if (nodeEnv === 'production' && !databaseSsl) throw new Error('DATABASE_SSL=true is required in production.')
   if (nodeEnv === 'production' && (new URL(issuer).protocol !== 'https:' || new URL(jwksUrl).protocol !== 'https:')) {
