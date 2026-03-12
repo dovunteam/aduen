@@ -8,7 +8,9 @@ COPY package.json package-lock.json ./
 RUN npm ci --include=dev
 COPY tsconfig.json ./
 COPY src ./src
-RUN npm run build && npm prune --omit=dev && npm cache clean --force
+RUN npm run build && npm prune --omit=dev && npm cache clean --force \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-v1.22.22 \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY migrations ./migrations
 
 USER node
