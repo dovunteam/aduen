@@ -24,6 +24,13 @@ describe('authenticated case API client', () => {
     expect(new Headers(fetcher.mock.calls[2]?.[1]?.headers).get('If-Match')).toBe('"1"')
   })
 
+  it('deletes all hosted account data through the authenticated API', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }))
+    const api = setup(fetcher)
+    await expect(api.deleteAccountData()).resolves.toBeUndefined()
+    expect(fetcher).toHaveBeenCalledWith('https://api.example.test/v1/account/data', expect.objectContaining({ method: 'DELETE', credentials: 'omit', cache: 'no-store' }))
+  })
+
   it('uses bearer auth, omits browser credentials, and checks ETag revisions', async () => {
     const record = createCaseRecord(EMPTY_DRAFT, new Date('2026-09-24T00:00:00.000Z'))
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ record, revision: 2 }), { status: 200, headers: { ETag: '"2"' } }))

@@ -205,6 +205,24 @@ test('case deletion is owner scoped and requires an exact revision', async () =>
   assert.equal((await app.inject({ method: 'GET', url: `/v1/cases/${record.id}`, headers: bearer(aliceToken) })).statusCode, 404)
 })
 
+test('account data deletion removes every hosted case for that subject and is idempotent', async () => {
+  const aliceToken = await signToken({ sub: 'delete-account-a' })
+  const bobToken = await signToken({ sub: 'delete-account-b' })
+  const aliceCase = makeRecord('550e8400-e29b-41d4-a716-446655440011')
+  const aliceCaseTwo = makeRecord('550e8400-e29b-41d4-a716-446655440012')
+  const bobCase = makeRecord('550e8400-e29b-41d4-a716-446655440013')
+  for (const record of [aliceCase, aliceCaseTwo]) assert.equal((await app.inject({ method: 'POST', url: '/v1/cases', headers: bearer(aliceToken), payload: record })).statusCode, 201)
+  assert.equal((await app.inject({ method: 'POST', url: '/v1/cases', headers: bearer(bobToken), payload: bobCase })).statusCode, 201)
+
+  const deleted = await app.inject({ method: 'DELETE', url: '/v1/account/data', headers: bearer(aliceToken) })
+  assert.equal(deleted.statusCode, 204)
+  assert.equal(store.records.has(`delete-account-a:${aliceCase.id}`), false)
+  assert.equal(store.records.has(`delete-account-a:${aliceCaseTwo.id}`), false)
+  assert.equal(store.records.has(`delete-account-b:${bobCase.id}`), true)
+  assert.equal((await app.inject({ method: 'DELETE', url: '/v1/account/data', headers: bearer(aliceToken) })).statusCode, 204)
+  assert.equal((await app.inject({ method: 'GET', url: '/v1/account/data' })).statusCode, 401)
+})
+
 async function signToken({ sub = 'user-a', audience = 'aduen-api', tokenIssuer = 'https://identity.example.test/', ageSeconds = 0, lifetimeSeconds = 300, issuedAt = true } = {}) {
   const now = Math.floor(Date.now() / 1000)
   const token = new SignJWT({})
@@ -258,5 +276,8 @@ class MemoryCaseStore {
     const key = `${subject}:${id}`
     const current = this.records.get(key)
     return Boolean(current && current.revision === revision && this.records.delete(key))
+  }
+  async deleteAccountData(subject) {
+    for (const key of this.records.keys()) if (key.startsWith(`${subject}:`)) this.records.delete(key)
   }
 }

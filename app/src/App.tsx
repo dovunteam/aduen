@@ -113,6 +113,12 @@ function App() {
     recordAuditEvent('hosted_case_deleted', id, 'hosted case record deleted from account')
   }
 
+  async function deleteHostedAccountData() {
+    if (!hosted || !identitySignedIn) throw new Error('Hosted case storage is unavailable.')
+    await hosted.api.deleteAccountData()
+    recordAuditEvent('hosted_account_data_deleted', 'hosted-account', 'all hosted case and mutation audit data deleted')
+  }
+
   async function importHostedCase(stored: StoredCase) {
     if (!hosted || !identitySignedIn) throw new Error('Hosted case storage is unavailable.')
     if (!readConsent()) throw new Error('Accept the privacy notice before using hosted case data.')
@@ -302,7 +308,7 @@ function App() {
       {step === 'review' && <ReviewStep locale={locale} caseId={readCase()?.id ?? 'case'} draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => void runAction(() => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions, locale); savePack(pack); setComplaintPack(pack); setStep('pack') })} />}
       {step === 'pack' && complaintPack && <PackStep locale={locale} initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`); setComplaintPack(approved) }} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep locale={locale} onBack={() => setStep(complaintPack ? 'pack' : 'review')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
-      {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} hostedConfigured={Boolean(hosted)} signedIn={identitySignedIn} identityError={identityError} onSignIn={beginHostedSignIn} onSaveHosted={syncHostedCase} onListHosted={loadHostedCases} onDeleteHosted={deleteHostedCase} onImportHosted={importHostedCase} />}
+      {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} hostedConfigured={Boolean(hosted)} signedIn={identitySignedIn} identityError={identityError} onSignIn={beginHostedSignIn} onSaveHosted={syncHostedCase} onListHosted={loadHostedCases} onDeleteHosted={deleteHostedCase} onDeleteHostedAccountData={deleteHostedAccountData} onImportHosted={importHostedCase} />}
     </main>
     <footer><div className="footer-brand"><AduenBrand compact /><span>{locale === 'ms' ? 'Susun. Jelaskan. Ambil langkah seterusnya.' : 'Organise. Clarify. Take the next step.'}</span></div><p>{text.footer}</p></footer>
   </div>

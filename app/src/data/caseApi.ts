@@ -34,6 +34,7 @@ export function createCaseApi(options: CaseApiOptions) {
       if (!Number.isSafeInteger(revision) || revision < 1) throw new Error('A valid case revision is required.')
       await request(`/cases/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'If-Match': `"${revision}"` } })
     },
+    async deleteAccountData(): Promise<void> { await request('/account/data', { method: 'DELETE' }) },
   }
 
   async function request(path: string, init: RequestInit): Promise<Response> {
