@@ -31,6 +31,8 @@ Required environment values: `DATABASE_URL`, `AUTH_ISSUER`, `AUTH_JWKS_URL`, `AU
 
 The separately scheduled audit expiry command requires `DATABASE_URL_MAINTENANCE` and `AUDIT_RETENTION_DAYS` (1–3650 whole days). The maintenance role can inspect timestamps only and can delete audit rows older than the cutoff; it cannot read case data or audit event details. Set the period and job cadence only after approving the audit retention schedule. For local development, run `npm run prune:audit` from this directory after setting the two variables. The Compose `prune-audit` service runs the same one-shot job.
 
+CI creates a PostgreSQL custom-format dump from synthetic data, restores it into a fresh database, and reruns the ownership and retention integration suite against the restored copy. This verifies the schema and row policies survive a logical restore. Production still needs an operator-selected backup facility with encryption, access controls, retention and deletion schedules, recovery objectives, and recurring restore drills.
+
 Hosted case content also requires an explicitly approved inactivity-retention period. Set `HOSTED_CASE_RETENTION_DAYS` from 1 to 3650 whole days in production; API startup fails when it is missing or invalid. The one-shot `npm run prune:hosted-cases` job deletes hosted cases whose last server update is older than that cutoff and emits only the deleted count and cutoff. The maintenance role can see only `updated_at` for eligible rows and cannot read case records, owner subjects, or case IDs. Schedule the Compose `prune-hosted-cases` job at a cadence approved with the retention policy; no production period or cadence is selected by this repository.
 
 ## Current limits

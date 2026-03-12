@@ -47,6 +47,17 @@ jobs:
           AUDIT_RETENTION_DAYS=30 docker compose --file ../../compose.yaml --env-file ../../.env.example --profile maintenance run --build --rm prune-audit
           remaining=$(docker compose --file ../../compose.yaml --env-file ../../.env.example exec --no-TTY database psql --username aduen_migrator --dbname aduen --tuples-only --no-align --command="SELECT count(*) FROM aduen_case_audit_events WHERE owner_subject = 'synthetic-retention-job-check' AND occurred_at < now() - interval '30 days'")
           test "$remaining" = "0"
+      - name: Restore a PostgreSQL backup and recheck row policies
+        run: |
+          backup_file=$(mktemp)
+          trap 'rm -f "$backup_file"' EXIT
+          docker compose --file ../../compose.yaml --env-file ../../.env.example exec --no-TTY database pg_dump --username aduen_migrator --format=custom --no-owner --dbname aduen > "$backup_file"
+          docker compose --file ../../compose.yaml --env-file ../../.env.example exec --no-TTY database createdb --username aduen_migrator aduen_restore
+          docker compose --file ../../compose.yaml --env-file ../../.env.example exec --no-TTY database pg_restore --username aduen_migrator --format=custom --exit-on-error --no-owner --dbname aduen_restore < "$backup_file"
+          DATABASE_URL=postgres://aduen_api:replace-with-another-local-only-password@127.0.0.1:54329/aduen_restore \
+          DATABASE_URL_MIGRATOR=postgres://aduen_migrator:replace-with-a-local-only-password@127.0.0.1:54329/aduen_restore \
+          DATABASE_URL_MAINTENANCE=postgres://aduen_retention:replace-with-a-third-local-only-password@127.0.0.1:54329/aduen_restore \
+            npm run test:postgres
       - run: npm audit --audit-level=high
       - name: Remove the synthetic database
         if: always()
