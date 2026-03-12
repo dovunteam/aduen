@@ -4,7 +4,7 @@ import { Pool } from 'pg'
 import { PgCaseStore } from '../dist/caseStore.js'
 import { createPostgresRateLimitStore } from '../dist/postgresRateLimitStore.js'
 import { pruneExpiredHostedCases } from '../dist/pruneHostedCases.js'
-import { assertRestrictedRuntimeRole } from '../dist/runtimeRole.js'
+import { assertCurrentMigrations, assertRestrictedRuntimeRole } from '../dist/runtimeRole.js'
 
 const databaseUrl = process.env.DATABASE_URL
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl, max: 1 }) : null
@@ -17,6 +17,10 @@ after(async () => { await Promise.all([pool?.end(), migratorPool?.end(), mainten
 
 test('production runtime role is restricted and does not own policy-protected tables', { skip: !pool }, async () => {
   await assertRestrictedRuntimeRole(pool)
+})
+
+test('production runtime role can verify the exact applied migration checksums', { skip: !pool }, async () => {
+  await assertCurrentMigrations(pool)
 })
 
 test('production runtime guard rejects the privileged migration role', { skip: !migratorPool }, async () => {

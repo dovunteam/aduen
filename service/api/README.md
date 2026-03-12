@@ -6,7 +6,7 @@ This Node.js 24 service is the first hosted-service slice. It validates an exter
 
 1. Copy `.env.example` at the repository root to `.env`; replace both local-only passwords with different random values and percent-encode reserved URL characters in the two database URLs.
 2. Start the local database: `docker compose up -d database`.
-3. Build the API image and apply the schema: `docker compose --profile tools run --build --rm migrate`. The migrator records applied SQL checksums in `aduen_schema_migrations`, rejects edited or unknown migrations, and serializes concurrent migrator runs with a PostgreSQL advisory lock. Add a new numbered migration instead of changing an applied migration.
+3. Build the API image and apply the schema: `docker compose --profile tools run --build --rm migrate`. The migrator records applied SQL checksums in `aduen_schema_migrations`, rejects edited or unknown migrations, and serializes concurrent migrator runs with a PostgreSQL advisory lock. Production API startup verifies that the database has the exact migration set shipped by the image. Add a new numbered migration instead of changing an applied migration.
 4. In a second terminal, run the row-policy integration check from `service/api`: set `DATABASE_URL` to the runtime-role URL and run `npm run test:postgres`.
 5. Start the API: `docker compose up --build api`.
 6. Check `http://127.0.0.1:8080/health/ready`.
