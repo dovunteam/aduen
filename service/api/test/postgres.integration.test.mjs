@@ -14,8 +14,10 @@ const maintenanceUrl = process.env.DATABASE_URL_MAINTENANCE
 const maintenancePool = maintenanceUrl ? new Pool({ connectionString: maintenanceUrl, max: 1 }) : null
 const testAdminUrl = process.env.DATABASE_URL_TEST_ADMIN
 const testAdminPool = testAdminUrl ? new Pool({ connectionString: testAdminUrl, max: 1 }) : null
+const backupUrl = process.env.DATABASE_URL_BACKUP
+const backupPool = backupUrl ? new Pool({ connectionString: backupUrl, max: 1 }) : null
 
-after(async () => { await Promise.all([pool?.end(), migratorPool?.end(), maintenancePool?.end(), testAdminPool?.end()]) })
+after(async () => { await Promise.all([pool?.end(), migratorPool?.end(), maintenancePool?.end(), testAdminPool?.end(), backupPool?.end()]) })
 
 test('production runtime role is restricted and does not own policy-protected tables', { skip: !pool }, async () => {
   await assertRestrictedRuntimeRole(pool)
@@ -76,6 +78,30 @@ test('PostgreSQL store scopes CRUD and records minimized mutation events', { ski
   assert.equal(await store.delete(otherOwner, id, 2), false)
   assert.equal(await store.delete(owner, id, 2), true)
   assert.equal(await store.get(owner, id), null)
+})
+
+test('PostgreSQL backup role can read all owners while remaining read-only', { skip: !pool || !backupPool }, async () => {
+  const store = new PgCaseStore(pool)
+  const ownerA = `backup-owner-a-${crypto.randomUUID()}`
+  const ownerB = `backup-owner-b-${crypto.randomUUID()}`
+  const idA = crypto.randomUUID()
+  const idB = crypto.randomUUID()
+  try {
+    await store.create(ownerA, makeRecord(idA))
+    await store.create(ownerB, makeRecord(idB))
+
+    const permissions = await backupPool.query(`SELECT
+      has_table_privilege(current_user, 'public.aduen_cases', 'SELECT') AS can_read,
+      has_table_privilege(current_user, 'public.aduen_cases', 'INSERT') AS can_insert,
+      has_table_privilege(current_user, 'public.aduen_cases', 'UPDATE') AS can_update,
+      has_table_privilege(current_user, 'public.aduen_cases', 'DELETE') AS can_delete`)
+    assert.deepEqual(permissions.rows[0], { can_read: true, can_insert: false, can_update: false, can_delete: false })
+    const rows = await backupPool.query('SELECT id FROM aduen_cases WHERE id = ANY($1::uuid[]) ORDER BY id', [[idA, idB]])
+    assert.deepEqual(rows.rows.map((row) => row.id), [idA, idB].sort())
+  } finally {
+    await store.deleteAccountData(ownerA)
+    await store.deleteAccountData(ownerB)
+  }
 })
 
 test('PostgreSQL account deletion removes only that subject cases and audit rows', { skip: !pool || !testAdminPool }, async () => {

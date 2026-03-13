@@ -13,15 +13,16 @@ Each API process opens a PostgreSQL pool of up to 10 connections. Account for th
 
 ## Database roles and migrations
 
-Provision a database, TLS certificate validation, and three distinct roles before deploying the API:
+Provision a database, TLS certificate validation, and four distinct roles before deploying the API:
 
 | Role | Use | Required boundary |
 |---|---|---|
 | Schema owner / migrator | One-shot migration job only | Owns schema and applies the versioned migrations; never supplied to API replicas |
 | `aduen_api` | API runtime | Restricted login role; not a table owner, superuser, or RLS bypass role |
 | `aduen_retention` | Scheduled expiry jobs | Can expire approved records through timestamp-only policies; cannot read case content or owner identifiers |
+| `aduen_backup` | Isolated backup job only | Read-only membership in `pg_read_all_data` plus `BYPASSRLS` for complete logical dumps; no write, database-creation, role-creation, replication, or superuser privileges |
 
-For standard PostgreSQL, `service/api/deploy/postgres-roles.sql` creates the three least-privilege login roles and grants the minimum connection and schema privileges used by the migrations. Run it once as the database administrator against the already-created database with `ADUEN_DATABASE_NAME`, `ADUEN_MIGRATOR_PASSWORD`, `ADUEN_API_PASSWORD`, and `ADUEN_RETENTION_PASSWORD` injected through the operator’s secret facility. Keep the resulting migrator credential short-lived where supported. Managed database services can require translating role ownership and grants to their own supported workflow. `service/api/docker/init-db.sh` is only for the local Compose bootstrap.
+For standard PostgreSQL, `service/api/deploy/postgres-roles.sql` creates the login roles and grants the minimum connection and schema privileges used by migrations and retention jobs. It also creates the intentionally privileged but read-only `aduen_backup` login. Run it once as the database administrator against the already-created database with `ADUEN_DATABASE_NAME`, `ADUEN_MIGRATOR_PASSWORD`, `ADUEN_API_PASSWORD`, `ADUEN_RETENTION_PASSWORD`, and `ADUEN_BACKUP_PASSWORD` injected through the operator’s secret facility. Keep the migrator credential available only to migration jobs and the backup credential available only to backup jobs. Managed database services can require translating role ownership and grants to their own supported workflow; if they prohibit `BYPASSRLS`, use a verified native full-database backup facility rather than weakening case policies. `service/api/docker/init-db.sh` is only for the local Compose bootstrap.
 
 Provide a short-lived `DATABASE_URL_MIGRATOR` only to the migration job. Run `npm run migrate` from the API image once before rolling out new replicas. The migrator serializes concurrent runs and rejects changed or unknown migration history. Take and verify a pre-change backup before a schema rollout. Migrations are not automatically reversed; recover with a forward fix or the approved restore procedure.
 
@@ -48,7 +49,7 @@ Inject these values through the runtime’s secret and configuration facilities.
 
 The issuer does not need to be a specific vendor. Its access tokens must use RS256 or ES256, include `iss`, `sub`, `aud`, `iat`, and `exp`, and be verifiable at the configured JWKS endpoint. Offline refresh is disabled in the client. Account recovery, logout/session revocation, issuer registration, and the production redirect policy still need explicit review.
 
-The migration job additionally needs `DATABASE_URL_MIGRATOR` and `DATABASE_SSL=true`. Scheduled maintenance containers need `DATABASE_URL_MAINTENANCE`, `DATABASE_SSL=true`, `AUDIT_RETENTION_DAYS`, or `HOSTED_CASE_RETENTION_DAYS` according to the command being run. These credentials are separate from the API runtime URL and must not be provided to web clients.
+The migration job additionally needs `DATABASE_URL_MIGRATOR` and `DATABASE_SSL=true`. Scheduled maintenance containers need `DATABASE_URL_MAINTENANCE`, `DATABASE_SSL=true`, `AUDIT_RETENTION_DAYS`, or `HOSTED_CASE_RETENTION_DAYS` according to the command being run. Backup jobs need `DATABASE_URL_BACKUP` for `aduen_backup`, plus `BACKUP_ACTIVE_KEY_ID`, `BACKUP_ENCRYPTION_KEYRING`, and an absolute `BACKUP_SCRATCH_DIR` when opening archives. These credentials are separate from the API runtime URL and must not be provided to web clients.
 
 ## Release and operations sequence
 
@@ -58,7 +59,7 @@ The migration job additionally needs `DATABASE_URL_MIGRATOR` and `DATABASE_SSL=t
 4. Apply migrations with the separate migrator job. Verify the migration ledger and runtime role using the restricted API connection before shifting traffic.
 5. Roll out the API image behind HTTPS ingress. Route readiness from `/health/ready`; use `/health/live` only to detect a failed process. Allow graceful `SIGTERM` shutdown and give open requests time to finish. Verify CORS and browser security headers at the deployed origins.
 6. Schedule one-shot maintenance containers from the same immutable API image: run `node dist/pruneAudit.js` with `DATABASE_URL_MAINTENANCE` and approved `AUDIT_RETENTION_DAYS`; run `node dist/pruneHostedCases.js` with the maintenance URL and the same approved `HOSTED_CASE_RETENTION_DAYS` as the API. (The local npm scripts build first and are for development.) Alert on nonzero job exits without logging credentials or case data.
-7. Configure encrypted PostgreSQL backups with `backupArchiveCli.js seal`, retain key IDs and prior decryption keys according to the approved recovery policy, and restore into an isolated database using `backupArchiveCli.js open` before `pg_restore`. Run and record recurring restore drills.
+7. Configure encrypted PostgreSQL backups with `backupArchiveCli.js seal`, retain key IDs and prior decryption keys according to the approved recovery policy, and restore into an isolated database owned by `aduen_migrator` using `backupArchiveCli.js open` before `pg_restore` as that role. Run and record recurring restore drills.
 8. Verify owner isolation, access/deletion/export behavior, database TLS and role restrictions, ingress proxy trust, rate limiting, secret rotation, retention jobs, backup restoration, request-log redaction, and incident response before considering real-record intake.
 
 ## Readiness signals and remaining gates
