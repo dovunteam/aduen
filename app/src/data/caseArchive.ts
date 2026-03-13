@@ -13,7 +13,7 @@ export async function downloadCaseArchive(draft: CaseDraft, submission: Submissi
   const manifest = {
     exportVersion: 1,
     exportedAt: new Date().toISOString(),
-    notice: 'User-controlled Tuntiva prototype export. Evidence originals have not been altered.',
+    notice: 'User-controlled Buktiva prototype export. Evidence originals have not been altered.',
     case: draft,
     caseRecord: readCase(),
     packVersions: listPacks(),
@@ -31,7 +31,7 @@ export async function downloadCaseArchive(draft: CaseDraft, submission: Submissi
   const archive = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } })
   const url = URL.createObjectURL(archive)
   const anchor = document.createElement('a')
-  anchor.href = url; anchor.download = `tuntiva-case-export-${new Date().toISOString().slice(0, 10)}.zip`; anchor.click()
+  anchor.href = url; anchor.download = `buktiva-case-export-${new Date().toISOString().slice(0, 10)}.zip`; anchor.click()
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 

@@ -4,7 +4,7 @@ async function acceptBoundary(page: import('@playwright/test').Page) {
   await page.goto('/')
   const begin = page.getByRole('button', { name: 'Begin safety check' })
   await expect(begin).toBeDisabled()
-  await page.getByLabel(/I understand Tuntiva's role/).check()
+  await page.getByLabel(/I understand Buktiva's role/).check()
   await begin.click()
 }
 
@@ -50,7 +50,7 @@ test('urgent risk blocks the ordinary intake path', async ({ page }) => {
 test('an unsupported sector stops before evidence collection', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page, { category: 'healthcare' })
-  await expect(page.getByRole('heading', { name: 'Tuntiva should not prepare this case.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Buktiva should not prepare this case.' })).toBeVisible()
   await expect(page.getByText('Healthcare matters are excluded')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Add evidence' })).toHaveCount(0)
 })
@@ -85,12 +85,12 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await expect(page.getByText('0', { exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Merchant or platform first' })).toBeVisible()
   await page.getByRole('button', { name: 'Prepare merchant request' }).click()
-  await expect(page.getByText('TUNTIVA CASE PACK')).toBeVisible()
+  await expect(page.getByText('BUKTIVA CASE PACK')).toBeVisible()
   await page.getByLabel(/I reviewed this pack/).check()
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: /Approve and export PDF/ }).click()
   const download = await downloadPromise
-  expect(download.suggestedFilename()).toBe('tuntiva-synthetic-store-v1.pdf')
+  expect(download.suggestedFilename()).toBe('buktiva-synthetic-store-v1.pdf')
   await page.getByRole('button', { name: /Track external status/ }).click()
   await page.getByLabel('Recipient or channel').fill('Synthetic merchant email')
   await page.getByLabel('Submission date').fill('2026-08-10')
@@ -122,6 +122,6 @@ test('extracted candidates require explicit confirmation, correction, or rejecti
   await cards.nth(2).getByRole('button', { name: 'Reject' }).click()
   await expect(page.getByText('Confirmed as 125.50')).toBeVisible()
   await expect(page.getByText('Rejected — not used as a fact')).toBeVisible()
-  await page.getByRole('button', { name: /Continue to Tuntiva Check/ }).click()
+  await page.getByRole('button', { name: /Continue to Buktiva Check/ }).click()
   await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
 })

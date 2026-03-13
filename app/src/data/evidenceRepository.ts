@@ -3,6 +3,8 @@ import { validateEvidenceFile, validateEvidenceSignature } from '../domain/evide
 import { createEvidenceExtraction, reviewCandidate } from '../domain/extraction'
 import type { EvidenceExtraction } from '../domain/extraction'
 
+// Preserve locally stored originals created before the public Buktiva rename.
+// IndexedDB database names are implementation details and are never displayed to users.
 const DATABASE_NAME = 'tuntiva-prototype'
 const DATABASE_VERSION = 2
 const METADATA_STORE = 'evidence-metadata'

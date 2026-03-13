@@ -18,7 +18,7 @@ export function downloadComplaintPackPdf(pack: ComplaintPack): void {
   const heading = (text: string) => { y += 4; line(text.toUpperCase(), 11, true); pdf.setDrawColor(190); pdf.line(left, y - 1, 192, y - 1); y += 3 }
 
   pdf.setTextColor(23, 58, 54)
-  line('TUNTIVA CASE PACK', 18, true)
+  line('BUKTIVA CASE PACK', 18, true)
   line(`Version ${pack.version} | Approved ${new Date(pack.approvedAt).toLocaleString('en-MY')}`, 8)
   heading('Transaction')
   line(`Consumer: ${pack.consumerName}\nSeller: ${pack.transaction.seller}`, 10, true)
