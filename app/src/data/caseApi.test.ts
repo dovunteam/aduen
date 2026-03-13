@@ -31,6 +31,15 @@ describe('authenticated case API client', () => {
     expect(fetcher).toHaveBeenCalledWith('https://api.example.test/v1/account/data', expect.objectContaining({ method: 'DELETE', credentials: 'omit', cache: 'no-store' }))
   })
 
+  it('exports every authenticated hosted case and validates the records', async () => {
+    const record = createCaseRecord(EMPTY_DRAFT)
+    const exportedAt = '2026-09-24T00:00:00.000Z'
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ exportedAt, cases: [{ record, revision: 2 }] }), { status: 200 }))
+    const api = setup(fetcher)
+    await expect(api.exportAll()).resolves.toEqual({ exportedAt, cases: [{ record, revision: 2 }] })
+    expect(fetcher).toHaveBeenCalledWith('https://api.example.test/v1/account/data/export', expect.objectContaining({ method: 'GET', credentials: 'omit', cache: 'no-store' }))
+  })
+
   it('uses bearer auth, omits browser credentials, and checks ETag revisions', async () => {
     const record = createCaseRecord(EMPTY_DRAFT, new Date('2026-09-24T00:00:00.000Z'))
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ record, revision: 2 }), { status: 200, headers: { ETag: '"2"' } }))

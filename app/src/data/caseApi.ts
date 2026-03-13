@@ -22,6 +22,12 @@ export function createCaseApi(options: CaseApiOptions) {
       if (cursor) query.set('cursor', cursor)
       return request(`/cases?${query}`, { method: 'GET' }).then(parseCasePage)
     },
+    async exportAll(): Promise<{ exportedAt: string; cases: StoredCase[] }> {
+      const response = await request('/account/data/export', { method: 'GET' })
+      const value: unknown = await response.json()
+      if (!value || typeof value !== 'object' || !('exportedAt' in value) || typeof value.exportedAt !== 'string' || !Number.isFinite(Date.parse(value.exportedAt)) || !('cases' in value) || !Array.isArray(value.cases)) throw new Error('Case API returned an invalid account export.')
+      return { exportedAt: value.exportedAt, cases: value.cases.map((item) => validateStoredCase(item)) }
+    },
     get(id: string): Promise<StoredCase> { return request(`/cases/${encodeURIComponent(id)}`, { method: 'GET' }).then(parseStoredCase) },
     create(record: CaseRecord): Promise<StoredCase> {
       return request('/cases', { method: 'POST', body: JSON.stringify(record) }).then((response) => parseStoredCase(response, record.id))

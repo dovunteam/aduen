@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 import { createCaseRecord, EMPTY_DRAFT } from '../src/domain/case'
 
 const authority = 'https://identity.example.test/'
@@ -45,6 +46,9 @@ test('hosted save requires consent and account copies can be listed and deleted 
     }
     if (method === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return }
     requests.push({ method, url: request.url(), revision: request.headers()['if-match'] })
+    if (method === 'GET' && url.pathname === '/v1/account/data/export') {
+      await route.fulfill({ status: 200, headers, json: { exportedAt: '2026-09-24T00:00:00.000Z', cases: [...owned.values(), { record: anotherCase, revision: 3 }] } }); return
+    }
     if (method === 'GET' && url.pathname === '/v1/cases' && url.searchParams.get('cursor') === 'next-page') {
       await route.fulfill({ status: 200, headers, json: { cases: [{ record: anotherCase, revision: 3 }], nextCursor: null } }); return
     }
@@ -112,6 +116,19 @@ test('hosted save requires consent and account copies can be listed and deleted 
   const audit = await page.evaluate(() => JSON.parse(localStorage.getItem('Aduen.audit-log.v1') ?? '[]') as Array<{ action: string }>)
   expect(audit.some((event) => event.action === 'hosted_case_saved')).toBe(true)
   expect(audit.some((event) => event.action === 'hosted_case_deleted')).toBe(true)
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export all hosted data' }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toBe('aduen-hosted-data-2026-09-24.json')
+  const downloadPath = await download.path()
+  expect(downloadPath).not.toBeNull()
+  if (downloadPath) {
+    const exportedData = JSON.parse(await readFile(downloadPath, 'utf8')) as { format: string; cases: Array<{ record: { id: string } }> }
+    expect(exportedData.format).toBe('aduen-hosted-case-data-v1')
+    expect(exportedData.cases.map((item) => item.record.id).sort()).toEqual([anotherCase.id])
+  }
+  expect(requests.some((request) => request.method === 'GET' && request.url.endsWith('/v1/account/data/export'))).toBe(true)
 
   page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'Delete all hosted data' }).click()

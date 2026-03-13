@@ -24,9 +24,10 @@ The API image exposes port `8080` and includes a container health check against 
 - `GET /v1/cases/:id` reads an owner-scoped case.
 - `PUT /v1/cases/:id` replaces a case only with its current `If-Match: "revision"` ETag.
 - `DELETE /v1/cases/:id` requires the current ETag and removes the case row.
+- `GET /v1/account/data/export` returns every structured case record and revision owned by the authenticated subject, with an export timestamp.
 - `DELETE /v1/account/data` transactionally deletes every hosted case and minimized mutation-audit row owned by the authenticated subject. It is idempotent and returns no case counts.
 
-Bulk deletion removes server-side case and mutation history in one database transaction. It does not delete local browser data, the external identity-provider account, or retained backups.
+The browser downloads the account export as JSON; it contains structured records and revisions but no browser evidence or files. Bulk deletion removes server-side case and mutation history in one database transaction. It does not delete local browser data, the external identity-provider account, or retained backups.
 
 All `/v1` routes require an `Authorization: Bearer` token signed with RS256 or ES256 by the configured issuer, with the configured audience, `sub`, and `exp`. Responses set `Cache-Control: no-store` and a random `X-Request-Id`. Structured request logs contain only that ID, the route template, method, status, and duration; they omit case IDs, query strings, IP addresses, tokens, user subjects, and request bodies. Mutation events store only the issuer subject, case UUID, action, and timestamp. Invalid tokens are rejected; an unavailable JWKS endpoint returns 503 and the case request is not processed.
 
