@@ -28,6 +28,39 @@ jobs:
           cache-dependency-path: service/api/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: Verify restricted PostgreSQL role provisioning
+        env:
+          ADUEN_DATABASE_NAME: aduen_role_check
+          ADUEN_MIGRATOR_PASSWORD: synthetic-role-migrator-password
+          ADUEN_API_PASSWORD: synthetic-role-api-password
+          ADUEN_RETENTION_PASSWORD: synthetic-role-retention-password
+        run: |
+          set -euo pipefail
+          docker run --detach --rm --name aduen-role-provision-check \
+            --env POSTGRES_DB=aduen_role_check \
+            --env POSTGRES_PASSWORD=synthetic-superuser-password \
+            --env POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256 \
+            --publish 127.0.0.1:54330:5432 \
+            postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+          trap 'docker rm -f aduen-role-provision-check >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            if docker exec aduen-role-provision-check pg_isready --username postgres --dbname aduen_role_check; then break; fi
+            sleep 1
+          done
+          docker exec aduen-role-provision-check pg_isready --username postgres --dbname aduen_role_check
+          docker exec --interactive \
+            --env ADUEN_DATABASE_NAME \
+            --env ADUEN_MIGRATOR_PASSWORD \
+            --env ADUEN_API_PASSWORD \
+            --env ADUEN_RETENTION_PASSWORD \
+            aduen-role-provision-check psql --username postgres --dbname aduen_role_check \
+            < deploy/postgres-roles.sql
+          DATABASE_URL_MIGRATOR=postgres://aduen_migrator:synthetic-role-migrator-password@127.0.0.1:54330/aduen_role_check npm run migrate
+          DATABASE_URL=postgres://aduen_api:synthetic-role-api-password@127.0.0.1:54330/aduen_role_check \
+          DATABASE_URL_MIGRATOR=postgres://aduen_migrator:synthetic-role-migrator-password@127.0.0.1:54330/aduen_role_check \
+          DATABASE_URL_MAINTENANCE=postgres://aduen_retention:synthetic-role-retention-password@127.0.0.1:54330/aduen_role_check \
+          DATABASE_URL_TEST_ADMIN=postgres://postgres:synthetic-superuser-password@127.0.0.1:54330/aduen_role_check \
+            npm run test:postgres
       - name: Start PostgreSQL for row policy verification
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example up --detach database
       - name: Apply the case schema
