@@ -20,6 +20,8 @@ const pool = new Pool({
 })
 const app = createApp(new PgCaseStore(pool), createAuthenticator({ issuer: config.issuer, jwksUrl: config.jwksUrl, audience: config.audience, maxTokenAgeSeconds: config.authMaxTokenAgeSeconds }), config.corsOrigins, undefined, {
   trustedProxies: config.trustedProxies,
+  metricsBearerToken: config.metricsBearerToken,
+  getDatabasePoolMetrics: () => ({ total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }),
   ...(config.rateLimitHmacKey ? { rateLimitStore: createPostgresRateLimitStore(pool, config.rateLimitHmacKey) } : {}),
 })
 

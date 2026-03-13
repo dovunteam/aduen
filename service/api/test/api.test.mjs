@@ -51,6 +51,29 @@ test('health is public and API responses disable caching and browser embedding',
   assert.match(response.headers['x-request-id'], /^[\da-f-]{36}$/iu)
 })
 
+test('Prometheus metrics require a bearer secret and expose only bounded route labels', async () => {
+  const metricsApp = createApp(store, authenticator, [], () => undefined, {
+    metricsBearerToken: 'synthetic-protected-metrics-secret-123456789',
+    getDatabasePoolMetrics: () => ({ total: 4, idle: 3, waiting: 1 }),
+  })
+  await metricsApp.ready()
+  try {
+    assert.equal((await metricsApp.inject({ method: 'GET', url: '/metrics' })).statusCode, 404)
+    await metricsApp.inject({ method: 'GET', url: '/health/live' })
+    const token = await signToken({ sub: 'metrics-test-subject' })
+    const caseId = '550e8400-e29b-41d4-a716-446655440098'
+    await metricsApp.inject({ method: 'GET', url: `/v1/cases/${caseId}?private=metrics-query-value`, headers: bearer(token) })
+    const response = await metricsApp.inject({ method: 'GET', url: '/metrics', headers: { authorization: 'Bearer synthetic-protected-metrics-secret-123456789' } })
+    assert.equal(response.statusCode, 200)
+    assert.match(response.headers['content-type'], /text\/plain/u)
+    assert.match(response.body, /aduen_http_requests_total\{method="GET",route="\/health\/live",status="200"\} 1/u)
+    assert.match(response.body, /route="\/v1\/cases\/:id",status="404"/u)
+    assert.match(response.body, /aduen_postgres_pool_connections\{state="waiting"\} 1/u)
+    for (const sensitive of [caseId, 'metrics-query-value', token, 'metrics-test-subject']) assert.equal(response.body.includes(sensitive), false)
+  } finally { await metricsApp.close() }
+  assert.equal((await app.inject({ method: 'GET', url: '/metrics' })).statusCode, 404)
+})
+
 test('production limiter keys requests by the client IP from explicitly trusted proxies', async () => {
   const keys = new Map()
   class SharedTestStore {
@@ -123,7 +146,7 @@ test('production refuses missing database TLS and insecure identity endpoints', 
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://user:secret@identity.example.test/jwks' }), /without credentials/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'https://app.example.test/path' }), /exact HTTP\(S\) origins/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'http://app.example.test' }), /must use HTTPS/u)
-  const secure = { ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', TRUSTED_PROXIES: '10.20.0.0/16,2001:db8::1', RATE_LIMIT_HMAC_KEY: 'synthetic-shared-rate-limit-secret-123456', HOSTED_CASE_RETENTION_DAYS: '365' }
+  const secure = { ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', TRUSTED_PROXIES: '10.20.0.0/16,2001:db8::1', RATE_LIMIT_HMAC_KEY: 'synthetic-shared-rate-limit-secret-123456', METRICS_BEARER_TOKEN: 'synthetic-protected-metrics-secret-123456789', HOSTED_CASE_RETENTION_DAYS: '365' }
   assert.throws(() => readConfig({ ...secure, HOSTED_CASE_RETENTION_DAYS: '' }), /HOSTED_CASE_RETENTION_DAYS must be explicitly selected/u)
   assert.throws(() => readConfig({ ...secure, HOSTED_CASE_RETENTION_DAYS: '0' }), /whole number from 1 to 3650/u)
   assert.equal(readConfig({ ...secure, HOSTED_CASE_RETENTION_DAYS: '365' }).hostedCaseRetentionDays, 365)
@@ -134,6 +157,8 @@ test('production refuses missing database TLS and insecure identity endpoints', 
   assert.throws(() => readConfig({ ...secure, TRUSTED_PROXIES: 'ingress.example.test' }), /IP addresses or CIDR/u)
   assert.throws(() => readConfig({ ...secure, RATE_LIMIT_HMAC_KEY: '' }), /RATE_LIMIT_HMAC_KEY is required/u)
   assert.throws(() => readConfig({ ...secure, RATE_LIMIT_HMAC_KEY: 'too-short' }), /at least 32 UTF-8 bytes/u)
+  assert.throws(() => readConfig({ ...secure, METRICS_BEARER_TOKEN: '' }), /METRICS_BEARER_TOKEN is required/u)
+  assert.throws(() => readConfig({ ...secure, METRICS_BEARER_TOKEN: 'too-short' }), /at least 32 UTF-8 bytes/u)
   assert.deepEqual(readConfig(secure).trustedProxies, ['10.20.0.0/16', '2001:db8::1'])
 })
 
