@@ -26,7 +26,7 @@ For standard PostgreSQL, `service/api/deploy/postgres-roles.sql` creates the log
 
 Provide a short-lived `DATABASE_URL_MIGRATOR` only to the migration job. Run `npm run migrate` from the API image once before rolling out new replicas. The migrator serializes concurrent runs and rejects changed or unknown migration history. Take and verify a pre-change backup before a schema rollout. Migrations are not automatically reversed; recover with a forward fix or the approved restore procedure.
 
-API replicas use only `DATABASE_URL` for the restricted runtime role. Configure `DATABASE_SSL=true`; the client validates the server certificate. Startup checks the protected tables, elevated role privileges, explicit role memberships, ownership boundaries, and exact migration ledger. The API role is expected to use direct grants only. A failed guard must stop rollout rather than trigger a permissive fallback.
+API replicas use only `DATABASE_URL` for the restricted runtime role. Configure `DATABASE_SSL=true`; the client validates the server certificate. Startup checks the protected tables, elevated role privileges, explicit role memberships, `CREATE` on the public schema, table privileges that bypass row-level security or create triggers/references, ownership boundaries, and exact migration ledger. The API role is expected to use direct grants only. A failed guard must stop rollout rather than trigger a permissive fallback.
 
 ## API environment
 
