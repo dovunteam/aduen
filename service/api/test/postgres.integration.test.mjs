@@ -94,8 +94,9 @@ test('PostgreSQL backup role can read all owners while remaining read-only', { s
       has_table_privilege(current_user, 'public.aduen_cases', 'SELECT') AS can_read,
       has_table_privilege(current_user, 'public.aduen_cases', 'INSERT') AS can_insert,
       has_table_privilege(current_user, 'public.aduen_cases', 'UPDATE') AS can_update,
-      has_table_privilege(current_user, 'public.aduen_cases', 'DELETE') AS can_delete`)
-    assert.deepEqual(permissions.rows[0], { can_read: true, can_insert: false, can_update: false, can_delete: false })
+      has_table_privilege(current_user, 'public.aduen_cases', 'DELETE') AS can_delete,
+      pg_has_role(current_user, 'pg_read_all_data', 'MEMBER') AS has_cluster_wide_read_role`)
+    assert.deepEqual(permissions.rows[0], { can_read: true, can_insert: false, can_update: false, can_delete: false, has_cluster_wide_read_role: false })
     const rows = await backupPool.query('SELECT id FROM aduen_cases WHERE id = ANY($1::uuid[]) ORDER BY id', [[idA, idB]])
     assert.deepEqual(rows.rows.map((row) => row.id), [idA, idB].sort())
   } finally {
