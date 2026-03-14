@@ -115,13 +115,25 @@ jobs:
           trivy image --scanners vuln --format cyclonedx --output api-image.sbom.cdx.json aduen-local-service-api
           printf 'image=aduen-local-service-api\nimage_id=%s\n' "$image_id" > api-image-metadata.txt
           printf 'Tested API image ID: `%s`\n' "$image_id" >> "$GITHUB_STEP_SUMMARY"
+      - name: Export and verify the tested API image archive
+        run: |
+          docker image save --output api-image.tar aduen-local-service-api
+          sha256sum api-image.tar > api-image.tar.sha256
+          docker image load --input api-image.tar
+          sha256sum --check api-image.tar.sha256
+          expected_image_id=$(sed -n 's/^image_id=//p' api-image-metadata.txt)
+          actual_image_id=$(docker image inspect --format '{{.Id}}' aduen-local-service-api)
+          test -n "$expected_image_id"
+          test "$actual_image_id" = "$expected_image_id"
       - name: Upload API image SBOM and metadata
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: aduen-api-image-sbom
+          name: aduen-api-tested-image
           path: |
             service/api/api-image.sbom.cdx.json
             service/api/api-image-metadata.txt
+            service/api/api-image.tar
+            service/api/api-image.tar.sha256
           if-no-files-found: error
           retention-days: 90
       - name: Verify migration ledger skips completed migrations
