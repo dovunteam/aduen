@@ -24,6 +24,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const issuer = required(env.AUTH_ISSUER, 'AUTH_ISSUER')
   const jwksUrl = required(env.AUTH_JWKS_URL, 'AUTH_JWKS_URL')
   const audience = required(env.AUTH_AUDIENCE, 'AUTH_AUDIENCE')
+  const issuerUrl = parseHttpEndpoint(issuer, 'AUTH_ISSUER')
+  const jwksEndpoint = parseHttpEndpoint(jwksUrl, 'AUTH_JWKS_URL')
   const authMaxTokenAgeSeconds = Number(env.AUTH_MAX_TOKEN_AGE_SECONDS ?? '3600')
   if (!Number.isInteger(authMaxTokenAgeSeconds) || authMaxTokenAgeSeconds < 60 || authMaxTokenAgeSeconds > 86_400) throw new Error('AUTH_MAX_TOKEN_AGE_SECONDS must be a whole number from 60 to 86400.')
   const hostedCaseRetentionValue = env.HOSTED_CASE_RETENTION_DAYS?.trim() ?? ''
@@ -37,11 +39,9 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   assertDatabaseTlsUrl(databaseUrl, databaseSsl)
 
   if (nodeEnv === 'production' && !databaseSsl) throw new Error('DATABASE_SSL=true is required in production.')
-  if (nodeEnv === 'production' && (new URL(issuer).protocol !== 'https:' || new URL(jwksUrl).protocol !== 'https:')) {
+  if (nodeEnv === 'production' && (issuerUrl.protocol !== 'https:' || jwksEndpoint.protocol !== 'https:')) {
     throw new Error('AUTH_ISSUER and AUTH_JWKS_URL must use HTTPS in production.')
   }
-  if (nodeEnv !== 'production' && !['http:', 'https:'].includes(new URL(issuer).protocol)) throw new Error('AUTH_ISSUER must be an HTTP(S) URL.')
-  if (nodeEnv !== 'production' && !['http:', 'https:'].includes(new URL(jwksUrl).protocol)) throw new Error('AUTH_JWKS_URL must be an HTTP(S) URL.')
   if (nodeEnv === 'production' && hostedCaseRetentionDays === null) throw new Error('HOSTED_CASE_RETENTION_DAYS must be explicitly selected in production.')
 
   const port = Number(env.PORT ?? '8080')
@@ -71,6 +71,15 @@ function isIpOrCidr(value: string): boolean {
 function isOrigin(value: string): boolean {
   try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) && url.origin === value && !url.username && !url.password }
   catch { return false }
+}
+
+function parseHttpEndpoint(value: string, name: string): URL {
+  let url: URL
+  try { url = new URL(value) } catch { throw new Error(`${name} must be an absolute HTTP(S) URL.`) }
+  if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password || url.hash) {
+    throw new Error(`${name} must be an HTTP(S) URL without credentials or a fragment.`)
+  }
+  return url
 }
 
 function required(value: string | undefined, name: string): string {

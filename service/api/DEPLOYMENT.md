@@ -47,7 +47,7 @@ Inject these values through the runtime’s secret and configuration facilities.
 | `RATE_LIMIT_HMAC_KEY` | Random secret with at least 32 UTF-8 bytes, identical across replicas |
 | `HOSTED_CASE_RETENTION_DAYS` | Explicit policy-approved whole number from 1 to 3650 |
 
-The issuer does not need to be a specific vendor. Its access tokens must use RS256 or ES256, include `iss`, `sub`, `aud`, `iat`, and `exp`, and be verifiable at the configured JWKS endpoint. Offline refresh is disabled in the client. Account recovery, logout/session revocation, issuer registration, and the production redirect policy still need explicit review.
+The issuer does not need to be a specific vendor. Its access tokens must use RS256 or ES256, include `iss`, `sub`, `aud`, `iat`, and `exp`, and be verifiable at the configured JWKS endpoint. The API rejects identity endpoint URLs with embedded credentials or fragments. Offline refresh is disabled in the client. Account recovery, logout/session revocation, issuer registration, and the production redirect policy still need explicit review.
 
 The migration job additionally needs `DATABASE_URL_MIGRATOR` and `DATABASE_SSL=true`. Scheduled maintenance containers need `DATABASE_URL_MAINTENANCE`, `DATABASE_SSL=true`, `AUDIT_RETENTION_DAYS`, or `HOSTED_CASE_RETENTION_DAYS` according to the command being run. Backup jobs need `DATABASE_URL_BACKUP` for `aduen_backup`, plus `BACKUP_ACTIVE_KEY_ID`, `BACKUP_ENCRYPTION_KEYRING`, and an absolute `BACKUP_SCRATCH_DIR` when opening archives. These credentials are separate from the API runtime URL and must not be provided to web clients.
 
