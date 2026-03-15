@@ -99,6 +99,14 @@ jobs:
           test "$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$api_container")" = '["no-new-privileges:true"]'
           curl --fail --silent http://127.0.0.1:8080/health/live
           curl --fail --silent http://127.0.0.1:8080/health/ready
+      - name: Scan the API image for high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          scan-ref: aduen-local-service-api
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: '1'
       - name: Verify migration ledger skips completed migrations
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example --profile tools run --build --rm migrate
       - name: Verify PostgreSQL owner isolation
