@@ -97,7 +97,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await page.getByLabel('External reference').fill('SYNTH-001')
   await page.getByRole('button', { name: /Save status/ }).click()
   await expect(page.getByRole('status')).toContainText('Status saved')
-  await expect(page.getByText('handed off', { exact: true })).toBeVisible()
+  await expect(page.getByText('Handed off', { exact: true })).toBeVisible()
 })
 
 test('extracted candidates require explicit confirmation, correction, or rejection', async ({ page }) => {
