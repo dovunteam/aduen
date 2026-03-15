@@ -1,9 +1,11 @@
 import { Pool } from 'pg'
 import { readMigrations } from './migrationManifest.js'
+import { assertDatabaseTlsUrl } from './databaseTls.js'
 
 const databaseUrl = process.env.DATABASE_URL_MIGRATOR
 if (!databaseUrl) throw new Error('DATABASE_URL_MIGRATOR is required.')
 if (process.env.NODE_ENV === 'production' && process.env.DATABASE_SSL !== 'true') throw new Error('DATABASE_SSL=true is required in production.')
+assertDatabaseTlsUrl(databaseUrl, process.env.DATABASE_SSL === 'true')
 
 const pool = new Pool({
   connectionString: databaseUrl,
