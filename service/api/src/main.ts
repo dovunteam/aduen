@@ -18,9 +18,11 @@ const pool = new Pool({
   idleTimeoutMillis: 30_000,
   application_name: 'aduen-case-api',
 })
-const app = createApp(new PgCaseStore(pool), createAuthenticator({ issuer: config.issuer, jwksUrl: config.jwksUrl, audience: config.audience, maxTokenAgeSeconds: config.authMaxTokenAgeSeconds }), config.corsOrigins, undefined, {
+const authenticate = createAuthenticator({ issuer: config.issuer, jwksUrl: config.jwksUrl, audience: config.audience, maxTokenAgeSeconds: config.authMaxTokenAgeSeconds })
+const app = createApp(new PgCaseStore(pool), authenticate, config.corsOrigins, undefined, {
   trustedProxies: config.trustedProxies,
   metricsBearerToken: config.metricsBearerToken,
+  checkAuthenticationProvider: authenticate.checkProvider,
   getDatabasePoolMetrics: () => ({ total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }),
   ...(config.rateLimitHmacKey ? { rateLimitStore: createPostgresRateLimitStore(pool, config.rateLimitHmacKey) } : {}),
 })

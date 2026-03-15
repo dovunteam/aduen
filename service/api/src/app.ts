@@ -17,7 +17,7 @@ const pageSchema = z.object({
   cursor: z.string().max(512).optional(),
 }).strict()
 
-export type AppOptions = { trustedProxies?: string[]; rateLimitStore?: RateLimitStoreConstructor; metricsBearerToken?: string | null; getDatabasePoolMetrics?: () => DatabasePoolMetrics }
+export type AppOptions = { trustedProxies?: string[]; rateLimitStore?: RateLimitStoreConstructor; metricsBearerToken?: string | null; getDatabasePoolMetrics?: () => DatabasePoolMetrics; checkAuthenticationProvider?: () => Promise<void> }
 
 export function createApp(store: CaseStore, authenticate: Authenticate, corsOrigins: string[] = [], writeRequestLog: (entry: object) => void = (entry) => console.info(JSON.stringify(entry)), options: AppOptions = {}) {
   const trustedProxies = options.trustedProxies ?? []
@@ -59,7 +59,10 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
 
   app.get('/health/live', { config: { rateLimit: false } }, async () => ({ status: 'ok' }))
   app.get('/health/ready', { config: { rateLimit: false } }, async (_request, reply) => {
-    try { await store.ping(); return { status: 'ready' } }
+    try {
+      await Promise.all([store.ping(), options.checkAuthenticationProvider?.()])
+      return { status: 'ready' }
+    }
     catch { return reply.code(503).send({ error: 'not_ready' }) }
   })
   app.get('/metrics', { config: { rateLimit: false } }, async (request, reply) => {
