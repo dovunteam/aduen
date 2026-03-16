@@ -108,6 +108,21 @@ jobs:
           format: table
           severity: HIGH,CRITICAL
           exit-code: '1'
+      - name: Generate API image SBOM and record image ID
+        run: |
+          image_id=$(docker image inspect --format '{{.Id}}' aduen-local-service-api)
+          trivy image --scanners vuln --format cyclonedx --output api-image.sbom.cdx.json aduen-local-service-api
+          printf 'image=aduen-local-service-api\nimage_id=%s\n' "$image_id" > api-image-metadata.txt
+          printf 'Tested API image ID: `%s`\n' "$image_id" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload API image SBOM and metadata
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: aduen-api-image-sbom
+          path: |
+            service/api/api-image.sbom.cdx.json
+            service/api/api-image-metadata.txt
+          if-no-files-found: error
+          retention-days: 90
       - name: Verify migration ledger skips completed migrations
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example --profile tools run --build --rm migrate
       - name: Verify PostgreSQL owner isolation
