@@ -14,6 +14,7 @@ export type ApiConfig = {
   corsOrigins: string[]
   trustedProxies: string[]
   rateLimitHmacKey: string | null
+  rateLimitHmacPreviousKey: string | null
   metricsBearerToken: string | null
   nodeEnv: string
 }
@@ -54,13 +55,16 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   if (trustedProxies.some((value) => !isIpOrCidr(value))) throw new Error('TRUSTED_PROXIES must contain IP addresses or CIDR ranges.')
   if (nodeEnv === 'production' && trustedProxies.length === 0) throw new Error('TRUSTED_PROXIES must list the trusted TLS ingress addresses in production.')
   const rateLimitHmacKey = env.RATE_LIMIT_HMAC_KEY?.trim() || null
+  const rateLimitHmacPreviousKey = env.RATE_LIMIT_HMAC_KEY_PREVIOUS?.trim() || null
   if (rateLimitHmacKey && Buffer.byteLength(rateLimitHmacKey, 'utf8') < 32) throw new Error('RATE_LIMIT_HMAC_KEY must contain at least 32 UTF-8 bytes.')
+  if (rateLimitHmacPreviousKey && Buffer.byteLength(rateLimitHmacPreviousKey, 'utf8') < 32) throw new Error('RATE_LIMIT_HMAC_KEY_PREVIOUS must contain at least 32 UTF-8 bytes.')
+  if (rateLimitHmacKey && rateLimitHmacKey === rateLimitHmacPreviousKey) throw new Error('RATE_LIMIT_HMAC_KEY and RATE_LIMIT_HMAC_KEY_PREVIOUS must be different.')
   if (nodeEnv === 'production' && !rateLimitHmacKey) throw new Error('RATE_LIMIT_HMAC_KEY is required for shared production rate limiting.')
   const metricsBearerToken = env.METRICS_BEARER_TOKEN?.trim() || null
   if (metricsBearerToken && Buffer.byteLength(metricsBearerToken, 'utf8') < 32) throw new Error('METRICS_BEARER_TOKEN must contain at least 32 UTF-8 bytes.')
   if (nodeEnv === 'production' && !metricsBearerToken) throw new Error('METRICS_BEARER_TOKEN is required for protected production metrics.')
 
-  return { host, port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, metricsBearerToken, nodeEnv }
+  return { host, port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, rateLimitHmacPreviousKey, metricsBearerToken, nodeEnv }
 }
 
 function isIpOrCidr(value: string): boolean {
