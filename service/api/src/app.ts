@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { randomUUID, timingSafeEqual } from 'node:crypto'
 import rateLimit from '@fastify/rate-limit'
 import cors from '@fastify/cors'
 import Fastify from 'fastify'
@@ -8,6 +8,8 @@ import { AuthenticationUnavailable } from './auth.js'
 import type { Authenticate } from './auth.js'
 import type { CaseStore } from './caseStore.js'
 import type { RateLimitStoreConstructor } from './postgresRateLimitStore.js'
+import { ApiMetrics } from './metrics.js'
+import type { DatabasePoolMetrics } from './metrics.js'
 
 const idSchema = z.uuid()
 const pageSchema = z.object({
@@ -15,12 +17,13 @@ const pageSchema = z.object({
   cursor: z.string().max(512).optional(),
 }).strict()
 
-export type AppOptions = { trustedProxies?: string[]; rateLimitStore?: RateLimitStoreConstructor }
+export type AppOptions = { trustedProxies?: string[]; rateLimitStore?: RateLimitStoreConstructor; metricsBearerToken?: string | null; getDatabasePoolMetrics?: () => DatabasePoolMetrics }
 
 export function createApp(store: CaseStore, authenticate: Authenticate, corsOrigins: string[] = [], writeRequestLog: (entry: object) => void = (entry) => console.info(JSON.stringify(entry)), options: AppOptions = {}) {
   const trustedProxies = options.trustedProxies ?? []
   const app = Fastify({ logger: false, bodyLimit: 128 * 1024, trustProxy: trustedProxies.length ? trustedProxies : false, requestIdHeader: false, genReqId: () => randomUUID() })
   const requestStarted = new WeakMap<object, bigint>()
+  const metrics = new ApiMetrics()
   void app.register(cors, { origin: corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Authorization', 'Content-Type', 'If-Match'], exposedHeaders: ['ETag', 'X-Request-Id'], credentials: false, maxAge: 600 })
   if (options.rateLimitStore) {
     const sharedStore = new options.rateLimitStore({ max: 120, timeWindow: 60_000 } as never)
@@ -49,6 +52,7 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
     const route = request.routeOptions.url ?? 'unmatched'
     const startedAt = requestStarted.get(request)
     const durationMs = startedAt === undefined ? 0 : Number(process.hrtime.bigint() - startedAt) / 1_000_000
+    metrics.observeHttp(request.method, route, reply.statusCode, durationMs)
     writeRequestLog({ event: 'api_request', requestId: request.id, method: request.method, route, statusCode: reply.statusCode, durationMs: Math.round(durationMs * 100) / 100 })
   })
   app.addHook('onRequest', async (request) => { requestStarted.set(request, process.hrtime.bigint()) })
@@ -57,6 +61,10 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
   app.get('/health/ready', { config: { rateLimit: false } }, async (_request, reply) => {
     try { await store.ping(); return { status: 'ready' } }
     catch { return reply.code(503).send({ error: 'not_ready' }) }
+  })
+  app.get('/metrics', { config: { rateLimit: false } }, async (request, reply) => {
+    if (!options.metricsBearerToken || !matchesBearerToken(request.headers.authorization, options.metricsBearerToken)) return reply.code(404).send({ error: 'not_found' })
+    return reply.type('text/plain; version=0.0.4; charset=utf-8').send(metrics.render(options.getDatabasePoolMetrics?.()))
   })
 
   app.addHook('preHandler', async (request, reply) => {
@@ -145,6 +153,11 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
 }
 
 function etag(revision: number): string { return `"${revision}"` }
+function matchesBearerToken(header: string | undefined, token: string): boolean {
+  const expected = Buffer.from(`Bearer ${token}`, 'utf8')
+  const actual = Buffer.from(header ?? '', 'utf8')
+  return actual.length === expected.length && timingSafeEqual(actual, expected)
+}
 function parseIfMatch(value: string | undefined): number | 'missing' | 'invalid' {
   if (value === undefined) return 'missing'
   const match = value.match(/^"([1-9]\d*)"$/u)

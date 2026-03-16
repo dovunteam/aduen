@@ -45,6 +45,7 @@ Inject these values through the runtime’s secret and configuration facilities.
 | `CORS_ORIGINS` | Comma-separated exact HTTPS browser origins; no paths or wildcard |
 | `TRUSTED_PROXIES` | Exact ingress peer IP addresses or CIDRs observed by the API |
 | `RATE_LIMIT_HMAC_KEY` | Random secret with at least 32 UTF-8 bytes, identical across replicas |
+| `METRICS_BEARER_TOKEN` | Random secret with at least 32 UTF-8 bytes; keep it only in the scraper and API secret stores |
 | `HOSTED_CASE_RETENTION_DAYS` | Explicit policy-approved whole number from 1 to 3650 |
 
 The issuer does not need to be a specific vendor. Its access tokens must use RS256 or ES256, include `iss`, `sub`, `aud`, `iat`, and `exp`, and be verifiable at the configured JWKS endpoint. The API rejects identity endpoint URLs with embedded credentials or fragments. Offline refresh is disabled in the client. Account recovery, logout/session revocation, issuer registration, and the production redirect policy still need explicit review.
@@ -64,6 +65,6 @@ The migration job additionally needs `DATABASE_URL_MIGRATOR` and `DATABASE_SSL=t
 
 ## Readiness signals and remaining gates
 
-`/health/live` reports process liveness. `/health/ready` checks database connectivity; it does not test the OIDC issuer, JWKS reachability, ingress, or browser configuration. Authentication requests return unavailable if JWKS retrieval fails. Monitor API status codes and latency, health checks, database saturation, migration failures, retention-job exits, and backup/restore outcomes using infrastructure monitoring that does not capture request bodies, tokens, owner subjects, case identifiers, or query strings.
+`/health/live` reports process liveness. `/health/ready` checks database connectivity; it does not test the OIDC issuer, JWKS reachability, ingress, or browser configuration. Authentication requests return unavailable if JWKS retrieval fails. `/metrics` serves Prometheus text format after validating `Authorization: Bearer <METRICS_BEARER_TOKEN>`; keep the route private to the scraper network and rotate the token through the secret store. It reports route-template request counts and latency histograms, process uptime, and PostgreSQL pool total, idle, and waiting connections. Labels use registered route templates and never include case IDs, subjects, query strings, or request data. Monitor these signals, health checks, migration failures, retention-job exits, and backup/restore outcomes using infrastructure monitoring that does not capture request bodies, tokens, owner subjects, case identifiers, or query strings.
 
 This runbook does not provide an infrastructure-specific deployment, scheduler, monitoring integration, production OIDC registration, managed secret store, backup target, or retention schedule. Those must be selected and verified for the chosen operating environment before the service can be treated as production-ready.
