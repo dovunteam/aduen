@@ -21,7 +21,7 @@ export type AppOptions = { trustedProxies?: string[]; rateLimitStore?: RateLimit
 
 export function createApp(store: CaseStore, authenticate: Authenticate, corsOrigins: string[] = [], writeRequestLog: (entry: object) => void = (entry) => console.info(JSON.stringify(entry)), options: AppOptions = {}) {
   const trustedProxies = options.trustedProxies ?? []
-  const app = Fastify({ logger: false, bodyLimit: 128 * 1024, trustProxy: trustedProxies.length ? trustedProxies : false, requestIdHeader: false, genReqId: () => randomUUID() })
+  const app = Fastify({ logger: false, bodyLimit: 128 * 1024, requestTimeout: 30_000, trustProxy: trustedProxies.length ? trustedProxies : false, requestIdHeader: false, genReqId: () => randomUUID() })
   const requestStarted = new WeakMap<object, bigint>()
   const metrics = new ApiMetrics()
   void app.register(cors, { origin: corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Authorization', 'Content-Type', 'If-Match'], exposedHeaders: ['ETag', 'X-Request-Id'], credentials: false, maxAge: 600 })
