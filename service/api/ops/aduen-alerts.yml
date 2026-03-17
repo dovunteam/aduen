@@ -1,0 +1,48 @@
+groups:
+  - name: aduen-api
+    rules:
+      - alert: AduenApiScrapeUnavailable
+        expr: up{job="aduen-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Aduen API metrics endpoint is unavailable
+          description: Prometheus has failed to scrape an Aduen API target for at least two minutes.
+
+      - alert: AduenApiHighServerErrorRate
+        expr: |
+          sum by (job) (rate(aduen_http_requests_total{job="aduen-api",status=~"5.."}[5m]))
+          /
+          clamp_min(sum by (job) (rate(aduen_http_requests_total{job="aduen-api"}[5m])), 0.001)
+          > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Aduen API server error rate is elevated
+          description: More than five percent of API responses have been 5xx for at least ten minutes.
+
+      - alert: AduenApiHighRequestLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (job, le) (
+              rate(aduen_http_request_duration_seconds_bucket{job="aduen-api",route!~"/health/.*|/metrics"}[5m])
+            )
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Aduen API request latency is elevated
+          description: The 95th percentile of non-health API responses has exceeded one second for at least ten minutes.
+
+      - alert: AduenPostgresPoolWaiters
+        expr: aduen_postgres_pool_connections{job="aduen-api",state="waiting"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Aduen API requests are waiting for PostgreSQL connections
+          description: At least one API process has had queued PostgreSQL pool requests for five minutes.
