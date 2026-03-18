@@ -1,4 +1,5 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto'
+import { Readable } from 'node:stream'
 import rateLimit from '@fastify/rate-limit'
 import cors from '@fastify/cors'
 import Fastify from 'fastify'
@@ -96,8 +97,20 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
 
   app.get('/v1/account/data/export', async (request, reply) => {
     try {
-      const cases = await store.exportAll(request.userSubject!)
-      return { exportedAt: new Date().toISOString(), cases }
+      const exportedAt = new Date().toISOString()
+      const cases = store.streamExportAll
+        ? store.streamExportAll(request.userSubject!)
+        : await store.exportAll(request.userSubject!)
+      const body = Readable.from((async function* () {
+        yield `{"exportedAt":${JSON.stringify(exportedAt)},"cases":[`
+        let first = true
+        for await (const item of cases) {
+          yield `${first ? '' : ','}${JSON.stringify(item)}`
+          first = false
+        }
+        yield ']}'
+      })())
+      return reply.type('application/json; charset=utf-8').send(body)
     } catch { return reply.code(500).send({ error: 'internal_error' }) }
   })
 
