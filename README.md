@@ -2,7 +2,7 @@
 
 > Turn a failed purchase into a clear recovery path.
 
-**Aduen** is a consumer case-preparation and recovery-routing product by DOVUN. It helps Malaysian consumers organise transaction evidence, understand the appropriate next step, prepare accurate complaint material, and track a case from merchant contact to an eligible external channel.
+**Aduen** is a consumer case-preparation and recovery-routing prototype. It helps Malaysian consumers organise transaction evidence, understand the appropriate next step, prepare accurate complaint material, and track a case from merchant contact to an eligible external channel.
 
 Aduen is designed for cases such as:
 
@@ -31,20 +31,44 @@ Aduen distinguishes four kinds of information:
 
 Derived data never silently replaces original evidence.
 
-## Documentation
-
-Start with [the documentation index](docs/00_PRODUCT_INDEX.md).
-
 ## Research status
-
-The underlying consumer problem is documented. KPDN's national e-commerce review reports 10,488 online-transaction complaints in 2024, including 5,422 complaints for goods or services not received and 2,019 for goods or services not as advertised.
 
 The Aduen product proposition is not yet validated. There is no evidence in this repository that consumers will pay for Aduen, that its complaint packs improve recovery rates, or that a sustainable institutional payer exists. Those questions must be tested with real, consented cases.
 
 ## Product status
 
-An early local-first web prototype is available in [`app`](app/README.md). It now covers the core workflow from consent and urgent triage through evidence capture, local previews and supported redacted copies, completeness checks, merchant-first routing, operator-reviewed user-approved PDF packs, outcome tracking, local audit history, configurable local retention expiry, and data export or deletion. A separate synthetic-data [case API foundation](service/api/README.md) adds OIDC-protected structured-case storage with PostgreSQL ownership policies, but the browser app is not connected to it, no identity provider or hosting environment is configured, and it is not approved for real consumer records. Aduen still has no regulator integration, legal review, account lifecycle, server-side evidence storage, or payment handling.
+An early local-first web prototype is available in [`app`](app/README.md). It covers consent and urgent triage, evidence capture, local previews and supported redacted copies, completeness checks, merchant-first routing, operator-reviewed complaint packs, outcome tracking, local audit history, retention expiry, and data export or deletion.
 
-## Quick run and verify
+A separate synthetic-data [case API foundation](service/api/README.md) adds OIDC-protected structured-case storage with PostgreSQL ownership policies. The browser app is not connected to it by default; no identity provider or hosting environment is configured, and neither component is approved for real consumer records.
 
-On Windows, double-click [`run-aduen.bat`](run-aduen.bat) to start the development server and open the local page. To run a specific command from Command Prompt, use `run-aduen.bat test`, `run-aduen.bat lint`, `run-aduen.bat build`, `run-aduen.bat e2e`, or `run-aduen.bat verify`. Verification checks the tracked tree for em dashes and validates the product-document index. The batch file's browser checks use Chromium; run `npm run test:e2e` from `app` when you want the full configured browser matrix.
+Regulator integration, legal review, account lifecycle, server-side evidence storage, and payment handling are not implemented.
+
+## Run locally
+
+Requires Node.js 24 and npm. From the repository root:
+
+```sh
+cd app
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite. The API foundation has separate setup instructions in [`service/api/README.md`](service/api/README.md); it is synthetic-data infrastructure and is not connected to the browser app by default.
+
+## Verify
+
+Run these commands from `app`:
+
+```sh
+npm run lint
+npm test
+npm run build
+npx playwright install chromium # required once for browser tests
+npm run test:e2e
+```
+
+The repository also includes [`run-aduen.bat`](run-aduen.bat) for Windows. Its `verify` command runs the text and documentation checks, lint, unit tests, build, and Chromium end-to-end tests. The full CI workflow additionally verifies the PostgreSQL API setup and ownership policies with Docker.
+
+## License
+
+No license file is included. Public visibility does not grant permission to reuse or redistribute the code.
