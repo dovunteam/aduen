@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test'
 
+async function addBmEvidence(page: import('@playwright/test').Page, type: string, name: string) {
+  await page.getByLabel('Fail asal').setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(`Synthetic ${name}.`) })
+  await page.getByLabel('Apakah jenis rekod?').selectOption(type)
+  await page.getByRole('button', { name: 'Tambah bukti' }).click()
+  await expect(page.getByText(name, { exact: true })).toBeVisible()
+}
+
 test('Bahasa Malaysia preference persists across the safety journey', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'BM' }).click()
@@ -47,6 +54,14 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await expect(page.getByRole('heading', { name: 'Simpan yang asal.' })).toBeVisible()
   await expect(page.getByLabel('Apakah jenis rekod?')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Semak kes' })).toBeDisabled()
+
+  await addBmEvidence(page, 'receipt', 'resit.txt')
+  await addBmEvidence(page, 'payment', 'bayaran.txt')
+  await addBmEvidence(page, 'listing', 'iklan.txt')
+  await addBmEvidence(page, 'message', 'mesej.txt')
+  await page.getByRole('button', { name: 'Semak kes' }).click()
+  await expect(page.getByRole('heading', { name: 'Semak rekod.' })).toBeVisible()
+  await expect(page.getByText('Garis masa Buktiva', { exact: true })).toBeVisible()
 })
 
 test('Bahasa Malaysia privacy controls describe local data handling', async ({ page }) => {
