@@ -56,6 +56,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   if (nodeEnv === 'production' && trustedProxies.length === 0) throw new Error('TRUSTED_PROXIES must list the trusted TLS ingress addresses in production.')
   const rateLimitHmacKey = env.RATE_LIMIT_HMAC_KEY?.trim() || null
   const rateLimitHmacPreviousKey = env.RATE_LIMIT_HMAC_KEY_PREVIOUS?.trim() || null
+  if (rateLimitHmacPreviousKey && !rateLimitHmacKey) throw new Error('RATE_LIMIT_HMAC_KEY_PREVIOUS requires RATE_LIMIT_HMAC_KEY.')
   if (rateLimitHmacKey && Buffer.byteLength(rateLimitHmacKey, 'utf8') < 32) throw new Error('RATE_LIMIT_HMAC_KEY must contain at least 32 UTF-8 bytes.')
   if (rateLimitHmacPreviousKey && Buffer.byteLength(rateLimitHmacPreviousKey, 'utf8') < 32) throw new Error('RATE_LIMIT_HMAC_KEY_PREVIOUS must contain at least 32 UTF-8 bytes.')
   if (rateLimitHmacKey && rateLimitHmacKey === rateLimitHmacPreviousKey) throw new Error('RATE_LIMIT_HMAC_KEY and RATE_LIMIT_HMAC_KEY_PREVIOUS must be different.')
