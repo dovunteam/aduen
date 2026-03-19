@@ -16,7 +16,7 @@ test('Bahasa Malaysia preference persists across the safety journey', async ({ p
 
   await page.reload()
   await expect(page.getByRole('button', { name: 'BM' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByLabel(/Saya memahami peranan Aduen/).check()
+  await page.getByLabel(/Saya telah membaca dan memahami/).check()
   await page.getByRole('button', { name: 'Mulakan semakan keselamatan' }).click()
   await page.getByLabel('Bayaran atau transaksi tidak dibenarkan oleh saya').check()
 
@@ -27,7 +27,7 @@ test('Bahasa Malaysia preference persists across the safety journey', async ({ p
 test('Bahasa Malaysia case details preserve stable domain values', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'BM' }).click()
-  await page.getByLabel(/Saya memahami peranan Aduen/).check()
+  await page.getByLabel(/Saya telah membaca dan memahami/).check()
   await page.getByRole('button', { name: 'Mulakan semakan keselamatan' }).click()
   await page.getByRole('button', { name: /Tiada isu mendesak/ }).click()
 
@@ -136,7 +136,7 @@ test('Bahasa Malaysia privacy controls describe local data handling', async ({ p
   await page.getByRole('button', { name: 'Kawalan data' }).click()
 
   await expect(page.getByRole('heading', { name: 'Data anda kekal di bawah kawalan anda.' })).toBeVisible()
-  await expect(page.getByText('Pelayar ini', { exact: true })).toBeVisible()
+  await expect(page.getByText('Peranti ini sahaja', { exact: true })).toBeVisible()
   await expect(page.getByText('Calon fakta terbitan', { exact: true })).toBeVisible()
   await expect(page.getByText('Versi pek aduan', { exact: true })).toBeVisible()
   await expect(page.getByText('Status penyerahan', { exact: true })).toBeVisible()
@@ -148,7 +148,7 @@ test('Bahasa Malaysia privacy controls describe local data handling', async ({ p
 test('Bahasa Malaysia localizes the TTPM pre-check explanation', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'BM' }).click()
-  await page.getByLabel(/Saya memahami peranan Aduen/).check()
+  await page.getByLabel(/Saya telah membaca dan memahami/).check()
   await page.getByRole('button', { name: 'Mulakan semakan keselamatan' }).click()
   await page.getByRole('button', { name: /Tiada isu mendesak/ }).click()
   await page.getByLabel('Nama anda atau nama kes pilihan').fill('Pengguna Contoh')

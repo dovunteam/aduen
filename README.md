@@ -33,13 +33,15 @@ Derived data never silently replaces original evidence.
 
 ## Research status
 
-The Aduen product proposition is not yet validated. There is no evidence in this repository that consumers will pay for Aduen, that its complaint packs improve recovery rates, or that a sustainable institutional payer exists. Those questions must be tested with real, consented cases.
+This repository focuses on completing a local-first app using synthetic development and demo data. It does not claim that consumers will pay for Aduen or that its complaint packs improve recovery rates.
 
 ## Product status
 
-An early local-first web prototype is available in [`app`](app/README.md). It covers consent and urgent triage, evidence capture, local previews and supported redacted copies, completeness checks, merchant-first routing, operator-reviewed complaint packs, outcome tracking, local audit history, retention expiry, and data export or deletion.
+The local-first web app is available in [`app`](app/README.md). Case records and evidence remain in the user's browser storage on their device. The app requires no account, hosted case service, or backend deployment.
 
-A separate synthetic-data [case API foundation](service/api/README.md) adds OIDC-protected structured-case storage with PostgreSQL ownership policies. The browser app is not connected to it by default; no identity provider or hosting environment is configured, and neither component is approved for real consumer records.
+Use synthetic case details and files for development, screenshots, and demonstrations. Do not use real consumer case information as test data.
+
+A separate synthetic-data [case API experiment](service/api/README.md) is isolated from the browser app and is not needed to build, run, or use it. It can inform a future scaling phase if the product direction changes.
 
 Regulator integration, legal review, account lifecycle, server-side evidence storage, and payment handling are not implemented.
 
@@ -53,7 +55,7 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. The API foundation has separate setup instructions in [`service/api/README.md`](service/api/README.md); it is synthetic-data infrastructure and is not connected to the browser app by default.
+Open the local URL printed by Vite. No server setup or account configuration is needed.
 
 ## Verify
 

@@ -11,11 +11,16 @@ async function seedCase(page: Page, status: CaseRecordStatus = 'evidence_collect
     localStorage.setItem('workspace-seeded', 'true')
     const at = '2026-09-01T00:00:00.000Z'
     localStorage.setItem('Aduen.case-record.v1', JSON.stringify({ id: 'workspace-case', draft, status, createdAt: at, updatedAt: at, history: [{ at, actor: 'user', action: 'case_details_confirmed', status }] }))
-    if (consent) localStorage.setItem('Aduen.consent.v1', JSON.stringify({ noticeVersion: 'prototype-privacy-and-role-v1', acceptedAt: at, purpose: 'case-preparation-and-local-storage', withdrawalPath: 'data-controls' }))
+    if (consent) localStorage.setItem('Aduen.consent.v1', JSON.stringify({ noticeVersion: 'local-first-privacy-and-role-v2', acceptedAt: at, purpose: 'case-preparation-and-local-storage', withdrawalPath: 'data-controls' }))
   }, { draft: { ...EMPTY_DRAFT, consumerName: 'Synthetic Consumer', consumerLocation: 'malaysia', seller: 'Synthetic Workspace Store', sellerLocation: 'malaysia', purchaseDate: '2026-08-01', amount: '125.50', paymentMethod: 'Card', purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', remedyAmount: '125.50', contactHistory: 'none' }, status, consent })
 }
 
 test('returning users can manage evidence, search records, and resume after reload', async ({ page }) => {
+  const localOrigin = `http://127.0.0.1:${process.env.PLAYWRIGHT_PORT ?? 4173}`
+  const offDeviceRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().startsWith('http') && new URL(request.url()).origin !== localOrigin) offDeviceRequests.push(request.url())
+  })
   await seedCase(page)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Synthetic Workspace Store' })).toBeVisible()
@@ -35,6 +40,7 @@ test('returning users can manage evidence, search records, and resume after relo
   await page.reload()
   await page.getByRole('button', { name: /Resume saved case/ }).click()
   await expect(page.getByLabel('Original file')).toBeVisible()
+  expect(offDeviceRequests).toEqual([])
 })
 
 test('draft and unsupported cases retain their workflow gates', async ({ page }) => {
