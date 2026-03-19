@@ -54,6 +54,18 @@ npm run test:e2e
 
 `npm run test:e2e` runs the local Chromium suite. Use `npm run test:e2e:all` for the full configured browser matrix or `npm run test:e2e:firefox` for Firefox only.
 
+## Pilot scorecard
+
+The `score:pilot` command reads an anonymised CSV from the private pilot workspace; it does not read browser storage or evidence files. Include every started case, the final-ten denominator decision, and actual case revenue, operator time, and other variable costs such as acquisition, payment processing, extraction, and storage. Revenue should be net of refunds. The economics gate allocates revenue and costs across all started cases, so excluded or withdrawn cases still affect the result.
+
+Required columns are `caseId,packApproved,merchantDecisionOrValidHandoff,preparationMinutesBefore,preparationMinutesWithAduen,clarificationEventsBefore,clarificationEventsWithAduen,paymentEvidence,materialError,finalCountDecision,operatorMinutes,revenue,otherVariableCosts`. Run the scorer from the repository root with an explicit labour rate:
+
+```sh
+run-aduen.bat pilot-score "C:\private-pilot\aduen-cases.csv" --operator-rate=120
+```
+
+Use `--institution-commitment=yes` only when a documented paid-pilot commitment exists in the private pilot register. Keep completed logs and payment records out of the repository.
+
 ## Current boundary
 
 Accounts, staff review, live route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. The static-hosting header policy needs to be adopted and verified by a deployment host.
