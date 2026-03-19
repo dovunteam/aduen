@@ -3,6 +3,7 @@ import { after, test } from 'node:test'
 import { Pool } from 'pg'
 import { PgCaseStore } from '../dist/caseStore.js'
 import { createPostgresRateLimitStore } from '../dist/postgresRateLimitStore.js'
+import { pruneExpiredRateLimitRows } from '../dist/pruneAudit.js'
 import { pruneExpiredHostedCases } from '../dist/pruneHostedCases.js'
 import { assertCurrentMigrations, assertRestrictedRuntimeRole } from '../dist/runtimeRole.js'
 
@@ -171,13 +172,25 @@ test('PostgreSQL retention role can delete expired rate-limit buckets only', { s
   await pool.query('INSERT INTO aduen_api_rate_limits (key_hash, window_start, request_count, expires_at) VALUES ($1, now(), 1, now() + interval \'1 hour\') ON CONFLICT DO NOTHING', [keyHash])
   const client = await maintenancePool.connect()
   try {
+    await pruneExpiredRateLimitRows(client)
+    await assert.rejects(pool.query('SELECT aduen_prune_expired_rate_limit_batch()'), (error) => error.code === '42501')
     await assert.rejects(client.query('SELECT key_hash FROM aduen_api_rate_limits'), (error) => error.code === '42501')
     assert.equal((await client.query('SELECT expires_at FROM aduen_api_rate_limits WHERE expires_at > now()')).rowCount, 0)
     assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at > now()')).rowCount, 0)
+    assert.equal(await pruneExpiredRateLimitRows(client), 0)
     await pool.query('UPDATE aduen_api_rate_limits SET window_start = $2, expires_at = $3 WHERE key_hash = $1', [keyHash, expiredWindowStart, expiredAt])
     assert.equal((await client.query('SELECT expires_at FROM aduen_api_rate_limits WHERE expires_at = $1', [expiredAt])).rowCount, 1)
-    assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at = $1', [expiredAt])).rowCount, 1)
+    assert.equal(await pruneExpiredRateLimitRows(client), 1)
     assert.equal((await client.query('SELECT expires_at FROM aduen_api_rate_limits WHERE expires_at = $1', [expiredAt])).rowCount, 0)
+
+    const batchPrefix = crypto.randomUUID().replaceAll('-', '').slice(0, 16)
+    await pool.query(`
+      INSERT INTO aduen_api_rate_limits (key_hash, window_start, request_count, expires_at)
+      SELECT $1 || lpad(to_hex(n), 48, '0'), now() - interval '2 hours', 1, now() - interval '1 hour'
+      FROM generate_series(1, 501) AS n
+    `, [batchPrefix])
+    assert.equal(await pruneExpiredRateLimitRows(client), 501)
+    assert.equal((await pool.query('SELECT count(*) FROM aduen_api_rate_limits WHERE left(key_hash, 16) = $1', [batchPrefix])).rows[0].count, '0')
   } finally { client.release() }
 })
 

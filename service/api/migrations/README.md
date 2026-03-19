@@ -8,6 +8,8 @@ Migration 001 enables and forces PostgreSQL row-level security on case and audit
 
 Migration 005 grants the API role owner-scoped deletion access to mutation-audit rows so `DELETE /v1/account/data` can remove hosted case and mutation-audit data atomically for one authenticated subject. This does not remove browser data, external identity-provider accounts, or backups.
 
+Migration 006 adds a fixed-size, security-definer function for pruning expired rate-limit rows. The maintenance role can execute it and receive only the number of rows removed; it still cannot read stored keys or counts. The function owner can select and delete only expired rows under forced row-level security.
+
 Run the expiry command using `DATABASE_URL_MAINTENANCE` and an explicitly selected `AUDIT_RETENTION_DAYS` value from 1 to 3650. Schedule it with the deployment's job runner only after security and privacy reviewers approve the audit schedule. The repository does not select a production retention period or deployment cadence.
 
 Run hosted-case expiry using the same restricted maintenance role and an explicitly selected `HOSTED_CASE_RETENTION_DAYS` value from 1 to 3650. It deletes records based on server-controlled `updated_at`, so each accepted edit resets inactivity age. Select the period and job cadence only after security and privacy review. The API refuses production startup until a valid period is configured; the Compose maintenance job is `prune-hosted-cases`.
