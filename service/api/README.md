@@ -13,9 +13,9 @@ This Node.js 24 service is the first hosted-service slice. It validates an exter
 
 The example identity-provider URLs deliberately use the reserved `.invalid` domain. Configure a real OIDC issuer, JWKS URI, and API audience before testing authenticated routes. The local Compose API and one-shot database jobs run with a read-only root filesystem, a restricted `/tmp`, no Linux capabilities, no privilege escalation, and a PID limit. The local Compose ports bind to loopback only. Do not place real consumer records in this development environment.
 
-The API image exposes port `8080` and includes a container health check against `/health/ready`. It reports healthy only when the process can reach PostgreSQL; a deployment runtime should use this signal for readiness and remove unhealthy instances from traffic. Keep the API port private behind a TLS-terminating ingress and preserve the image's non-root user. The probe does not validate OIDC discovery or ingress configuration.
+The API image exposes port `8080` and includes a container health check against `/health/ready`. In local development the probe checks PostgreSQL; in production it also requires a fresh configured JWKS key set. A deployment runtime should use this signal for readiness and remove unhealthy instances from traffic. Keep the API port private behind a TLS-terminating ingress and preserve the image's non-root user. The probe does not validate ingress configuration.
 
-For the provider-neutral OCI runtime contract, role provisioning, release order, and production readiness gates, see [DEPLOYMENT.md](./DEPLOYMENT.md). No production hosting target or runtime configuration is selected by this repository.
+For the provider-neutral OCI runtime contract, role provisioning, release order, and production readiness gates, see [DEPLOYMENT.md](./DEPLOYMENT.md). For initial containment, evidence handling, and recovery steps, see [INCIDENT_RESPONSE.md](./INCIDENT_RESPONSE.md); operators still need to assign contacts, escalation authority, and notification deadlines before real-record intake. No production hosting target or runtime configuration is selected by this repository.
 
 ## Endpoints
 
