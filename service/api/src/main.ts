@@ -22,7 +22,7 @@ const authenticate = createAuthenticator({ issuer: config.issuer, jwksUrl: confi
 const app = createApp(new PgCaseStore(pool), authenticate, config.corsOrigins, undefined, {
   trustedProxies: config.trustedProxies,
   metricsBearerToken: config.metricsBearerToken,
-  checkAuthenticationProvider: authenticate.checkProvider,
+  ...(config.nodeEnv === 'production' ? { checkAuthenticationProvider: authenticate.checkProvider } : {}),
   getDatabasePoolMetrics: () => ({ total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }),
   ...(config.rateLimitHmacKey ? { rateLimitStore: createPostgresRateLimitStore(pool, config.rateLimitHmacKey) } : {}),
 })
