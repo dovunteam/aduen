@@ -135,7 +135,7 @@ test('follow-up reminders use local dates and disappear for recorded outcomes', 
 })
 
 for (const locale of ['en', 'ms'] as const) {
-  for (const width of [390, 1440]) {
+  for (const width of [390, 820, 1440]) {
     test(`workspace is accessible and fits ${width}px in ${locale}`, async ({ page }, testInfo) => {
       await seedCase(page)
       await page.setViewportSize({ width, height: 900 })
