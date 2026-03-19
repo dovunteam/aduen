@@ -24,7 +24,7 @@ const app = createApp(new PgCaseStore(pool), authenticate, config.corsOrigins, u
   metricsBearerToken: config.metricsBearerToken,
   ...(config.nodeEnv === 'production' ? { checkAuthenticationProvider: authenticate.checkProvider } : {}),
   getDatabasePoolMetrics: () => ({ total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }),
-  ...(config.rateLimitHmacKey ? { rateLimitStore: createPostgresRateLimitStore(pool, config.rateLimitHmacKey) } : {}),
+  ...(config.rateLimitHmacKey ? { rateLimitStore: createPostgresRateLimitStore(pool, [config.rateLimitHmacKey, ...(config.rateLimitHmacPreviousKey ? [config.rateLimitHmacPreviousKey] : [])]) } : {}),
 })
 
 let closing = false
