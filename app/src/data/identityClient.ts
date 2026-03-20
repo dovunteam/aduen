@@ -61,7 +61,7 @@ export function createIdentityClient(settings: IdentitySettings) {
       return user.access_token
     },
     beginSignIn(): Promise<void> { return manager.signinRedirect() },
-    completeSignIn(): Promise<User> { return manager.signinRedirectCallback() },
+    completeSignIn(callbackUrl?: string): Promise<User> { return manager.signinRedirectCallback(callbackUrl) },
     beginSignOut(): Promise<void> { return manager.signoutRedirect() },
   }
 }
