@@ -127,7 +127,9 @@ function App() {
     const link = document.createElement('a')
     link.href = blobUrl
     link.download = `aduen-hosted-data-${exported.exportedAt.slice(0, 10)}.json`
+    document.body.appendChild(link)
     link.click()
+    link.remove()
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1_000)
     recordAuditEvent('hosted_account_data_exported', 'hosted-account', `exported ${exported.cases.length} hosted case records`)
   }
