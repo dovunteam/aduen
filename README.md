@@ -39,6 +39,8 @@ This repository focuses on completing a local-first app using synthetic developm
 
 The local-first web app is available in [`app`](app/README.md). Case records and evidence remain in the user's browser storage on their device. The app requires no account, hosted case service, or backend deployment.
 
+The repository includes a root-level [`vercel.json`](vercel.json) for deploying the Vite app from `app/` as a static Vercel project. See the [Vercel deployment instructions](app/README.md#deploy-to-vercel).
+
 Use synthetic case details and files for development, screenshots, and demonstrations. Do not use real consumer case information as test data.
 
 A separate synthetic-data [case API experiment](service/api/README.md) is isolated from the browser app and is not needed to build, run, or use it. It can inform a future scaling phase if the product direction changes.
