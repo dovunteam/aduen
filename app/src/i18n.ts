@@ -8,6 +8,9 @@ export const messages = {
     home: 'Aduen home',
     dataControls: 'Data controls',
     prototype: 'Public preview',
+    themeToggle: 'Change colour theme',
+    darkMode: 'Dark mode',
+    lightMode: 'Light mode',
     progress: ['Understand', 'Safety check', 'Case details', 'Evidence', 'Confirm facts', 'Check', 'Pack', 'Status'],
     progressLabel: 'Case setup progress',
     welcome: {
@@ -60,6 +63,9 @@ export const messages = {
     home: 'Laman utama Aduen',
     dataControls: 'Kawalan data',
     prototype: 'Pratonton awam',
+    themeToggle: 'Tukar tema warna',
+    darkMode: 'Mod gelap',
+    lightMode: 'Mod cerah',
     progress: ['Fahami', 'Semakan keselamatan', 'Butiran kes', 'Bukti', 'Sahkan fakta', 'Semak', 'Pek', 'Status'],
     progressLabel: 'Kemajuan penyediaan kes',
     welcome: {

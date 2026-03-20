@@ -37,9 +37,21 @@ import './visual.css'
 import './reference.css'
 
 type Step = 'workspace' | 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
+type Theme = 'light' | 'dark'
+const THEME_STORAGE_KEY = 'Aduen-theme'
+
+function readTheme(): Theme {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY)
+    if (saved === 'light' || saved === 'dark') return saved
+  } catch { /* Use the system preference if browser storage is unavailable. */ }
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
 const safetyIconNames: readonly FeatureIconName[] = ['payment', 'lock', 'warning', 'shield', 'clock']
 function App() {
   const [locale, setLocale] = useState<Locale>(readLocale)
+  const [theme, setTheme] = useState<Theme>(readTheme)
   const [step, setStep] = useState<Step>(() => readCase() && readConsent() ? 'workspace' : 'welcome')
   const [consent, setConsent] = useState(() => Boolean(readConsent()))
   const [urgentReasons, setUrgentReasons] = useState<string[]>([])
@@ -68,6 +80,10 @@ function App() {
     try { saveLocale(locale) } catch { /* Language can still be changed for this session. */ }
     document.documentElement.lang = locale
   }, [locale])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
 
   useEffect(() => {
     void expireLocalDataIfDue().then((expired) => {
@@ -178,7 +194,7 @@ function App() {
   if (!retentionReady) return <div className="app-shell is-welcome"><main><p className="lede">Loading Aduen...</p></main></div>
 
   return <div className={`app-shell ${step === 'welcome' || step === 'workspace' ? 'is-welcome' : 'is-workflow'}`}>
-    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><AduenBrand /></button>{step === 'welcome' && <nav className="header-nav" aria-label={locale === 'ms' ? 'Navigasi utama' : 'Main navigation'}><a href="#how-it-works">{locale === 'ms' ? 'Cara ia berfungsi' : 'How it works'}</a><a href="#before-title">{locale === 'ms' ? 'Apa yang kami bantu' : 'What we cover'}</a></nav>}<div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
+    <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><AduenBrand /></button>{step === 'welcome' && <nav className="header-nav" aria-label={locale === 'ms' ? 'Navigasi utama' : 'Main navigation'}><a href="#how-it-works">{locale === 'ms' ? 'Cara ia berfungsi' : 'How it works'}</a><a href="#before-title">{locale === 'ms' ? 'Apa yang kami bantu' : 'What we cover'}</a></nav>}<div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="theme-toggle" type="button" aria-label={text.themeToggle} onClick={() => setTheme((current) => { const next = current === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(THEME_STORAGE_KEY, next) } catch { /* Theme can still be changed for this session. */ } return next })}>{theme === 'dark' ? '☀' : '☾'}<span>{theme === 'dark' ? text.lightMode : text.darkMode}</span></button><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button><div className="pilot-label"><span /> {text.prototype}</div></div></header>
     <main>
       {step !== 'data' && step !== 'workspace' && step !== 'welcome' && <nav className="progress" aria-label={text.progressLabel}>
         <div className="progress-mobile">

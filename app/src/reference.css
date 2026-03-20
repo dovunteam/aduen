@@ -319,6 +319,103 @@ h1, .narrow-page h1, .form-page h1 { font-size:clamp(36px,4vw,52px); line-height
 .workspace-sidebar dl > div:first-child { padding-top:3px; }
 .workspace-sidebar dl > div:first-child dd { font-size:29px; font-weight:700; letter-spacing:-.03em; }
 .workspace-note { background:var(--surface); border:1px solid #d4e8e9; border-radius:var(--radius); padding:24px; }
+
+/* A persisted dark theme for the app interface. */
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #e2eeeb;
+  --muted: #a6bbb7;
+  --paper: #172522;
+  --line: #354844;
+  --teal: #76c2b4;
+  --teal-light: #233b36;
+  --sand: #302d25;
+  --surface: #1d2d29;
+  color: var(--ink);
+  background: #111a18;
+}
+html[data-theme='dark'] body,
+html[data-theme='dark'] .app-shell { color: var(--ink); background: #111a18; }
+html[data-theme='dark'] .topbar,
+html[data-theme='dark'] .progress,
+html[data-theme='dark'] .app-shell > footer { background: #172320; border-color: var(--line); }
+html[data-theme='dark'] .header-nav a,
+html[data-theme='dark'] .data-link,
+html[data-theme='dark'] .progress-item,
+html[data-theme='dark'] .lede,
+html[data-theme='dark'] .boundary-grid p,
+html[data-theme='dark'] .notice p,
+html[data-theme='dark'] .hero-reassurance,
+html[data-theme='dark'] .hero-footnote,
+html[data-theme='dark'] .section-intro { color: var(--muted); }
+html[data-theme='dark'] .theme-toggle {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 5px 9px;
+  border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--surface);
+  cursor: pointer; font-size: 12px;
+}
+.theme-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 5px 9px; border: 1px solid #cbdce0; border-radius: 6px; color: var(--ink); background: #fff; cursor: pointer; font-size: 12px; white-space: nowrap; }
+html[data-theme='dark'] .locale-switch button[aria-pressed='true'] { color: var(--ink); }
+html[data-theme='dark'] .pilot-label { color: #b9cfca; background: #263a35; border-color: #3a514b; }
+html[data-theme='dark'] .boundary-grid article,
+html[data-theme='dark'] .form-section,
+html[data-theme='dark'] .evidence-form,
+html[data-theme='dark'] .review-section,
+html[data-theme='dark'] .evidence-item,
+html[data-theme='dark'] .candidate,
+html[data-theme='dark'] .data-inventory,
+html[data-theme='dark'] .extraction-summary,
+html[data-theme='dark'] .summary,
+html[data-theme='dark'] .scope-reasons,
+html[data-theme='dark'] .data-action,
+html[data-theme='dark'] .support-card,
+html[data-theme='dark'] .workspace-note,
+html[data-theme='dark'] .preview-workspace { background: #1a2925; border-color: var(--line); }
+html[data-theme='dark'] .welcome-consent,
+html[data-theme='dark'] .operator-review-panel,
+html[data-theme='dark'] .case-form .section-title { background: #202f2b; border-color: var(--line); }
+html[data-theme='dark'] .fields input,
+html[data-theme='dark'] .fields select,
+html[data-theme='dark'] .fields textarea,
+html[data-theme='dark'] .candidate-value input,
+html[data-theme='dark'] .secondary { background: #172522; border-color: #50645e; color: var(--ink); }
+html[data-theme='dark'] .fields input::placeholder,
+html[data-theme='dark'] .fields textarea::placeholder { color: #96aaa5; }
+html[data-theme='dark'] .choice,
+html[data-theme='dark'] .workspace-journey li span,
+html[data-theme='dark'] .file-field > span,
+html[data-theme='dark'] .empty-state { background: #202f2b; border-color: #435a53; color: var(--ink); }
+html[data-theme='dark'] .choice:has(input:checked),
+html[data-theme='dark'] .candidate.confirmed { background: #1e3931; border-color: #477a6d; }
+html[data-theme='dark'] .check-score,
+html[data-theme='dark'] .approval-panel,
+html[data-theme='dark'] .follow-up,
+html[data-theme='dark'] .status-badge,
+html[data-theme='dark'] .workspace-followup,
+html[data-theme='dark'] .save-state,
+html[data-theme='dark'] .privacy-line,
+html[data-theme='dark'] .workspace-completeness { background: #203832; color: #c2ded6; border-color: #3c5b52; }
+html[data-theme='dark'] .section-title > span,
+html[data-theme='dark'] .feature-icon,
+html[data-theme='dark'] .file-icon,
+html[data-theme='dark'] .workspace-file-icon,
+html[data-theme='dark'] .check-label > span { background: #2d4941; color: #b4ddd3; border-color: #46655c; }
+html[data-theme='dark'] .secondary:not(:disabled):hover { background: #263b35; }
+html[data-theme='dark'] .primary:disabled { background: #33413b; border-color: #3d4b45; color: #b1bdb7; }
+html[data-theme='dark'] .route-preview,
+html[data-theme='dark'] .workspace-next { background: #123d39; }
+html[data-theme='dark'] .workspace-next .primary { background: #d6ece6; color: #173a36; border-color: #d6ece6; }
+html[data-theme='dark'] .status-badge.closed { background: #342e2a; }
+html[data-theme='dark'] .storage-error,
+html[data-theme='dark'] .form-error,
+html[data-theme='dark'] .evidence-warning,
+html[data-theme='dark'] .urgent-panel { background: #3a2925; color: #f0b7a8; border-color: #69463d; }
+html[data-theme='dark'] .pack-document,
+html[data-theme='dark'] .preview-workspace .preview-content { color: #243b38; background: #fff; }
+html[data-theme='dark'] .preview-nav { background: #f7fbfb; }
+@media (max-width: 720px) {
+  .theme-toggle span { display: none; }
+  .theme-toggle { width: 34px; justify-content: center; padding: 5px; }
+}
 .workspace-note strong { color:var(--teal); font-size:17px; line-height:1.5; }
 @media (max-width:1100px) {
  .welcome-hero { gap:36px; } .progress { padding-inline:24px; } .progress-item { font-size:10px; gap:5px; } .progress-item:not(:last-child)::after { margin-inline:6px; }
