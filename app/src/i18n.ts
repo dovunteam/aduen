@@ -7,7 +7,7 @@ export const messages = {
   en: {
     home: 'Aduen home',
     dataControls: 'Data controls',
-    prototype: 'Private prototype',
+    prototype: 'Public preview',
     progress: ['Understand', 'Safety check', 'Case details', 'Evidence', 'Confirm facts', 'Check', 'Pack', 'Status'],
     progressLabel: 'Case setup progress',
     welcome: {
@@ -59,7 +59,7 @@ export const messages = {
   ms: {
     home: 'Laman utama Aduen',
     dataControls: 'Kawalan data',
-    prototype: 'Prototaip persendirian',
+    prototype: 'Pratonton awam',
     progress: ['Fahami', 'Semakan keselamatan', 'Butiran kes', 'Bukti', 'Sahkan fakta', 'Semak', 'Pek', 'Status'],
     progressLabel: 'Kemajuan penyediaan kes',
     welcome: {
