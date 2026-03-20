@@ -39,6 +39,7 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
     void app.register(rateLimit, { max: 120, timeWindow: '1 minute' })
   }
   app.addHook('onSend', async (request, reply) => {
+    if (request.protocol === 'https') reply.header('Strict-Transport-Security', 'max-age=31536000')
     reply.header('X-Request-Id', request.id)
     reply.header('Cache-Control', 'no-store')
     reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
