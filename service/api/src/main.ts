@@ -10,7 +10,7 @@ const config = readConfig()
 const pool = new Pool({
   connectionString: config.databaseUrl,
   ssl: config.databaseSsl ? { rejectUnauthorized: true } : false,
-  max: 10,
+  max: config.databasePoolMax,
   connectionTimeoutMillis: 3_000,
   statement_timeout: 10_000,
   query_timeout: 12_000,
