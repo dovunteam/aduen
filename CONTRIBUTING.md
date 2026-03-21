@@ -35,6 +35,8 @@ npm run build
 npm run test:e2e
 ```
 
+The end-to-end suite uses Google Chrome. Install it for Playwright once with `npx playwright install chrome` before running that suite.
+
 For API changes, from `service/api`, run:
 
 ```sh

@@ -67,11 +67,11 @@ Run these commands from `app`:
 npm run lint
 npm test
 npm run build
-npx playwright install chromium # required once for browser tests
+npx playwright install chrome # required once for browser tests
 npm run test:e2e
 ```
 
-The repository also includes [`run-aduen.bat`](run-aduen.bat) for Windows. Its `verify` command runs the text and documentation checks, lint, unit tests, build, and Chromium end-to-end tests. The full CI workflow additionally verifies the PostgreSQL API setup and ownership policies with Docker.
+The repository also includes [`run-aduen.bat`](run-aduen.bat) for Windows. Its `verify` command runs the text and documentation checks, lint, unit tests, build, and Chrome end-to-end tests. The full CI workflow additionally verifies the PostgreSQL API setup and ownership policies with Docker.
 
 ## Contributing and security
 

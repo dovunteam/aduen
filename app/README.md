@@ -18,6 +18,7 @@ This directory contains the first interactive Aduen prototype. It currently supp
 - submission and outcome tracking;
 - a returning-user case workspace with guided resumption, progress, purchase summary, searchable evidence, missing-item counts, pack version history, and recent case activity;
 - local follow-up reminders on the workspace, using the user's chosen date and hidden after a recorded outcome;
+- system-preferred light or dark themes, with the selected theme remembered;
 - complete ZIP export, local activity history, operator release review, configurable local retention expiry, and explicit local deletion; and
 - recovery of the previous valid case autosave if the latest local case record becomes unreadable, with a visible notice and activity entry.
 
@@ -54,11 +55,11 @@ Open the local URL printed by Vite.
 npm run lint
 npm test
 npm run build
-npx playwright install chromium # required once for browser tests
+npx playwright install chrome # required once for browser tests
 npm run test:e2e
 ```
 
-`npm run test:e2e` runs the local Chromium suite. Use `npm run test:e2e:all` for the full configured browser matrix or `npm run test:e2e:firefox` for Firefox only.
+`npm run test:e2e` runs the Chromium project in Google Chrome. Use `npm run test:e2e:all` for the full configured browser matrix or `npm run test:e2e:firefox` for Firefox only.
 
 ## Pilot scorecard
 
