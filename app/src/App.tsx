@@ -83,6 +83,10 @@ function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (favicon) favicon.href = theme === 'dark' ? '/favicon-dark.svg' : '/favicon.svg'
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    if (themeColor) themeColor.content = theme === 'dark' ? '#111a18' : '#f3f0e8'
   }, [theme])
 
   useEffect(() => {

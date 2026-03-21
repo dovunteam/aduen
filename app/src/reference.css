@@ -16,6 +16,19 @@ body, .app-shell { background: #fff; }
 .topbar { position: relative; height: 72px; max-width: none; padding-inline: clamp(24px, 4vw, 72px); background: #fff; border-color: var(--line); }
 .wordmark { width: 160px; flex: 0 0 auto; }
 .aduen-brand { width: 146px; }
+.aduen-brand {
+  --aduen-mark-dark-start: #003d4a;
+  --aduen-mark-dark-end: #075566;
+  --aduen-mark-light-start: #448f98;
+  --aduen-mark-light-end: #5eaaad;
+  --aduen-wordmark: #003e4b;
+  overflow: visible;
+}
+.aduen-brand .aduen-mark-dark-start { stop-color: var(--aduen-mark-dark-start); }
+.aduen-brand .aduen-mark-dark-end { stop-color: var(--aduen-mark-dark-end); }
+.aduen-brand .aduen-mark-light-start { stop-color: var(--aduen-mark-light-start); }
+.aduen-brand .aduen-mark-light-end { stop-color: var(--aduen-mark-light-end); }
+.aduen-brand .aduen-wordmark { fill: var(--aduen-wordmark); }
 .header-nav { display: flex; align-items: center; gap: clamp(18px, 2vw, 34px); position: absolute; left: 50%; transform: translateX(-50%); }
 .header-nav a { color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 500; white-space: nowrap; }
 .header-nav a:hover { color: var(--teal); text-decoration: underline; }
@@ -449,3 +462,83 @@ html[data-theme='dark'] .preview-nav { background: #f7fbfb; }
  .workspace-next h2 { font-size:28px; max-width:100%; } .workspace-next p { max-width:100%; }
  .workspace-stats > div { padding-inline:12px; } .workspace-stats strong { font-size:32px; } .workspace-journey li { font-size:10px; padding-right:7px; } .workspace-stats span { font-size:11px; }
 }
+
+/* Keep the dark theme readable across status, warning and action states. */
+html[data-theme='dark'] .aduen-brand {
+  --aduen-mark-dark-start: #b6e8df;
+  --aduen-mark-dark-end: #7ccabd;
+  --aduen-mark-light-start: #78d0cf;
+  --aduen-mark-light-end: #48aab5;
+  --aduen-wordmark: #fff;
+}
+html[data-theme='dark'] .preview-workspace .aduen-brand,
+html[data-theme='dark'] .pack-document .aduen-brand {
+  --aduen-mark-dark-start: #003d4a;
+  --aduen-mark-dark-end: #075566;
+  --aduen-mark-light-start: #448f98;
+  --aduen-mark-light-end: #5eaaad;
+  --aduen-wordmark: #003e4b;
+}
+html[data-theme='dark'] .preview-workspace,
+html[data-theme='dark'] .pack-document {
+  --ink: #243b38;
+  --muted: #617782;
+  --line: #dce5e8;
+  --teal: #075868;
+  --teal-light: #e8f3f3;
+  --surface: #f3f9fa;
+}
+html[data-theme='dark'] .preview-workspace { background: #fff; border-color: #dce5e8; color: #243b38; }
+html[data-theme='dark'] .hero-reassurance > span { color: #c0d0c7; }
+html[data-theme='dark'] .case-preview .preview-shape-one { background: linear-gradient(135deg, #233b36, #263e39); }
+html[data-theme='dark'] .case-preview .preview-shape-two { background: #6cbeb01f; }
+html[data-theme='dark'] .primary:not(:disabled):hover { background: #39877c; border-color: #39877c; }
+html[data-theme='dark'] .secondary { background: #172522; border-color: #50645e; color: var(--ink); }
+html[data-theme='dark'] .secondary:not(:disabled):hover { background: #263b35; }
+html[data-theme='dark'] .primary:disabled { background: #33413b; border-color: #3d4b45; color: #b1bdb7; }
+html[data-theme='dark'] .progress-item.completed { color: #9bd8c8; }
+html[data-theme='dark'] .progress-item.completed span { background: #203832; color: #b8e4d8; border-color: #3c5b52; }
+html[data-theme='dark'] .progress-item[aria-current='step'] span { box-shadow: 0 0 0 4px #253a34; }
+html[data-theme='dark'] .progress-mobile progress,
+html[data-theme='dark'] .progress-mobile progress::-webkit-progress-bar { background: #283a35; }
+html[data-theme='dark'] .welcome-consent .check-row { border-color: var(--line); }
+html[data-theme='dark'] .optional,
+html[data-theme='dark'] .check-item small,
+html[data-theme='dark'] .timeline small,
+html[data-theme='dark'] .candidate details { color: var(--muted); }
+html[data-theme='dark'] .case-form .section-title > span { background: #2d4941; color: #b4ddd3; border-color: #46655c; }
+html[data-theme='dark'] .receipt-decoration .feature-icon { background: #2d4941; color: #b4ddd3; }
+html[data-theme='dark'] .safety-support::before { background: linear-gradient(135deg, #203b35, #1d302c); }
+html[data-theme='dark'] .workspace-status { color: #c2ded6; background: #203832; border-color: #3c5b52; }
+html[data-theme='dark'] .workspace-followup.is-due { background: #3a3326; color: #f0d39b; border-color: #715d38; }
+html[data-theme='dark'] .workspace-journey li[aria-current] span { box-shadow: 0 0 0 4px #253a34; }
+html[data-theme='dark'] .candidate-meta > span { background: #2d4039; color: #c5d9d2; }
+html[data-theme='dark'] .candidate-actions button:first-child { background: #246c63; }
+html[data-theme='dark'] .candidate-actions button:first-child:hover { background: #328579; }
+html[data-theme='dark'] .candidate.confirmed { background: #1e3931; border-color: #477a6d; }
+html[data-theme='dark'] .candidate.rejected { background: #202725; }
+html[data-theme='dark'] .evidence-copy code,
+html[data-theme='dark'] .request-preview { background: #202c29; color: var(--ink); }
+html[data-theme='dark'] .check-symbol { background: #4a302c; color: #f0a08b; }
+html[data-theme='dark'] .check-item.satisfied .check-symbol { background: #21483b; color: #a0dfc9; }
+html[data-theme='dark'] .check-score.incomplete strong { color: #f0a08b; }
+html[data-theme='dark'] .success-mark { background: #2f7765; border-color: #477a6d; color: #eff8f5; }
+html[data-theme='dark'] .route-preview.unsupported { background: #493a34; }
+html[data-theme='dark'] .route-preview.uncertain { background: #384743; }
+html[data-theme='dark'] .urgent-panel,
+html[data-theme='dark'] .evidence-warning,
+html[data-theme='dark'] .risk-review,
+html[data-theme='dark'] .form-error,
+html[data-theme='dark'] .conflict-panel,
+html[data-theme='dark'] .timeline-warnings,
+html[data-theme='dark'] .storage-error,
+html[data-theme='dark'] .data-action.destructive { background: #3a2925; color: #f0b7a8; border-color: #69463d; }
+html[data-theme='dark'] .urgent-panel p,
+html[data-theme='dark'] .evidence-warning span,
+html[data-theme='dark'] .risk-review p,
+html[data-theme='dark'] .conflict-panel p,
+html[data-theme='dark'] .timeline-warnings p,
+html[data-theme='dark'] .data-action.destructive > div > p { color: #dfb8ad; }
+html[data-theme='dark'] .urgent-panel .source-note { border-color: #69463d; }
+html[data-theme='dark'] .official-links a { color: #f0ba9e; }
+html[data-theme='dark'] .scope-mark { background: #3b2c28; color: #f0b7a8; }
