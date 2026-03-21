@@ -41,6 +41,7 @@ import './reference.css'
 type Step = 'workspace' | 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
 function App() {
   const [locale, setLocale] = useState<Locale>(readLocale)
+  const identityCheckStarted = useRef(false)
   const hosted = useMemo(() => {
     try {
       const identitySettings = identitySettingsFromEnvironment()
@@ -77,7 +78,8 @@ function App() {
   const progress = useMemo(() => ({ workspace: 0, welcome: 1, triage: 2, case: 3, scope: 3, saved: 3, evidence: 4, extraction: 5, review: 6, pack: 7, status: 8, data: 0 }[step]), [step])
 
   useEffect(() => {
-    if (!hosted) return
+    if (!hosted || identityCheckStarted.current) return
+    identityCheckStarted.current = true
     const checkIdentity = async () => {
       try {
         const redirectPath = new URL(import.meta.env.VITE_OIDC_REDIRECT_URI, window.location.origin).pathname
