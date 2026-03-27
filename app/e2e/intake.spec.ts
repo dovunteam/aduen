@@ -108,6 +108,7 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   await page.getByRole('button', { name: /Save status/ }).click()
   await expect(page.getByRole('status')).toContainText('Status saved')
   await expect(page.getByText('Handed off', { exact: true })).toBeVisible()
+  await expect(page.getByText('This reminder is based on the follow-up date you entered, not an external deadline.')).toBeVisible()
   const calendarDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Download calendar reminder' }).click()
   expect((await calendarDownload).suggestedFilename()).toBe('buktiva-follow-up-2026-08-17.ics')
