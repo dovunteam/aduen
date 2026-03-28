@@ -64,6 +64,14 @@ test('aviation cases receive the current CAAM handoff before evidence collection
   await expect(page.getByRole('button', { name: 'Add evidence' })).toHaveCount(0)
 })
 
+test('financial-service cases receive the provider-first BNM handoff before evidence collection', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page, { category: 'financial_service' })
+  await expect(page.getByRole('link', { name: 'Open Bank Negara Malaysia complaint process' })).toHaveAttribute('href', 'https://www.bnm.gov.my/contact-us/lodge-complaint')
+  await expect(page.getByText('Complain to the financial service provider’s Complaints Unit first.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add evidence' })).toHaveCount(0)
+})
+
 test('a supported draft preserves original evidence and resumes at the evidence stage', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)
