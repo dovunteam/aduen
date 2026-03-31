@@ -134,6 +134,16 @@ test('a complete merchant-first case reaches approved PDF export and outcome tra
   const calendarDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Download calendar reminder' }).click()
   expect((await calendarDownload).suggestedFilename()).toBe('buktiva-follow-up-2026-08-17.ics')
+  await page.reload()
+  await page.getByRole('button', { name: /Resume saved case/ }).click()
+  await expect(page.getByLabel('External reference')).toHaveValue('SYNTH-001')
+  await page.getByRole('button', { name: '← Pack', exact: true }).click()
+  await expect(page.getByText('BUKTIVA CASE PACK')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Export PDF and selected evidence (ZIP)' })).toBeEnabled()
+  await page.getByRole('button', { name: '← Buktiva Check', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Review the record.' })).toBeVisible()
+  await expect(page.getByText('0', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Prepare merchant request' })).toBeEnabled()
 })
 
 test('extracted candidates require explicit confirmation, correction, or rejection', async ({ page }) => {
