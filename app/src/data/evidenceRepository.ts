@@ -107,7 +107,7 @@ export async function listExtractions(): Promise<EvidenceExtraction[]> {
   return records
 }
 
-export async function reviewExtractionCandidate(extractionId: string, candidateId: string, status: 'confirmed' | 'rejected', correctedValue?: string): Promise<EvidenceExtraction> {
+export async function reviewExtractionCandidate(extractionId: string, candidateId: string, status: 'unconfirmed' | 'confirmed' | 'rejected', correctedValue?: string): Promise<EvidenceExtraction> {
   const database = await openDatabase()
   const transaction = database.transaction(EXTRACTION_STORE, 'readwrite')
   const store = transaction.objectStore(EXTRACTION_STORE)

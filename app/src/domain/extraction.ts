@@ -9,6 +9,7 @@ export type ExtractionCandidate = {
   end: number
   status: 'unconfirmed' | 'confirmed' | 'rejected'
   confirmedValue: string | null
+  reviewHistory?: Array<{ at: string; previousStatus: ExtractionCandidate['status']; previousValue: string | null; status: ExtractionCandidate['status']; value: string | null }>
 }
 
 export type EvidenceExtraction = {
@@ -52,6 +53,7 @@ export function createEvidenceExtraction(evidenceId: string, text: string, now =
   return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion: 'plain-text-v1', candidates: extractCandidateFacts(text) }
 }
 
-export function reviewCandidate(candidateValue: ExtractionCandidate, status: 'confirmed' | 'rejected', correctedValue?: string): ExtractionCandidate {
-  return { ...candidateValue, status, confirmedValue: status === 'confirmed' ? (correctedValue?.trim() || candidateValue.value) : null }
+export function reviewCandidate(candidateValue: ExtractionCandidate, status: ExtractionCandidate['status'], correctedValue?: string, now = new Date()): ExtractionCandidate {
+  const confirmedValue = status === 'confirmed' ? (correctedValue?.trim() || candidateValue.value) : null
+  return { ...candidateValue, status, confirmedValue, reviewHistory: [...(candidateValue.reviewHistory ?? []), { at: now.toISOString(), previousStatus: candidateValue.status, previousValue: candidateValue.confirmedValue, status, value: confirmedValue }] }
 }
