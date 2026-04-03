@@ -3,8 +3,20 @@ import { EMPTY_DRAFT } from './case'
 import { evaluateInitialRoute } from './routing'
 
 describe('initial routing', () => {
+  it.each([{ sellerLocation: 'unknown' as const }, { sellerLocation: 'outside' as const }, { category: 'other' as const }])('retains uncertain scope for %j', (override) => {
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', sellerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', contactHistory: 'none', ...override }, [])
+    expect(route.confidence).toBe('uncertain')
+    expect(route.routeName).toBe('Manual scope review')
+  })
+
+  it('does not approve incomplete scope facts from a saved draft', () => {
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', contactHistory: 'none' }, [])
+    expect(route.confidence).toBe('uncertain')
+    expect(route.unmetPrerequisites).toContain('Purchase purpose')
+    expect(route.unmetPrerequisites).toContain('Seller location')
+  })
   it('recommends merchant-first when no contact is recorded', () => {
-    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', contactHistory: 'none' }, [])
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', sellerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', contactHistory: 'none' }, [])
     expect(route.routeName).toBe('Merchant or platform first')
     expect(route.confidence).toBe('supported')
     expect(route.ruleVersion).toMatch('R010')
