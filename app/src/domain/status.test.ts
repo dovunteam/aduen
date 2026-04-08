@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { EMPTY_SUBMISSION, nextStatus, validateStatusTransition } from './status'
 
 describe('case status', () => {
+  it('accepts a response or outcome recorded together with the first handoff', () => {
+    const submitted = { ...EMPTY_SUBMISSION, channel: 'Synthetic merchant', submissionDate: '2026-09-01' }
+    expect(validateStatusTransition('ready', nextStatus({ ...submitted, response: 'Received' }))).toBe(true)
+    expect(validateStatusTransition('ready', nextStatus({ ...submitted, outcome: 'refund' }))).toBe(true)
+    expect(validateStatusTransition('ready', nextStatus({ ...submitted, outcome: 'rejected' }))).toBe(true)
+  })
   it('derives handoff and response states from recorded external events', () => {
     expect(nextStatus({ ...EMPTY_SUBMISSION, submissionDate: '2026-05-01' })).toBe('handed_off')
     expect(nextStatus({ ...EMPTY_SUBMISSION, submissionDate: '2026-05-01', response: 'We are reviewing it.' })).toBe('awaiting_response')
