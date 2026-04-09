@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { reviewExtractionCandidate } from '../data/evidenceRepository'
 import type { EvidenceExtraction, ExtractionCandidate } from '../domain/extraction'
+import { isValidCandidateValue } from '../domain/extraction'
 import type { EvidenceMetadata } from '../domain/evidence'
 import type { Locale } from '../i18n'
 
@@ -19,6 +20,10 @@ export function ExtractionStep({ locale, initialExtractions, evidence, onBack, o
   async function decide(record: EvidenceExtraction, item: ExtractionCandidate, status: ExtractionCandidate['status']) {
     setBusyId(item.id)
     setError('')
+    if (status === 'confirmed' && !isValidCandidateValue(item.field, (edits[item.id] ?? item.value).trim())) {
+      setError(locale === 'ms' ? 'Masukkan jumlah dengan maksimum dua tempat perpuluhan, tarikh sah (YYYY-MM-DD), atau rujukan yang tidak kosong.' : 'Enter an amount with up to two decimal places, a valid date (YYYY-MM-DD), or a non-empty reference.')
+      setBusyId(''); return
+    }
     try {
       if (status === 'unconfirmed') setEdits((current) => ({ ...current, [item.id]: item.confirmedValue ?? item.value }))
       const updated = await reviewExtractionCandidate(record.id, item.id, status, edits[item.id])
