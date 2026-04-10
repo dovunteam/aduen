@@ -6,7 +6,7 @@ import { readConsent } from './consentRepository'
 import { readCase } from './caseRepository'
 import { listPacks } from './packRepository'
 
-export async function downloadCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<void> {
+export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<Uint8Array> {
   const evidence = await listEvidence()
   const extractions = await listExtractions()
   const zip = new JSZip()
@@ -26,10 +26,19 @@ export async function downloadCaseArchive(draft: CaseDraft, submission: Submissi
   const originals = zip.folder('evidence-originals')
   for (const [index, item] of evidence.entries()) {
     const original = await getEvidenceOriginal(item.id)
-    if (original) originals?.file(`${String(index + 1).padStart(2, '0')}-${safeFileName(item.fileName)}`, original)
+    if (!original) throw new Error(`The complete export could not be created: original missing for ${item.fileName}. Your stored case data has not been changed.`)
+    const bytes = await original.arrayBuffer()
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
+    const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+    if (hash !== item.sha256) throw new Error(`The complete export could not be verified: original integrity check failed for ${item.fileName}. Your stored case data has not been changed.`)
+    originals?.file(`${String(index + 1).padStart(2, '0')}-${safeFileName(item.fileName)}`, bytes)
   }
-  const archive = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } })
-  const url = URL.createObjectURL(archive)
+  return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } })
+}
+
+export async function downloadCaseArchive(draft: CaseDraft, submission: SubmissionRecord): Promise<void> {
+  const bytes = await buildCaseArchive(draft, submission)
+  const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }))
   const anchor = document.createElement('a')
   anchor.href = url; anchor.download = `buktiva-case-export-${new Date().toISOString().slice(0, 10)}.zip`; anchor.click()
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
