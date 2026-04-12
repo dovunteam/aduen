@@ -63,6 +63,21 @@ test('urgent risk blocks the ordinary intake path', async ({ page }) => {
   await expect(page.getByRole('button', { name: /No urgent issue/ })).toHaveCount(0)
 })
 
+test('draft deletion can be cancelled and confirmed deletion removes saved case data', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  page.once('dialog', (dialog) => dialog.dismiss())
+  await page.getByRole('button', { name: 'Delete draft', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Delete draft', exact: true })).toBeVisible()
+  expect(await page.evaluate(() => localStorage.getItem('buktiva.case-record.v1'))).not.toBeNull()
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Delete draft', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Begin safety check' })).toBeDisabled()
+  expect(await page.evaluate(() => localStorage.getItem('buktiva.case-record.v1'))).toBeNull()
+  await page.reload()
+  await expect(page.getByRole('button', { name: /Resume saved case/ })).toHaveCount(0)
+})
+
 test('an unsupported sector stops before evidence collection', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page, { category: 'healthcare' })

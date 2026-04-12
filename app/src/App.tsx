@@ -56,7 +56,12 @@ function App() {
   const toggleUrgent = (reason: string) => setUrgentReasons((current) => current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason])
   const updateDraft = <K extends keyof CaseDraft>(key: K, value: CaseDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
   function saveCase(event: FormEvent) { event.preventDefault(); const assessment = assessScope(draft); setScopeAssessment(assessment); setLastSaved(new Date()); if (assessment.result === 'unsupported') { recordCaseTransition(draft, 'out_of_scope', 'scope_exclusion_identified'); setStep('scope') } else { recordCaseTransition(draft, 'evidence_collection', assessment.result === 'uncertain' ? 'manual_scope_review_needed' : 'case_details_confirmed'); setStep('saved') } }
-  async function startOver() { clearCase(); clearSubmission(); clearConsent(); clearPacks(); await clearEvidence(); setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setStep('welcome') }
+  async function startOver() {
+    const prompt = locale === 'ms' ? 'Padam draf kes, setiap fail asal bukti, pek tersimpan, dan rekod status daripada pelayar ini? Tindakan ini tidak boleh dibatalkan.' : 'Delete the case draft, every evidence original, saved packs, and status record from this browser? This cannot be undone.'
+    if (!window.confirm(prompt)) return
+    await clearEvidence(); clearCase(); clearSubmission(); clearConsent(); clearPacks()
+    setDraft(EMPTY_DRAFT); setConsent(false); setUrgentReasons([]); setLastSaved(null); setComplaintPack(null); setReviewEvidence([]); setExtractions([]); setScopeAssessment(null); setStep('welcome')
+  }
   function openDataControls() { setReturnStep(step === 'data' ? 'welcome' : step); setStep('data') }
   async function resumeCase() {
     const record = readCase()
