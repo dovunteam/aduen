@@ -6,6 +6,7 @@ import type { EvidenceMetadata, EvidenceType } from '../domain/evidence'
 import { scanEvidenceFile } from '../domain/evidenceSafety'
 import type { EvidenceRisk } from '../domain/evidenceSafety'
 import type { Locale } from '../i18n'
+import { TextEvidencePreview } from './TextEvidencePreview'
 
 type Props = { locale: Locale; onBack: () => void; onContinue: (evidence: EvidenceMetadata[]) => void }
 
@@ -82,6 +83,7 @@ export function EvidenceStep({ locale, onBack, onContinue }: Props) {
       {items.length === 0 ? <div className="empty-state"><strong>{text.emptyTitle}</strong><p>{text.emptyCopy}</p></div> : <div className="evidence-list">{items.map((item) => <article className="evidence-item" key={item.id}>
         <div className="file-icon" aria-hidden="true">DOC</div><div className="evidence-copy"><strong>{item.fileName}</strong><p>{evidenceLabel(item.sourceType, locale)} · {formatFileSize(item.size)}{item.eventDate ? ` · ${item.eventDate}` : ` · ${text.dateUnknown}`}</p>{item.description && <p className="evidence-description">{item.description}</p>}<code title={item.sha256}>SHA-256 {item.sha256.slice(0, 12)}…</code></div>
         <div className="evidence-controls"><label><input type="checkbox" checked={item.includeInPack} onChange={() => toggleInclusion(item)} /> {text.include}</label><button className="download-link" type="button" onClick={() => void downloadOriginal(item)}>{text.download}</button><button type="button" onClick={() => remove(item)}>{text.delete}</button></div>
+        {item.mimeType === 'text/plain' && <div style={{ gridColumn: '2 / -1' }}><TextEvidencePreview evidenceId={item.id} locale={locale} /></div>}
       </article>)}</div>}
     </div>
     <div className="actions split"><button className="secondary" onClick={onBack}>{text.back}</button><button className="primary" disabled={items.length === 0} onClick={() => onContinue(items)}>{text.review} <span>→</span></button></div>
