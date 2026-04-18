@@ -9,9 +9,9 @@ import type { Locale } from '../i18n'
 import { TextEvidencePreview } from './TextEvidencePreview'
 import { ImageEvidencePreview } from './ImageEvidencePreview'
 
-type Props = { locale: Locale; onBack: () => void; onContinue: (evidence: EvidenceMetadata[]) => void }
+type Props = { locale: Locale; onBack: () => void; onChange: () => void; onContinue: (evidence: EvidenceMetadata[]) => void }
 
-export function EvidenceStep({ locale, onBack, onContinue }: Props) {
+export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
   const text = evidenceText[locale]
   const fileInput = useRef<HTMLInputElement>(null)
   const [items, setItems] = useState<EvidenceMetadata[]>([])
@@ -33,6 +33,7 @@ export function EvidenceStep({ locale, onBack, onContinue }: Props) {
     try {
       const detected = await scanEvidenceFile(file)
       if (detected.length && !riskAccepted) { setRisks(detected); return }
+      onChange()
       const saved = await addEvidence(file, { sourceType, eventDate: eventDate || null, description })
       setItems((current) => [saved, ...current]); setFile(null); setEventDate(''); setDescription(''); setRisks([]); setRiskAccepted(false)
       if (fileInput.current) fileInput.current.value = ''
@@ -41,24 +42,37 @@ export function EvidenceStep({ locale, onBack, onContinue }: Props) {
   }
 
   async function toggleInclusion(item: EvidenceMetadata) {
-    const next = !item.includeInPack
-    await updateEvidenceInclusion(item.id, next)
-    setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, includeInPack: next } : entry))
+    setBusy(true); setError('')
+    try {
+      const next = !item.includeInPack
+      onChange()
+      await updateEvidenceInclusion(item.id, next)
+      setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, includeInPack: next } : entry))
+    } catch { setError(text.saveError) }
+    finally { setBusy(false) }
   }
 
   async function remove(item: EvidenceMetadata) {
     if (!window.confirm(text.deleteConfirm(item.fileName))) return
-    await deleteEvidence(item.id)
-    setItems((current) => current.filter((entry) => entry.id !== item.id))
+    setBusy(true); setError('')
+    try {
+      onChange()
+      await deleteEvidence(item.id)
+      setItems((current) => current.filter((entry) => entry.id !== item.id))
+    } catch { setError(text.saveError) }
+    finally { setBusy(false) }
   }
 
   async function downloadOriginal(item: EvidenceMetadata) {
+    setError('')
+    try {
     const original = await getEvidenceOriginal(item.id)
     if (!original) { setError(text.originalMissing(item.fileName)); return }
     const url = URL.createObjectURL(original)
     const anchor = document.createElement('a')
     anchor.href = url; anchor.download = item.fileName.replace(/[\\/]/g, '_'); anchor.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch { setError(text.readError) }
   }
 
   return <section className="page form-page">
@@ -69,7 +83,7 @@ export function EvidenceStep({ locale, onBack, onContinue }: Props) {
     <form className="evidence-form" onSubmit={submit}>
       <SectionHeading number="01" title={text.addRecord} copy={text.formats} />
       <div className="fields two-col">
-        <label className="file-field">{text.originalFile}<input ref={fileInput} required type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setRisks([]); setRiskAccepted(false) }} /><span>{file ? `${file.name} · ${formatFileSize(file.size)}` : text.chooseFile}</span></label>
+        <label className="file-field">{text.originalFile}<input ref={fileInput} required type="file" disabled={busy} accept=".pdf,.jpg,.jpeg,.png,.webp,.txt" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setRisks([]); setRiskAccepted(false) }} /><span>{file ? `${file.name} · ${formatFileSize(file.size)}` : text.chooseFile}</span></label>
         <label>{text.recordKind}<select value={sourceType} onChange={(event) => setSourceType(event.target.value as EvidenceType)}>{EVIDENCE_TYPES.map((type) => <option value={type} key={type}>{evidenceLabel(type, locale)}</option>)}</select></label>
         <label>{text.eventDate} <span className="optional">{text.ifKnown}</span><input type="date" value={eventDate} onChange={(event) => setEventDate(event.target.value)} /></label>
         <label>{text.description} <span className="optional">{text.optional}</span><input value={description} maxLength={240} onChange={(event) => setDescription(event.target.value)} placeholder={text.descriptionPlaceholder} /></label>
@@ -83,12 +97,12 @@ export function EvidenceStep({ locale, onBack, onContinue }: Props) {
       <SectionHeading number="02" title={text.register} copy={text.recordCount(items.length)} />
       {items.length === 0 ? <div className="empty-state"><strong>{text.emptyTitle}</strong><p>{text.emptyCopy}</p></div> : <div className="evidence-list">{items.map((item) => <article className="evidence-item" key={item.id}>
         <div className="file-icon" aria-hidden="true">DOC</div><div className="evidence-copy"><strong>{item.fileName}</strong><p>{evidenceLabel(item.sourceType, locale)} · {formatFileSize(item.size)}{item.eventDate ? ` · ${item.eventDate}` : ` · ${text.dateUnknown}`}</p>{item.description && <p className="evidence-description">{item.description}</p>}<code title={item.sha256}>SHA-256 {item.sha256.slice(0, 12)}…</code></div>
-        <div className="evidence-controls"><label><input type="checkbox" checked={item.includeInPack} onChange={() => toggleInclusion(item)} /> {text.include}</label><button className="download-link" type="button" onClick={() => void downloadOriginal(item)}>{text.download}</button><button type="button" onClick={() => remove(item)}>{text.delete}</button></div>
+        <div className="evidence-controls"><label><input type="checkbox" disabled={busy} checked={item.includeInPack} onChange={() => toggleInclusion(item)} /> {text.include}</label><button className="download-link" type="button" onClick={() => void downloadOriginal(item)}>{text.download}</button><button type="button" disabled={busy} onClick={() => void remove(item)}>{text.delete}</button></div>
         {item.mimeType === 'text/plain' && <div style={{ gridColumn: '2 / -1' }}><TextEvidencePreview evidenceId={item.id} locale={locale} /></div>}
         {['image/jpeg', 'image/png', 'image/webp'].includes(item.mimeType) && <div style={{ gridColumn: '2 / -1' }}><ImageEvidencePreview evidenceId={item.id} fileName={item.fileName} locale={locale} /></div>}
       </article>)}</div>}
     </div>
-    <div className="actions split"><button className="secondary" onClick={onBack}>{text.back}</button><button className="primary" disabled={items.length === 0} onClick={() => onContinue(items)}>{text.review} <span>→</span></button></div>
+    <div className="actions split"><button className="secondary" disabled={busy} onClick={onBack}>{text.back}</button><button className="primary" disabled={items.length === 0 || busy} onClick={() => onContinue(items)}>{text.review} <span>→</span></button></div>
   </section>
 }
 
