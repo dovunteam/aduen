@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectEvidenceRisks } from './evidenceSafety'
+import { detectEvidenceRisks, scanEvidenceFile } from './evidenceSafety'
 
 describe('evidence safety scan', () => {
   it('flags plausible payment-card numbers using a checksum', () => {
@@ -15,5 +15,10 @@ describe('evidence safety scan', () => {
 
   it('does not flag ordinary complaint text', () => {
     expect(detectEvidenceRisks('The merchant promised delivery on 20 September.')).toEqual([])
+  })
+
+  it('requires manual review for binary evidence that cannot be text-scanned', async () => {
+    const risks = await scanEvidenceFile(new File(['%PDF-1.4'], 'receipt.pdf', { type: 'application/pdf' }))
+    expect(risks.map((risk) => risk.code)).toEqual(['binary_unscanned'])
   })
 })
