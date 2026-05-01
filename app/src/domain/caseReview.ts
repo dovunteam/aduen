@@ -80,5 +80,7 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
   if (draft.orderReference && extractedReferences.some((reference) => reference?.toLowerCase() !== draft.orderReference.toLowerCase())) conflicts.push('A confirmed extracted reference differs from the entered order or reference number.')
   const extractedDates = [...new Set(confirmed.filter((item) => item.field === 'date').map((item) => item.confirmedValue).filter(Boolean))]
   if (extractedDates.length > 1) conflicts.push('Confirmed evidence contains multiple extracted dates. Check which event each date describes.')
+  const extractedRemedies = [...new Set(confirmed.filter((item) => item.field === 'remedy').map((item) => item.confirmedValue?.toLowerCase()).filter(Boolean))]
+  if (draft.remedy && extractedRemedies.some((remedy) => remedy !== draft.remedy)) conflicts.push(`A confirmed extracted remedy differs from the entered requested remedy of ${draft.remedy}.`)
   return conflicts
 }

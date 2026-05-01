@@ -36,6 +36,11 @@ describe('bounded text extraction', () => {
     expect(candidates.every((item) => item.start >= 0 && item.sourceExcerpt.length > 0)).toBe(true)
   })
 
+  it('extracts only explicit requested remedies', () => {
+    const candidates = extractCandidateFacts('The listing mentions a refund, but I requested a replacement.')
+    expect(candidates.map(({ field, value }) => ({ field, value }))).toEqual([{ field: 'remedy', value: 'replacement' }])
+  })
+
   it('marks every extracted value unconfirmed by default', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
     expect(extraction.extractorVersion).toBe('plain-text-v1')
