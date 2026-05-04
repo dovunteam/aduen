@@ -21,7 +21,7 @@ export function ExtractionStep({ locale, initialExtractions, evidence, onBack, o
     setBusyId(item.id)
     setError('')
     if (status === 'confirmed' && !isValidCandidateValue(item.field, (edits[item.id] ?? item.value).trim())) {
-      setError(locale === 'ms' ? 'Masukkan jumlah dengan maksimum dua tempat perpuluhan, tarikh sah (YYYY-MM-DD), rujukan yang tidak kosong, atau penyelesaian yang sah.' : 'Enter an amount with up to two decimal places, a valid date (YYYY-MM-DD), a non-empty reference, or a valid remedy.')
+      setError(locale === 'ms' ? 'Masukkan jumlah dengan maksimum dua tempat perpuluhan, tarikh sah (YYYY-MM-DD), rujukan yang tidak kosong, nama, atau penyelesaian yang sah.' : 'Enter an amount with up to two decimal places, a valid date (YYYY-MM-DD), a non-empty reference, a name, or a valid remedy.')
       setBusyId(''); return
     }
     try {
@@ -55,6 +55,6 @@ const extractionText = {
 } as const
 
 function fieldLabel(field: ExtractionCandidate['field'], locale: Locale) {
-  const labels = locale === 'ms' ? { amount: 'Jumlah', date: 'Tarikh', reference: 'Rujukan', remedy: 'Penyelesaian' } : { amount: 'Amount', date: 'Date', reference: 'Reference', remedy: 'Remedy' }
+  const labels = locale === 'ms' ? { amount: 'Jumlah', date: 'Tarikh', reference: 'Rujukan', remedy: 'Penyelesaian', name: 'Nama' } : { amount: 'Amount', date: 'Date', reference: 'Reference', remedy: 'Remedy', name: 'Name' }
   return labels[field]
 }
