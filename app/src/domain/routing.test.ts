@@ -34,6 +34,10 @@ describe('initial routing', () => {
     expect(route.routeName).toBe('Manual route review')
     expect(route.unmetPrerequisites).toContain('Date of merchant contact')
     expect(route.confidence).toBe('uncertain')
+    expect(route.officialLinks).toEqual([
+      { label: 'KPDN e-Aduan', url: 'https://eaduan.kpdn.gov.my/' },
+      { label: 'TTPM e-Tribunal', url: 'https://ttpm.kpdn.gov.my/?lang=en' },
+    ])
   })
 
   it('pauses excluded and sector-specific categories', () => {
