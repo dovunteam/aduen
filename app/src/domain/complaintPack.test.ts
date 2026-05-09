@@ -4,7 +4,7 @@ import { approveComplaintPack, createComplaintPack, packFileName } from './compl
 import type { EvidenceMetadata } from './evidence'
 import type { RouteEvaluation } from './routing'
 
-const route: RouteEvaluation = { routeName: 'Merchant or platform first', recommendedAction: 'Write', matchingFacts: [], unmetPrerequisites: [], exclusionsChecked: [], source: 'R-010', sourceUrl: 'https://example.test/rule', sourceType: 'product-default', sourceChecked: '20 September 2026', ruleVersion: 'MY-R010-2026.09.20', confidence: 'supported' }
+const route: RouteEvaluation = { routeName: 'Merchant or platform first', recommendedAction: 'Write', matchingFacts: [], unmetPrerequisites: [], exclusionsChecked: [], source: 'R-010', sourceUrl: 'https://example.test/rule', sourceType: 'product-default', sourceChecked: '20 September 2026', ruleVersion: 'MY-R010-2026.09.20', confidence: 'supported', officialLinks: [{ label: 'Example destination', url: 'https://example.test/destination' }] }
 const item: EvidenceMetadata = { id: 'e1', fileName: 'receipt.pdf', mimeType: 'application/pdf', size: 100, sha256: 'abc', sourceType: 'receipt', eventDate: '2026-05-01', description: 'Order receipt', includeInPack: true, uploadedAt: '2026-05-01T00:00:00Z' }
 
 describe('complaint pack', () => {
@@ -14,6 +14,7 @@ describe('complaint pack', () => {
     const pack = createComplaintPack(draft, [item, excluded], route, new Date('2026-05-10T00:00:00Z'))
     expect(pack.evidence.map((entry) => entry.id)).toEqual(['e1'])
     expect(pack.route.ruleVersion).toBe('MY-R010-2026.09.20')
+    expect(pack.route.officialLinks).toEqual([{ label: 'Example destination', url: 'https://example.test/destination' }])
     expect(pack.merchantRequest.body).toContain('Example Store')
     expect(pack.approvedAt).toBeNull()
     expect(packFileName(pack)).toBe('buktiva-example-store-v1.pdf')

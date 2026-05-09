@@ -16,7 +16,7 @@ export type ComplaintPack = {
   issue: string
   remedy: string
   remedyAmount: string | null
-  route: Pick<RouteEvaluation, 'routeName' | 'ruleVersion' | 'sourceChecked' | 'sourceUrl'>
+  route: Pick<RouteEvaluation, 'routeName' | 'ruleVersion' | 'sourceChecked' | 'sourceUrl' | 'officialLinks'>
   timeline: ReturnType<typeof buildTimeline>
   evidence: Array<Pick<EvidenceMetadata, 'id' | 'fileName' | 'sourceType' | 'eventDate' | 'description' | 'sha256'>>
   confirmedDerivedFacts: Array<{ field: string; value: string; extractedValue: string; evidenceId: string; extractorVersion: string }>
@@ -32,7 +32,7 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
     consumerName: draft.consumerName,
     transaction: { seller: draft.seller, sellerLocation: draft.sellerLocation, platform: draft.platform, purchaseDate: draft.purchaseDate, amount: draft.amount, currency: draft.currency, paymentMethod: draft.paymentMethod, orderReference: draft.orderReference, category: draft.category.replaceAll('_', ' ') },
     issue: draft.issue.replaceAll('_', ' '), remedy: draft.remedy, remedyAmount: draft.remedy === 'refund' ? draft.remedyAmount : null,
-    route: { routeName: route.routeName, ruleVersion: route.ruleVersion, sourceChecked: route.sourceChecked, sourceUrl: route.sourceUrl },
+    route: { routeName: route.routeName, ruleVersion: route.ruleVersion, sourceChecked: route.sourceChecked, sourceUrl: route.sourceUrl, officialLinks: route.officialLinks },
     timeline: buildTimeline(draft, included),
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
     confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion }))),
