@@ -13,6 +13,11 @@ describe('evidence safety scan', () => {
     expect(codes).toContain('identity_number')
   })
 
+  it('flags explicit third-party information language', () => {
+    expect(detectEvidenceRisks('This screenshot contains someone else\'s phone number.').map((risk) => risk.code)).toContain('third_party_data')
+    expect(detectEvidenceRisks('My own phone number is included.').map((risk) => risk.code)).not.toContain('third_party_data')
+  })
+
   it('does not flag ordinary complaint text', () => {
     expect(detectEvidenceRisks('The merchant promised delivery on 20 September.')).toEqual([])
   })

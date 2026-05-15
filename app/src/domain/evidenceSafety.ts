@@ -1,4 +1,4 @@
-export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'binary_unscanned'; message: string }
+export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'binary_unscanned'; message: string }
 
 function passesLuhn(value: string): boolean {
   let sum = 0; let alternate = false
@@ -21,6 +21,9 @@ export function detectEvidenceRisks(text: string): EvidenceRisk[] {
   }
   if (/\b(?:mykad|passport|identity card|national registration identity card|nric)\b/i.test(text)) {
     risks.push({ code: 'identity_number', message: 'The file may contain an identity-document number.' })
+  }
+  if (/\b(?:third[- ]party|someone else['’]s|another person['’]s|other person['’]s)\b/i.test(text)) {
+    risks.push({ code: 'third_party_data', message: 'The file appears to mention another person’s information. Review whether it is necessary to include.' })
   }
   return risks
 }
