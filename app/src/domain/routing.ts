@@ -17,6 +17,23 @@ export type RouteEvaluation = {
   officialLinks?: Array<{ label: string; url: string }>
 }
 
+export type TtpmAssessment = { status: 'candidate' | 'excluded' | 'uncertain'; reason: string }
+
+export function assessTtpmCandidate(draft: CaseDraft, now = new Date()): TtpmAssessment {
+  if (draft.purpose === 'business') return { status: 'excluded', reason: 'TTPM candidate check: business or professional purchase is excluded.' }
+  if (['healthcare', 'professional_service', 'land', 'aviation'].includes(draft.category)) return { status: 'excluded', reason: 'TTPM candidate check: this category is listed as excluded or sector-specific.' }
+  const amount = Number(draft.amount)
+  if (!Number.isFinite(amount) || amount <= 0) return { status: 'uncertain', reason: 'TTPM candidate check: confirm the transaction amount.' }
+  if (amount > 50_000) return { status: 'excluded', reason: 'TTPM candidate check: the recorded amount is above the documented RM50,000 limit.' }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.purchaseDate)) return { status: 'uncertain', reason: 'TTPM candidate check: confirm the purchase date.' }
+  const purchaseDate = new Date(`${draft.purchaseDate}T00:00:00Z`)
+  const cutoff = new Date(now)
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 3)
+  if (!Number.isFinite(purchaseDate.getTime()) || purchaseDate > now) return { status: 'uncertain', reason: 'TTPM candidate check: the purchase date is invalid or in the future.' }
+  if (purchaseDate < cutoff) return { status: 'excluded', reason: 'TTPM candidate check: the purchase is outside the documented three-year period.' }
+  return { status: 'candidate', reason: 'TTPM candidate check: amount, personal purpose, category, and documented three-year period appear compatible; verify the live requirements.' }
+}
+
 export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
   const missing = checks.filter((item) => item.level === 'required' && !item.satisfied).map((item) => item.label)
   const base = {
@@ -66,8 +83,8 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
   }
   return {
     ...base, routeName: 'Manual route review', recommendedAction: 'Review the merchant contact and response before choosing any external escalation channel.',
-    matchingFacts: [`Merchant contact recorded: ${draft.contactHistory}`, ...(draft.contactDate ? [`Contact date: ${draft.contactDate}`] : [])],
-    unmetPrerequisites: [...missing, ...(!draft.contactDate ? ['Date of merchant contact'] : [])], exclusionsChecked: ['Merchant-first prerequisite considered'], confidence: 'uncertain',
+    matchingFacts: [`Merchant contact recorded: ${draft.contactHistory}`, ...(draft.contactDate ? [`Contact date: ${draft.contactDate}`] : []), assessTtpmCandidate(draft).reason],
+    unmetPrerequisites: [...missing, ...(!draft.contactDate ? ['Date of merchant contact'] : []), ...(assessTtpmCandidate(draft).status === 'uncertain' ? ['TTPM candidate facts need confirmation'] : [])], exclusionsChecked: ['Merchant-first prerequisite considered'], confidence: 'uncertain',
     officialLinks: [
       { label: 'KPDN e-Aduan', url: 'https://eaduan.kpdn.gov.my/' },
       { label: 'TTPM e-Tribunal', url: 'https://ttpm.kpdn.gov.my/?lang=en' },
