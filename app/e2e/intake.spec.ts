@@ -99,6 +99,7 @@ test('uploaded PDFs can be previewed locally without leaving the page', async ({
   await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await page.getByRole('button', { name: 'Preview PDF', exact: true }).click()
+  await expect(page.getByText('This prototype does not scan or redact PDF content.')).toBeVisible()
   const preview = page.getByTitle('Evidence PDF preview')
   await expect(preview).toBeVisible()
   await expect(preview).toHaveAttribute('src', /^blob:/)
