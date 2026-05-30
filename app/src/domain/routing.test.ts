@@ -58,6 +58,7 @@ describe('TTPM candidate check', () => {
     [{ ...base, amount: '50000.01' }, 'excluded'],
     [{ ...base, purchaseDate: '2022-09-20' }, 'excluded'],
     [{ ...base, amount: '' }, 'uncertain'],
+    [{ ...base, purpose: '' as const }, 'uncertain'],
   ] as const)('retains uncertainty or exclusion for %j', (draft, status) => {
     expect(assessTtpmCandidate(draft, new Date('2026-09-21T00:00:00Z')).status).toBe(status)
   })
