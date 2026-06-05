@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent } from 'react'
 import { getEvidenceOriginal } from '../data/evidenceRepository'
 import type { Locale } from '../i18n'
+import { recordAuditEvent } from '../data/auditRepository'
 
 type Redaction = { x: number; y: number; width: number; height: number }
 
@@ -24,6 +25,7 @@ export function ImageEvidencePreview({ evidenceId, fileName, locale }: { evidenc
       if (disposed) return
       if (!original) throw new Error('Missing original')
       objectUrl = URL.createObjectURL(original)
+      recordAuditEvent('evidence_previewed', evidenceId, 'image preview')
       setUrl(objectUrl)
     }).catch(() => { if (!disposed) setFailed(true) })
     return () => { disposed = true; if (objectUrl) URL.revokeObjectURL(objectUrl) }
@@ -74,6 +76,7 @@ export function ImageEvidencePreview({ evidenceId, fileName, locale }: { evidenc
       const copyUrl = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = copyUrl; anchor.download = `redacted-${fileName.replace(/[^a-z0-9._-]/gi, '_').replace(/\.[^.]+$/, '')}.png`; anchor.click()
+      recordAuditEvent('redacted_copy_exported', evidenceId, 'PNG image copy')
       window.setTimeout(() => URL.revokeObjectURL(copyUrl), 1000)
     } catch { setRedactionFailed(true) }
     finally { setDownloadBusy(false) }
