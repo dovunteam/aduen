@@ -74,5 +74,6 @@ test('Bahasa Malaysia privacy controls describe local data handling', async ({ p
 
   await expect(page.getByRole('heading', { name: 'Data anda kekal di bawah kawalan anda.' })).toBeVisible()
   await expect(page.getByText('Pelayar ini', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Sejarah aktiviti setempat' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Eksport ZIP' })).toBeDisabled()
 })
