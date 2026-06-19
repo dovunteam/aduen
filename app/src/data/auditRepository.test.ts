@@ -13,7 +13,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe('local audit log', () => {
   it('records ordered sensitive-action events and can clear them', () => {
-    const first = recordAuditEvent('evidence_previewed', 'e1', 'image preview', new Date('2026-09-21T00:00:00Z'))
+    const first = recordAuditEvent('case_edited', 'case-1', 'case draft fields changed', new Date('2026-09-21T00:00:00Z'))
     const second = recordAuditEvent('redacted_copy_exported', 'e1', 'PNG copy', new Date('2026-09-21T00:01:00Z'))
     expect(listAuditEvents()).toEqual([first, second])
     clearAuditEvents()

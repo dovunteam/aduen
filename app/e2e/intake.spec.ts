@@ -188,6 +188,7 @@ test('a supported draft preserves original evidence and resumes at the evidence 
   await page.getByRole('button', { name: 'Data controls' }).click()
   await expect(page.getByRole('heading', { name: 'Local activity history' })).toBeVisible()
   await page.getByText(/View \d+ recorded actions?/).click()
+  await expect(page.getByText('Case edited', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('Evidence previewed')).toBeVisible()
 })
 
