@@ -1,5 +1,6 @@
 import { EMPTY_SUBMISSION } from '../domain/status'
 import type { SubmissionRecord } from '../domain/status'
+import { recordAuditEvent } from './auditRepository'
 
 const STATUS_KEY = 'buktiva.submission-record.v1'
 const TUNTIVA_STATUS_KEY = 'tuntiva.submission-record.v1'
@@ -14,8 +15,12 @@ export function readSubmission(): SubmissionRecord {
 }
 
 export function saveSubmission(record: SubmissionRecord): SubmissionRecord {
+  const previous = readSubmission()
   const saved = { ...record, updatedAt: new Date().toISOString() }
   localStorage.setItem(STATUS_KEY, JSON.stringify(saved))
+  const { updatedAt: _previousUpdatedAt, ...previousContent } = previous
+  const { updatedAt: _savedUpdatedAt, ...savedContent } = saved
+  if (JSON.stringify(previousContent) !== JSON.stringify(savedContent)) recordAuditEvent('submission_edited', 'submission', 'external status record changed')
   return saved
 }
 
