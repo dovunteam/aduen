@@ -42,6 +42,11 @@ describe('fact conflicts', () => {
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
     expect(findFactConflicts({ ...EMPTY_DRAFT, remedy: 'refund' }, [extraction])[0]).toContain('requested remedy')
   })
+  it('flags a single confirmed evidence date that differs from the purchase date', () => {
+    const extraction = createEvidenceExtraction('e1', 'Order date: 2026-08-02')
+    extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
+    expect(findFactConflicts({ ...EMPTY_DRAFT, purchaseDate: '2026-08-01' }, [extraction])[0]).toContain('purchase date')
+  })
   it('flags a confirmed consumer name that differs from the case record', () => {
     const extraction = createEvidenceExtraction('e1', 'Customer name: Another Synthetic Consumer.')
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
