@@ -2,6 +2,7 @@ import type { EvidenceInput, EvidenceMetadata } from '../domain/evidence'
 import { validateEvidenceFile, validateEvidenceSignature } from '../domain/evidence'
 import { createEvidenceExtraction, reviewCandidate } from '../domain/extraction'
 import type { EvidenceExtraction } from '../domain/extraction'
+import { recordAuditEvent } from './auditRepository'
 
 // Preserve locally stored originals created before the public Buktiva rename.
 // IndexedDB database names are implementation details and are never displayed to users.
@@ -123,7 +124,10 @@ export async function reviewExtractionCandidate(extractionId: string, candidateI
     }
     request.onerror = () => reject(request.error)
   })
-  await transactionDone(transaction); database.close(); return updated
+  await transactionDone(transaction); database.close()
+  const reviewed = updated.candidates.find((item) => item.id === candidateId)
+  if (reviewed) recordAuditEvent('derived_fact_reviewed', candidateId, `${reviewed.field}: ${status}`)
+  return updated
 }
 
 export async function updateEvidenceInclusion(id: string, includeInPack: boolean): Promise<void> {
