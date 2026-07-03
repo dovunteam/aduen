@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listAuditEvents } from './auditRepository'
 import { EMPTY_SUBMISSION } from '../domain/status'
-import { saveSubmission } from './statusRepository'
+import { readSubmission, saveSubmission } from './statusRepository'
 
 beforeEach(() => {
   const values = new Map<string, string>()
@@ -19,5 +19,10 @@ describe('submission repository', () => {
     expect(listAuditEvents().map((event) => event.action)).toEqual(['submission_edited'])
     saveSubmission(saved)
     expect(listAuditEvents()).toHaveLength(1)
+  })
+
+  it('falls back to an empty record when stored status data is malformed', () => {
+    localStorage.setItem('buktiva.submission-record.v1', JSON.stringify({ status: 'not-a-status', outcome: 'refund' }))
+    expect(readSubmission()).toEqual(EMPTY_SUBMISSION)
   })
 })
