@@ -15,6 +15,7 @@ describe('evidence safety scan', () => {
 
   it('flags explicit third-party information language', () => {
     expect(detectEvidenceRisks('This screenshot contains someone else\'s phone number.').map((risk) => risk.code)).toContain('third_party_data')
+    expect(detectEvidenceRisks('This screenshot contains another person\u2019s email address.').map((risk) => risk.code)).toContain('third_party_data')
     expect(detectEvidenceRisks('My own phone number is included.').map((risk) => risk.code)).not.toContain('third_party_data')
   })
 
