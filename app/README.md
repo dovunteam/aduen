@@ -6,12 +6,14 @@ This directory contains the first interactive Buktiva prototype. It currently su
 - urgent-risk triage that stops the ordinary flow;
 - transaction, issue, remedy, promise, and merchant-contact capture;
 - original evidence storage with SHA-256 integrity hashes;
+- local text, image, and PDF previews with original-download controls;
+- text and image redacted-copy workflows that leave originals unchanged;
 - bounded plain-text extraction with user confirmation or correction;
 - issue-specific completeness checks and a sourced chronology;
 - versioned merchant-first routing;
 - user-reviewed PDF complaint packs;
 - submission and outcome tracking; and
-- complete ZIP export and explicit local deletion.
+- complete ZIP export, local activity history, and explicit local deletion.
 
 The prototype has no server or account system. Structured case data is stored in browser `localStorage`; evidence originals and metadata use separate IndexedDB stores. Do not use it for real consumer evidence.
 
@@ -36,4 +38,4 @@ npm run build
 
 ## Current boundary
 
-Accounts, image/PDF OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. English and Bahasa Malaysia are available for the prototype interface; source evidence and generated material retain their original language. See the [implementation ledger](../docs/Buktiva_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
+Accounts, image/PDF OCR, PDF redaction, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. PDF previews are sandboxed and explicitly require external redaction before a copy is re-uploaded. English and Bahasa Malaysia are available for the prototype interface; source evidence and generated material retain their original language. See the [implementation ledger](../docs/Buktiva_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
