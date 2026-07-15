@@ -124,6 +124,7 @@ test('draft deletion can be cancelled and confirmed deletion removes saved case 
   await page.getByRole('button', { name: 'Delete draft', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Begin safety check' })).toBeDisabled()
   expect(await page.evaluate(() => localStorage.getItem('buktiva.case-record.v1'))).toBeNull()
+  expect(await page.evaluate(() => localStorage.getItem('buktiva.audit-log.v1'))).toBeNull()
   await page.reload()
   await expect(page.getByRole('button', { name: /Resume saved case/ })).toHaveCount(0)
 })
