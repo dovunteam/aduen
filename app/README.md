@@ -34,6 +34,7 @@ Open the local URL printed by Vite.
 npm run lint
 npm test
 npm run build
+npm run test:e2e
 ```
 
 ## Current boundary
