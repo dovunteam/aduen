@@ -34,3 +34,10 @@ test('case details have no serious automated WCAG violations', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Describe the purchase.' })).toBeVisible()
   await expectNoHighImpactViolations(page)
 })
+
+test('privacy controls have no serious automated WCAG violations', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Data controls' }).click()
+  await expect(page.getByRole('heading', { name: 'Your data stays under your control.' })).toBeVisible()
+  await expectNoHighImpactViolations(page)
+})
