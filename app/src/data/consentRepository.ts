@@ -1,5 +1,6 @@
 import { createConsentRecord, NOTICE_VERSION } from '../domain/consent'
 import type { ConsentRecord } from '../domain/consent'
+import { recordAuditEvent } from './auditRepository'
 
 const CONSENT_KEY = 'buktiva.consent.v1'
 const TUNTIVA_CONSENT_KEY = 'tuntiva.consent.v1'
@@ -7,6 +8,7 @@ const TUNTIVA_CONSENT_KEY = 'tuntiva.consent.v1'
 export function acceptConsent(): ConsentRecord {
   const record = createConsentRecord()
   localStorage.setItem(CONSENT_KEY, JSON.stringify(record))
+  recordAuditEvent('consent_accepted', 'consent', `notice ${record.noticeVersion} accepted`)
   return record
 }
 
