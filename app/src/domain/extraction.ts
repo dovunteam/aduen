@@ -20,6 +20,12 @@ export type EvidenceExtraction = {
   candidates: ExtractionCandidate[]
 }
 
+export function isValidEvidenceExtraction(value: unknown): value is EvidenceExtraction {
+  if (!value || typeof value !== 'object') return false
+  const extraction = value as Partial<EvidenceExtraction>
+  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && extraction.extractorVersion === 'plain-text-v1' && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
+}
+
 function candidate(field: ExtractedField, value: string, confidence: number, text: string, start: number, end: number): ExtractionCandidate {
   return {
     id: crypto.randomUUID(), field, value, confidence,
@@ -76,4 +82,22 @@ export function isValidCandidateValue(field: ExtractedField, value: string): boo
   if (field === 'remedy') return ['delivery', 'replacement', 'repair', 'cancellation', 'refund'].includes(value.toLowerCase())
   if (field === 'name') return value.length <= 80 && /^[A-Za-z][A-Za-z .'-]*$/.test(value)
   return value.length <= 200 && !Array.from(value).some((character) => character.charCodeAt(0) < 32)
+}
+
+function isValidCandidate(value: unknown): value is ExtractionCandidate {
+  if (!value || typeof value !== 'object') return false
+  const candidateValue = value as Partial<ExtractionCandidate>
+  if (typeof candidateValue.id !== 'string' || !candidateValue.id || typeof candidateValue.field !== 'string' || !['amount', 'date', 'reference', 'remedy', 'name'].includes(candidateValue.field) || typeof candidateValue.value !== 'string' || typeof candidateValue.confidence !== 'number' || !Number.isFinite(candidateValue.confidence) || candidateValue.confidence < 0 || candidateValue.confidence > 1 || typeof candidateValue.sourceExcerpt !== 'string' || typeof candidateValue.start !== 'number' || !Number.isInteger(candidateValue.start) || candidateValue.start < 0 || typeof candidateValue.end !== 'number' || !Number.isInteger(candidateValue.end) || candidateValue.end < candidateValue.start || !['unconfirmed', 'confirmed', 'rejected'].includes(candidateValue.status as string) || (candidateValue.confirmedValue !== null && typeof candidateValue.confirmedValue !== 'string')) return false
+  const confirmedValid = candidateValue.confirmedValue === null || candidateValue.status !== 'confirmed' || isValidCandidateValue(candidateValue.field as ExtractedField, candidateValue.confirmedValue)
+  return confirmedValid && (!candidateValue.reviewHistory || (Array.isArray(candidateValue.reviewHistory) && candidateValue.reviewHistory.every(isValidReview)))
+}
+
+function isValidReview(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+  const review = value as { at?: unknown; previousStatus?: unknown; previousValue?: unknown; status?: unknown; value?: unknown }
+  return typeof review.at === 'string' && isIsoTimestamp(review.at) && ['unconfirmed', 'confirmed', 'rejected'].includes(review.previousStatus as string) && (review.previousValue === null || typeof review.previousValue === 'string') && ['unconfirmed', 'confirmed', 'rejected'].includes(review.status as string) && (review.value === null || typeof review.value === 'string')
+}
+
+function isIsoTimestamp(value: string): boolean {
+  try { return new Date(value).toISOString() === value } catch { return false }
 }

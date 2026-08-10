@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createEvidenceExtraction, extractCandidateFacts, reviewCandidate } from './extraction'
+import { createEvidenceExtraction, extractCandidateFacts, isValidEvidenceExtraction, reviewCandidate } from './extraction'
 
 describe('bounded text extraction', () => {
   it('rejects invalid confirmations without changing the original candidate', () => {
@@ -58,5 +58,12 @@ describe('bounded text extraction', () => {
     expect(corrected.value).toBe('25.00')
     expect(corrected.confirmedValue).toBe('24.50')
     expect(reviewCandidate(original, 'rejected').status).toBe('rejected')
+  })
+
+  it('validates stored extraction records before review', () => {
+    const valid = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00.000Z'))
+    expect(isValidEvidenceExtraction(valid)).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
+    expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], confidence: 2 }] })).toBe(false)
   })
 })
