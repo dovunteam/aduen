@@ -47,8 +47,9 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
     setBusy(true); setError('')
     try {
       const next = !item.includeInPack
+      const updated = await updateEvidenceInclusion(item.id, next)
+      if (!updated) throw new Error('Evidence record not found.')
       onChange()
-      await updateEvidenceInclusion(item.id, next)
       recordAuditEvent('evidence_inclusion_changed', item.id, next ? 'evidence included in pack' : 'evidence excluded from pack')
       setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, includeInPack: next } : entry))
     } catch { setError(text.saveError) }

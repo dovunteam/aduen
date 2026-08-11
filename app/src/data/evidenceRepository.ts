@@ -130,17 +130,19 @@ export async function reviewExtractionCandidate(extractionId: string, candidateI
   return updated
 }
 
-export async function updateEvidenceInclusion(id: string, includeInPack: boolean): Promise<void> {
+export async function updateEvidenceInclusion(id: string, includeInPack: boolean): Promise<boolean> {
   const database = await openDatabase()
   const transaction = database.transaction(METADATA_STORE, 'readwrite')
   const store = transaction.objectStore(METADATA_STORE)
   const request = store.get(id)
+  let updated = false
   request.onsuccess = () => {
     const existing = request.result as EvidenceMetadata | undefined
-    if (existing) store.put({ ...existing, includeInPack })
+    if (existing) { store.put({ ...existing, includeInPack }); updated = true }
   }
   await transactionDone(transaction)
   database.close()
+  return updated
 }
 
 export async function deleteEvidence(id: string): Promise<void> {
