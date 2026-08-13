@@ -67,8 +67,7 @@ export async function addEvidence(file: File, input: EvidenceInput): Promise<Evi
   transaction.objectStore(METADATA_STORE).add(metadata)
   transaction.objectStore(ORIGINAL_STORE).add(file, metadata.id)
   if (extraction?.candidates.length) transaction.objectStore(EXTRACTION_STORE).add(extraction)
-  await transactionDone(transaction)
-  database.close()
+  try { await transactionDone(transaction) } finally { database.close() }
   return metadata
 }
 
@@ -76,36 +75,37 @@ export async function listEvidence(): Promise<EvidenceMetadata[]> {
   const database = await openDatabase()
   const transaction = database.transaction(METADATA_STORE, 'readonly')
   const request = transaction.objectStore(METADATA_STORE).getAll()
-  const records = await new Promise<EvidenceMetadata[]>((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result.filter(isValidEvidenceMetadata))
-    request.onerror = () => reject(request.error)
-  })
-  database.close()
-  return records.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
+  try {
+    const records = await new Promise<EvidenceMetadata[]>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result.filter(isValidEvidenceMetadata))
+      request.onerror = () => reject(request.error)
+    })
+    return records.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
+  } finally { database.close() }
 }
 
 export async function getEvidenceOriginal(id: string): Promise<Blob | null> {
   const database = await openDatabase()
   const transaction = database.transaction(ORIGINAL_STORE, 'readonly')
   const request = transaction.objectStore(ORIGINAL_STORE).get(id)
-  const original = await new Promise<Blob | null>((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result ?? null)
-    request.onerror = () => reject(request.error)
-  })
-  database.close()
-  return original
+  try {
+    return await new Promise<Blob | null>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result ?? null)
+      request.onerror = () => reject(request.error)
+    })
+  } finally { database.close() }
 }
 
 export async function listExtractions(): Promise<EvidenceExtraction[]> {
   const database = await openDatabase()
   const transaction = database.transaction(EXTRACTION_STORE, 'readonly')
   const request = transaction.objectStore(EXTRACTION_STORE).getAll()
-  const records = await new Promise<EvidenceExtraction[]>((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result.filter(isValidEvidenceExtraction))
-    request.onerror = () => reject(request.error)
-  })
-  database.close()
-  return records
+  try {
+    return await new Promise<EvidenceExtraction[]>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result.filter(isValidEvidenceExtraction))
+      request.onerror = () => reject(request.error)
+    })
+  } finally { database.close() }
 }
 
 export async function reviewExtractionCandidate(extractionId: string, candidateId: string, status: 'unconfirmed' | 'confirmed' | 'rejected', correctedValue?: string): Promise<EvidenceExtraction> {
@@ -113,21 +113,23 @@ export async function reviewExtractionCandidate(extractionId: string, candidateI
   const transaction = database.transaction(EXTRACTION_STORE, 'readwrite')
   const store = transaction.objectStore(EXTRACTION_STORE)
   const request = store.get(extractionId)
-  const updated = await new Promise<EvidenceExtraction>((resolve, reject) => {
-    request.onsuccess = () => {
-      const extraction = request.result as EvidenceExtraction | undefined
-      if (!extraction) { reject(new Error('Extraction record not found.')); return }
-      try {
-        const next = { ...extraction, candidates: extraction.candidates.map((item) => item.id === candidateId ? reviewCandidate(item, status, correctedValue) : item) }
-        store.put(next); resolve(next)
-      } catch (error) { database.close(); reject(error) }
-    }
-    request.onerror = () => reject(request.error)
-  })
-  await transactionDone(transaction); database.close()
-  const reviewed = updated.candidates.find((item) => item.id === candidateId)
-  if (reviewed) recordAuditEvent('derived_fact_reviewed', candidateId, `${reviewed.field}: ${status}`)
-  return updated
+  try {
+    const updated = await new Promise<EvidenceExtraction>((resolve, reject) => {
+      request.onsuccess = () => {
+        const extraction = request.result as EvidenceExtraction | undefined
+        if (!extraction) { reject(new Error('Extraction record not found.')); return }
+        try {
+          const next = { ...extraction, candidates: extraction.candidates.map((item) => item.id === candidateId ? reviewCandidate(item, status, correctedValue) : item) }
+          store.put(next); resolve(next)
+        } catch (error) { reject(error) }
+      }
+      request.onerror = () => reject(request.error)
+    })
+    await transactionDone(transaction)
+    const reviewed = updated.candidates.find((item) => item.id === candidateId)
+    if (reviewed) recordAuditEvent('derived_fact_reviewed', candidateId, `${reviewed.field}: ${status}`)
+    return updated
+  } finally { database.close() }
 }
 
 export async function updateEvidenceInclusion(id: string, includeInPack: boolean): Promise<boolean> {
@@ -140,8 +142,7 @@ export async function updateEvidenceInclusion(id: string, includeInPack: boolean
     const existing = request.result as EvidenceMetadata | undefined
     if (existing) { store.put({ ...existing, includeInPack }); updated = true }
   }
-  await transactionDone(transaction)
-  database.close()
+  try { await transactionDone(transaction) } finally { database.close() }
   return updated
 }
 
@@ -153,8 +154,7 @@ export async function deleteEvidence(id: string): Promise<void> {
   const extractionStore = transaction.objectStore(EXTRACTION_STORE)
   const extractionKeys = extractionStore.index('evidenceId').getAllKeys(id)
   extractionKeys.onsuccess = () => extractionKeys.result.forEach((key) => extractionStore.delete(key))
-  await transactionDone(transaction)
-  database.close()
+  try { await transactionDone(transaction) } finally { database.close() }
 }
 
 export async function clearEvidence(): Promise<void> {
@@ -163,6 +163,5 @@ export async function clearEvidence(): Promise<void> {
   transaction.objectStore(METADATA_STORE).clear()
   transaction.objectStore(ORIGINAL_STORE).clear()
   transaction.objectStore(EXTRACTION_STORE).clear()
-  await transactionDone(transaction)
-  database.close()
+  try { await transactionDone(transaction) } finally { database.close() }
 }
