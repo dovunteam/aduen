@@ -22,6 +22,7 @@ export function listPacks(): ComplaintPack[] {
 }
 
 export function savePack(pack: ComplaintPack): void {
+  if (!isComplaintPack(pack)) throw new Error('Invalid pack.')
   const existing = listPacks()
   const previous = existing.find((item) => item.id === pack.id)
   if (previous) {
