@@ -36,4 +36,11 @@ describe('submission repository', () => {
     localStorage.setItem('buktiva.submission-record.v1', JSON.stringify({ ...EMPTY_SUBMISSION, submissionDate: '2026-02-30' }))
     expect(readSubmission()).toEqual(EMPTY_SUBMISSION)
   })
+
+  it('rejects lifecycle statuses without the facts that make them meaningful', () => {
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, status: 'handed_off' })).toThrow('Invalid submission record')
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, status: 'resolved', channel: 'merchant email', submissionDate: '2026-09-20' })).toThrow('Invalid submission record')
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, status: 'closed', channel: 'merchant email', submissionDate: '2026-09-20', outcome: 'refund' })).toThrow('Invalid submission record')
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, status: 'resolved', channel: 'merchant email', submissionDate: '2026-09-20', outcome: 'refund' })).not.toThrow()
+  })
 })
