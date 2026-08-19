@@ -28,7 +28,7 @@ describe('local audit log', () => {
   })
 
   it('ignores malformed stored records', () => {
-    localStorage.setItem('buktiva.audit-log.v1', JSON.stringify([{ action: 'unknown' }, { id: 'invalid-time', at: 'not-a-date', action: 'case_exported', targetId: 'case', detail: 'archive' }, { id: 'valid', at: '2026-09-21T00:00:00.000Z', action: 'case_exported', targetId: 'case', detail: 'archive' }]))
+    localStorage.setItem('buktiva.audit-log.v1', JSON.stringify([{ action: 'unknown' }, { id: 'invalid-time', at: 'not-a-date', action: 'case_exported', targetId: 'case', detail: 'archive' }, { id: 'oversized', at: '2026-09-21T00:00:00.000Z', action: 'case_exported', targetId: 'case', detail: 'x'.repeat(241) }, { id: 'control', at: '2026-09-21T00:00:00.000Z', action: 'case_exported', targetId: 'case', detail: 'archive\nwith-control' }, { id: 'valid', at: '2026-09-21T00:00:00.000Z', action: 'case_exported', targetId: 'case', detail: 'archive' }]))
     expect(listAuditEvents()).toHaveLength(1)
     expect(listAuditEvents()[0].id).toBe('valid')
   })
