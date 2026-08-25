@@ -37,6 +37,7 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
       if (detected.length && !riskAccepted) { setRisks(detected); return }
       onChange()
       const saved = await addEvidence(file, { sourceType, eventDate: eventDate || null, description })
+      recordAuditEvent('evidence_added', saved.id, 'evidence original added')
       setItems((current) => [saved, ...current]); setFile(null); setEventDate(''); setDescription(''); setRisks([]); setRiskAccepted(false)
       if (fileInput.current) fileInput.current.value = ''
     } catch (cause) { setError(cause instanceof Error ? localizeEvidenceError(cause.message, locale) : text.saveError) }
