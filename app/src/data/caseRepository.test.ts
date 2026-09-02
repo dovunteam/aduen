@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_DRAFT } from '../domain/case'
 import { readCase, saveCaseDraft } from './caseRepository'
+import { listAuditEvents } from './auditRepository'
 
 beforeEach(() => {
   const values = new Map<string, string>()
@@ -27,5 +28,12 @@ describe('case repository', () => {
   it('rejects stored cases with non-canonical lifecycle timestamps', () => {
     localStorage.setItem('buktiva.case-record.v1', JSON.stringify({ id: 'case-1', createdAt: '2026-09-21', updatedAt: '2026-09-21', status: 'draft', draft: EMPTY_DRAFT, history: [] }))
     expect(readCase()).toBeNull()
+  })
+
+  it('audits first creation separately from later edits', () => {
+    saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Synthetic seller' })
+    expect(listAuditEvents().map((event) => event.action)).toEqual(['case_created'])
+    saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Updated synthetic seller' })
+    expect(listAuditEvents().map((event) => event.action)).toEqual(['case_created', 'case_edited'])
   })
 })

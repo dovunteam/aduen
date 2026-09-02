@@ -39,14 +39,16 @@ export function readCase(): CaseRecord | null {
 
 export function saveCaseDraft(draft: CaseDraft): CaseRecord {
   if (!isCaseDraft(draft)) throw new Error('Invalid case draft.')
-  const current = readCase() ?? createCaseRecord(draft)
+  const existing = readCase()
+  const current = existing ?? createCaseRecord(draft)
   const changed = JSON.stringify(current.draft) !== JSON.stringify(draft)
   // A changed intake must be reviewed again; historical packs remain immutable.
   const reviewed = changed && current.status !== 'draft'
     ? transitionCase(current, 'draft', 'case_details_changed') : current
   const saved = { ...reviewed, draft, updatedAt: new Date().toISOString() }
   localStorage.setItem(CASE_KEY, JSON.stringify(saved))
-  if (changed) recordAuditEvent('case_edited', saved.id, 'case draft fields changed')
+  if (!existing) recordAuditEvent('case_created', saved.id, 'case record created')
+  else if (changed) recordAuditEvent('case_edited', saved.id, 'case draft fields changed')
   return saved
 }
 
