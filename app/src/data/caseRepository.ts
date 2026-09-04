@@ -88,8 +88,7 @@ function isDateOnlyOrEmpty(value: string): boolean {
 
 function isNonNegativeAmountOrEmpty(value: string): boolean {
   if (!value) return true
-  const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed >= 0
+  return /^\d+(?:\.\d{1,2})?$/.test(value) && Number.isFinite(Number(value))
 }
 
 function isIsoTimestamp(value: string): boolean {
