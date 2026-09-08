@@ -38,7 +38,11 @@ function isSubmissionRecord(value: SubmissionRecord): boolean {
   const successfulOutcome = ['refund', 'replacement', 'repair', 'delivery', 'partial'].includes(value.outcome)
   const closedOutcome = ['rejected', 'redirected', 'withdrawn', 'unresolved'].includes(value.outcome)
   const outcomeMatchesStatus = value.status !== 'resolved' && value.status !== 'closed' || value.status === 'resolved' && successfulOutcome || value.status === 'closed' && closedOutcome
-  return CASE_STATUSES.includes(value.status) && OUTCOMES.includes(value.outcome) && strings.every((item) => typeof item === 'string') && isDateOnlyOrEmpty(value.submissionDate) && isDateOnlyOrEmpty(value.nextFollowUpDate) && isIsoTimestampOrEmpty(value.updatedAt) && followUpOrderValid && (!requiresHandoff || hasHandoffDetails) && outcomeMatchesStatus
+  return CASE_STATUSES.includes(value.status) && OUTCOMES.includes(value.outcome) && strings.every((item) => typeof item === 'string') && isBoundedText(value.channel, 240) && isDateOnlyOrEmpty(value.submissionDate) && isBoundedText(value.referenceNumber, 200) && isDateOnlyOrEmpty(value.nextFollowUpDate) && isBoundedText(value.response, 1200) && isIsoTimestampOrEmpty(value.updatedAt) && followUpOrderValid && (!requiresHandoff || hasHandoffDetails) && outcomeMatchesStatus
+}
+
+function isBoundedText(value: string, maxLength: number): boolean {
+  return value.length <= maxLength
 }
 
 function isDateOnlyOrEmpty(value: string): boolean {
