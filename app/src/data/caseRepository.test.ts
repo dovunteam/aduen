@@ -41,6 +41,18 @@ describe('case repository', () => {
     expect(readCase()).toBeNull()
   })
 
+  it('rejects oversized or control-character case text', () => {
+    expect(() => saveCaseDraft({ ...EMPTY_DRAFT, seller: 'x'.repeat(501) })).toThrow('Invalid case draft')
+    expect(() => saveCaseDraft({ ...EMPTY_DRAFT, consumerName: 'Synthetic\nBuyer' })).toThrow('Invalid case draft')
+
+    const timestamp = '2026-09-21T00:00:00.000Z'
+    localStorage.setItem('buktiva.case-record.v1', JSON.stringify({
+      id: 'case-1', createdAt: timestamp, updatedAt: timestamp, status: 'draft', draft: EMPTY_DRAFT,
+      history: [{ at: timestamp, actor: 'system', action: 'x'.repeat(161), status: 'draft' }],
+    }))
+    expect(readCase()).toBeNull()
+  })
+
   it('audits first creation separately from later edits', () => {
     saveCaseDraft({ ...EMPTY_DRAFT, seller: 'Synthetic seller' })
     expect(listAuditEvents().map((event) => event.action)).toEqual(['case_created'])
