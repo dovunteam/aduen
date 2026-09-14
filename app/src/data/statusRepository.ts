@@ -42,7 +42,10 @@ function isSubmissionRecord(value: SubmissionRecord): boolean {
 }
 
 function isBoundedText(value: string, maxLength: number): boolean {
-  return value.length <= maxLength
+  return value.length <= maxLength && !Array.from(value).some((character) => {
+    const code = character.charCodeAt(0)
+    return code <= 31 || code === 127
+  })
 }
 
 function isDateOnlyOrEmpty(value: string): boolean {

@@ -48,4 +48,10 @@ describe('submission repository', () => {
     expect(() => saveSubmission({ ...EMPTY_SUBMISSION, channel: 'x'.repeat(241) })).toThrow('Invalid submission record')
     expect(() => saveSubmission({ ...EMPTY_SUBMISSION, response: 'x'.repeat(1201) })).toThrow('Invalid submission record')
   })
+
+  it('rejects control characters in stored status text', () => {
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, channel: 'merchant\nemail' })).toThrow('Invalid submission record')
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, referenceNumber: 'REF\t123' })).toThrow('Invalid submission record')
+    expect(() => saveSubmission({ ...EMPTY_SUBMISSION, response: 'Received\u0000' })).toThrow('Invalid submission record')
+  })
 })
