@@ -22,7 +22,7 @@ export function readCase(): CaseRecord | null {
     }
     const oldRecord = localStorage.getItem(TUNTIVA_CASE_KEY)
     if (oldRecord) {
-      const migrated = normaliseCaseRecord(JSON.parse(oldRecord))
+      const migrated = normaliseLegacyCaseRecord(JSON.parse(oldRecord))
       if (!migrated) return null
       localStorage.setItem(CASE_KEY, JSON.stringify(migrated)); localStorage.removeItem(TUNTIVA_CASE_KEY)
       return migrated
@@ -68,6 +68,17 @@ function normaliseCaseRecord(value: unknown): CaseRecord | null {
   const parsed = value as Partial<CaseRecord>
   const candidate = { ...parsed, draft: { ...EMPTY_DRAFT, ...(parsed.draft ?? {}) } } as CaseRecord
   return isCaseRecord(candidate) ? candidate : null
+}
+
+function normaliseLegacyCaseRecord(value: unknown): CaseRecord | null {
+  if (!value || typeof value !== 'object') return null
+  const parsed = value as Partial<CaseRecord>
+  const history = Array.isArray(parsed.history) && parsed.history.length > 0
+    ? parsed.history
+    : typeof parsed.createdAt === 'string' && CASE_STATUSES.includes(parsed.status as CaseRecordStatus)
+      ? [{ at: parsed.createdAt, actor: 'system' as const, action: 'case_created', status: parsed.status as CaseRecordStatus }]
+      : []
+  return normaliseCaseRecord({ ...parsed, history })
 }
 
 function isCaseRecord(value: CaseRecord): boolean {

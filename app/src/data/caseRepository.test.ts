@@ -41,6 +41,12 @@ describe('case repository', () => {
     expect(readCase()).toBeNull()
   })
 
+  it('upgrades legacy records with missing history during migration', () => {
+    const timestamp = '2026-09-21T00:00:00.000Z'
+    localStorage.setItem('tuntiva.case-record.v1', JSON.stringify({ id: 'legacy-case', createdAt: timestamp, updatedAt: timestamp, status: 'draft', draft: EMPTY_DRAFT, history: [] }))
+    expect(readCase()?.history).toEqual([{ at: timestamp, actor: 'system', action: 'case_created', status: 'draft' }])
+  })
+
   it('rejects oversized or control-character case text', () => {
     expect(() => saveCaseDraft({ ...EMPTY_DRAFT, seller: 'x'.repeat(501) })).toThrow('Invalid case draft')
     expect(() => saveCaseDraft({ ...EMPTY_DRAFT, consumerName: 'Synthetic\nBuyer' })).toThrow('Invalid case draft')
