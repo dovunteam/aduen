@@ -22,7 +22,7 @@ describe('submission repository', () => {
   })
 
   it('falls back to an empty record when stored status data is malformed', () => {
-    localStorage.setItem('buktiva.submission-record.v1', JSON.stringify({ status: 'not-a-status', outcome: 'refund' }))
+    localStorage.setItem('Aduen.submission-record.v1', JSON.stringify({ status: 'not-a-status', outcome: 'refund' }))
     expect(readSubmission()).toEqual(EMPTY_SUBMISSION)
   })
 
@@ -33,7 +33,7 @@ describe('submission repository', () => {
   })
 
   it('ignores stored records with invalid date fields', () => {
-    localStorage.setItem('buktiva.submission-record.v1', JSON.stringify({ ...EMPTY_SUBMISSION, submissionDate: '2026-02-30' }))
+    localStorage.setItem('Aduen.submission-record.v1', JSON.stringify({ ...EMPTY_SUBMISSION, submissionDate: '2026-02-30' }))
     expect(readSubmission()).toEqual(EMPTY_SUBMISSION)
   })
 

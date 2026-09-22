@@ -8,7 +8,7 @@ export function buildFollowUpCalendar(record: SubmissionRecord, now = new Date()
   const date = record.nextFollowUpDate.replaceAll('-', '')
   const channel = record.channel.trim() || 'case'
   const reference = record.referenceNumber.trim() ? ` Reference: ${record.referenceNumber.trim()}.` : ''
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Buktiva//Follow-up//EN', 'BEGIN:VEVENT', `UID:${crypto.randomUUID()}@buktiva.local`, `DTSTAMP:${now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')}`, `DTSTART;VALUE=DATE:${date}`, 'DURATION:P1D', `SUMMARY:${calendarText(`Buktiva follow-up: ${channel}`)}`, `DESCRIPTION:${calendarText(`Review your Buktiva case follow-up.${reference} This reminder is based on the follow-up date you entered, not an external deadline. Buktiva does not send notifications or submit anything for you.`)}`, 'END:VEVENT', 'END:VCALENDAR', ''].map(foldLine).join('\r\n')
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Aduen//Follow-up//EN', 'BEGIN:VEVENT', `UID:${crypto.randomUUID()}@Aduen.local`, `DTSTAMP:${now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')}`, `DTSTART;VALUE=DATE:${date}`, 'DURATION:P1D', `SUMMARY:${calendarText(`Aduen follow-up: ${channel}`)}`, `DESCRIPTION:${calendarText(`Review your Aduen case follow-up.${reference} This reminder is based on the follow-up date you entered, not an external deadline. Aduen does not send notifications or submit anything for you.`)}`, 'END:VEVENT', 'END:VCALENDAR', ''].map(foldLine).join('\r\n')
 }
 
 export function downloadFollowUpCalendar(record: SubmissionRecord): boolean {
@@ -17,7 +17,7 @@ export function downloadFollowUpCalendar(record: SubmissionRecord): boolean {
   const url = URL.createObjectURL(new Blob([calendar], { type: 'text/calendar;charset=utf-8' }))
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `buktiva-follow-up-${record.nextFollowUpDate}.ics`
+  anchor.download = `Aduen-follow-up-${record.nextFollowUpDate}.ics`
   anchor.click()
   recordAuditEvent('follow_up_exported', 'submission', 'follow-up calendar reminder exported')
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)

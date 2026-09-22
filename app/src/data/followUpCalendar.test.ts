@@ -6,7 +6,7 @@ describe('follow-up calendar export', () => {
   it('creates an all-day, escaped local calendar reminder', () => {
     const calendar = buildFollowUpCalendar({ ...EMPTY_SUBMISSION, channel: 'Merchant, support', referenceNumber: 'SYN;001', nextFollowUpDate: '2026-10-04' })?.replace(/\r\n /g, '')
     expect(calendar).toContain('DTSTART;VALUE=DATE:20261004')
-    expect(calendar).toContain('SUMMARY:Buktiva follow-up: Merchant\\, support')
+    expect(calendar).toContain('SUMMARY:Aduen follow-up: Merchant\\, support')
     expect(calendar).toContain('Reference: SYN\\;001.')
     expect(calendar).toContain('based on the follow-up date you entered\\, not an external deadline')
   })

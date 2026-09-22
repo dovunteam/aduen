@@ -4,7 +4,7 @@ import { createEvidenceExtraction, isValidEvidenceExtraction, reviewCandidate } 
 import type { EvidenceExtraction } from '../domain/extraction'
 import { recordAuditEvent } from './auditRepository'
 
-// Preserve locally stored originals created before the public Buktiva rename.
+// Preserve locally stored originals created before the public Aduen rename.
 // IndexedDB database names are implementation details and are never displayed to users.
 const DATABASE_NAME = 'tuntiva-prototype'
 const DATABASE_VERSION = 2

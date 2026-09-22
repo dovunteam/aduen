@@ -38,8 +38,8 @@ export function assessTtpmCandidate(draft: CaseDraft, now = new Date()): TtpmAss
 export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
   const missing = checks.filter((item) => item.level === 'required' && !item.satisfied).map((item) => item.label)
   const base = {
-    source: 'Buktiva Case Routing Rules — R-010 Merchant-first',
-    sourceUrl: 'https://github.com/dovunteam/tuntiva/blob/main/docs/Buktiva_Case_Routing_Rules.md#r-010-merchant-first',
+    source: 'Aduen Case Routing Rules — R-010 Merchant-first',
+    sourceUrl: 'https://github.com/dovunteam/tuntiva/blob/main/docs/Aduen_Case_Routing_Rules.md#r-010-merchant-first',
     sourceType: 'product-default' as const,
     sourceChecked: '20 September 2026',
     ruleVersion: 'MY-R010-2026.09.20.2',

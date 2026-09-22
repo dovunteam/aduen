@@ -15,7 +15,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe('case repository', () => {
   it('rejects a stored case with an unknown lifecycle status', () => {
-    localStorage.setItem('buktiva.case-record.v1', JSON.stringify({ id: 'case-1', createdAt: '2026-09-21', updatedAt: '2026-09-21', status: 'invalid', draft: EMPTY_DRAFT, history: [] }))
+    localStorage.setItem('Aduen.case-record.v1', JSON.stringify({ id: 'case-1', createdAt: '2026-09-21', updatedAt: '2026-09-21', status: 'invalid', draft: EMPTY_DRAFT, history: [] }))
     expect(readCase()).toBeNull()
   })
 
@@ -28,16 +28,16 @@ describe('case repository', () => {
   })
 
   it('rejects stored cases with non-canonical lifecycle timestamps', () => {
-    localStorage.setItem('buktiva.case-record.v1', JSON.stringify({ id: 'case-1', createdAt: '2026-09-21', updatedAt: '2026-09-21', status: 'draft', draft: EMPTY_DRAFT, history: [] }))
+    localStorage.setItem('Aduen.case-record.v1', JSON.stringify({ id: 'case-1', createdAt: '2026-09-21', updatedAt: '2026-09-21', status: 'draft', draft: EMPTY_DRAFT, history: [] }))
     expect(readCase()).toBeNull()
   })
 
   it('rejects stored cases without identity or lifecycle history', () => {
     const timestamp = '2026-09-21T00:00:00.000Z'
     const base = { createdAt: timestamp, updatedAt: timestamp, status: 'draft', draft: EMPTY_DRAFT }
-    localStorage.setItem('buktiva.case-record.v1', JSON.stringify({ ...base, id: '', history: [{ at: timestamp, actor: 'system', action: 'case_created', status: 'draft' }] }))
+    localStorage.setItem('Aduen.case-record.v1', JSON.stringify({ ...base, id: '', history: [{ at: timestamp, actor: 'system', action: 'case_created', status: 'draft' }] }))
     expect(readCase()).toBeNull()
-    localStorage.setItem('buktiva.case-record.v1', JSON.stringify({ ...base, id: 'case-1', history: [] }))
+    localStorage.setItem('Aduen.case-record.v1', JSON.stringify({ ...base, id: 'case-1', history: [] }))
     expect(readCase()).toBeNull()
   })
 
@@ -52,7 +52,7 @@ describe('case repository', () => {
     expect(() => saveCaseDraft({ ...EMPTY_DRAFT, consumerName: 'Synthetic\nBuyer' })).toThrow('Invalid case draft')
 
     const timestamp = '2026-09-21T00:00:00.000Z'
-    localStorage.setItem('buktiva.case-record.v1', JSON.stringify({
+    localStorage.setItem('Aduen.case-record.v1', JSON.stringify({
       id: 'case-1', createdAt: timestamp, updatedAt: timestamp, status: 'draft', draft: EMPTY_DRAFT,
       history: [{ at: timestamp, actor: 'system', action: 'x'.repeat(161), status: 'draft' }],
     }))
