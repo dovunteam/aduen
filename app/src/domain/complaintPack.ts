@@ -37,7 +37,7 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
     transaction: { seller: draft.seller, sellerLocation: draft.sellerLocation, platform: draft.platform, purchaseDate: draft.purchaseDate, amount: draft.amount, currency: draft.currency, paymentMethod: draft.paymentMethod, orderReference: draft.orderReference, category: draft.category.replaceAll('_', ' ') },
     issue: draft.issue.replaceAll('_', ' '), remedy: draft.remedy, remedyAmount: draft.remedy === 'refund' ? draft.remedyAmount : null,
     route: { routeName: route.routeName, ruleVersion: route.ruleVersion, sourceChecked: route.sourceChecked, sourceUrl: route.sourceUrl, officialLinks: route.officialLinks },
-    timeline: buildTimeline(draft, included),
+    timeline: buildTimeline(draft, included, extractions.filter((record) => included.some((item) => item.id === record.evidenceId))),
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
     confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion, candidateId: item.id, ...(item.field === 'amount' && item.amountRole ? { amountRole: item.amountRole } : {}) }))),
     merchantRequest: createMerchantRequest(draft, locale),

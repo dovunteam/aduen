@@ -41,4 +41,15 @@ describe('complaint pack', () => {
     expect(pack.confirmedDerivedFacts.map((fact) => confirmedFactLabel(fact, 'ms'))).toEqual(['Jumlah transaksi mungkin', 'Jumlah bayaran balik mungkin'])
     expect(confirmedFactLabel({ ...pack.confirmedDerivedFacts[0], amountRole: undefined }, 'en')).toBe('Amount')
   })
+
+  it('adds confirmed extracted dates to the pack timeline only for selected evidence', () => {
+    const excluded = { ...item, id: 'e2', includeInPack: false }
+    const includedDates = createEvidenceExtraction(item.id, 'Delivery date: 2026-05-03')
+    const excludedDates = createEvidenceExtraction(excluded.id, 'Delivery date: 2026-05-04')
+    includedDates.candidates[0] = reviewCandidate(includedDates.candidates[0], 'confirmed')
+    excludedDates.candidates[0] = reviewCandidate(excludedDates.candidates[0], 'confirmed')
+    const pack = createComplaintPack(EMPTY_DRAFT, [item, excluded], route, new Date(), 1, [includedDates, excludedDates])
+    expect(pack.timeline).toContainEqual(expect.objectContaining({ date: '2026-05-03', source: 'confirmed extracted fact', detail: 'receipt.pdf' }))
+    expect(pack.timeline.some((entry) => entry.date === '2026-05-04')).toBe(false)
+  })
 })

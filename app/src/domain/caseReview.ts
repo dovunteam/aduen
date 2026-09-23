@@ -1,9 +1,10 @@
 import type { CaseDraft } from './case'
 import type { EvidenceMetadata, EvidenceType } from './evidence'
 import type { EvidenceExtraction } from './extraction'
+import type { Locale } from '../i18n'
 
 export type CheckItem = { id: string; level: 'required' | 'useful'; label: string; reason: string; source: string; satisfied: boolean }
-export type TimelineItem = { id: string; date: string | null; label: string; detail: string; source: 'confirmed case detail' | 'user-described evidence' }
+export type TimelineItem = { id: string; date: string | null; label: string; detail: string; source: 'confirmed case detail' | 'user-described evidence' | 'confirmed extracted fact'; eventRole?: 'purchase' | 'promised' | 'delivery' | 'contact' | 'unclassified' }
 
 const ISSUE_RULES: Partial<Record<CaseDraft['issue'], Array<{ type: EvidenceType; level: CheckItem['level']; label: string; reason: string }>>> = {
   non_delivery: [
@@ -48,18 +49,46 @@ export function checkCompleteness(draft: CaseDraft, evidence: EvidenceMetadata[]
   return checks
 }
 
-export function buildTimeline(draft: CaseDraft, evidence: EvidenceMetadata[]): TimelineItem[] {
+export function buildTimeline(draft: CaseDraft, evidence: EvidenceMetadata[], extractions: EvidenceExtraction[] = []): TimelineItem[] {
   const items: TimelineItem[] = [
     { id: 'purchase', date: draft.purchaseDate || null, label: 'Purchase made', detail: `${draft.seller} · RM ${Number(draft.amount || 0).toFixed(2)}`, source: 'confirmed case detail' },
     ...(draft.promisedDate ? [{ id: 'promised', date: draft.promisedDate, label: 'Promised performance date', detail: 'Date recorded by the consumer', source: 'confirmed case detail' as const }] : []),
     ...(draft.contactHistory && draft.contactHistory !== 'none' ? [{ id: 'merchant-contact', date: draft.contactDate || null, label: 'Merchant contacted', detail: draft.contactHistory === 'responded' ? 'Merchant response recorded' : 'No response recorded', source: 'confirmed case detail' as const }] : []),
     ...evidence.map((item) => ({ id: item.id, date: item.eventDate, label: item.description || item.fileName, detail: item.sourceType.replaceAll('_', ' '), source: 'user-described evidence' as const })),
+    ...extractions.flatMap((record) => {
+      const item = evidence.find((entry) => entry.id === record.evidenceId)
+      if (!item) return []
+      return record.candidates.flatMap((candidate) => {
+        if (candidate.field !== 'date' || candidate.status !== 'confirmed' || !candidate.confirmedValue) return []
+        const eventRole = candidate.dateRole ?? 'unclassified'
+        const labels: Record<string, string> = { purchase: 'Purchase date in evidence', promised: 'Promised performance date in evidence', delivery: 'Delivery date in evidence', contact: 'Merchant contact date in evidence', unclassified: 'Confirmed date in evidence' }
+        return [{ id: candidate.id, date: candidate.confirmedValue, label: labels[eventRole] ?? labels.unclassified, detail: item.fileName, source: 'confirmed extracted fact' as const, eventRole }]
+      })
+    }),
   ]
   return items.sort((a, b) => {
     if (!a.date) return 1
     if (!b.date) return -1
     return a.date.localeCompare(b.date)
   })
+}
+
+export function timelineLabel(item: TimelineItem, locale: Locale): string {
+  if (!item.eventRole) return item.label
+  const labels = locale === 'ms'
+    ? { purchase: 'Tarikh pembelian dalam bukti', promised: 'Tarikh prestasi dijanjikan dalam bukti', delivery: 'Tarikh penghantaran dalam bukti', contact: 'Tarikh hubungan dengan peniaga dalam bukti', unclassified: 'Tarikh disahkan dalam bukti' }
+    : { purchase: 'Purchase date in evidence', promised: 'Promised performance date in evidence', delivery: 'Delivery date in evidence', contact: 'Merchant contact date in evidence', unclassified: 'Confirmed date in evidence' }
+  return labels[item.eventRole] ?? labels.unclassified
+}
+
+export function timelineSource(source: TimelineItem['source'], locale: Locale): string {
+  if (locale === 'ms') return ({ 'confirmed case detail': 'butiran kes disahkan', 'user-described evidence': 'bukti yang diterangkan pengguna', 'confirmed extracted fact': 'fakta daripada bukti yang disahkan pengguna' })[source]
+  return source
+}
+
+export function timelineDetail(item: TimelineItem, locale: Locale): string {
+  if (item.source !== 'confirmed extracted fact') return item.detail
+  return `${locale === 'ms' ? 'Bukti' : 'Evidence'}: ${item.detail}`
 }
 
 export function findTimelineWarnings(draft: CaseDraft, timeline: TimelineItem[]): string[] {

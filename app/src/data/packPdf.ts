@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import type { ComplaintPack } from '../domain/complaintPack'
 import { confirmedFactLabel, packFileName } from '../domain/complaintPack'
+import { timelineDetail, timelineLabel, timelineSource } from '../domain/caseReview'
 import { recordAuditEvent } from './auditRepository'
 
 export function downloadComplaintPackPdf(pack: ComplaintPack): void {
@@ -46,7 +47,7 @@ export function createComplaintPackPdf(pack: ComplaintPack): jsPDF {
   line(`${text.subject}: ${pack.merchantRequest.subject}`, 10, true)
   line(pack.merchantRequest.body)
   heading(text.chronology)
-  pack.timeline.forEach((item) => line(`${item.date || text.unknownDate} | ${item.label}\n${item.detail} (${item.source})`))
+  pack.timeline.forEach((item) => line(`${item.date || text.unknownDate} | ${timelineLabel(item, pack.locale)}\n${timelineDetail(item, pack.locale)} (${timelineSource(item.source, pack.locale)})`))
   heading(text.evidence)
   pack.evidence.forEach((item, index) => line(`${index + 1}. ${item.fileName} | ${text.evidenceTypes[item.sourceType as keyof typeof text.evidenceTypes] ?? item.sourceType.replaceAll('_', ' ')} | ${item.eventDate || text.unknownDate}\n${text.sha}: ${item.sha256}`))
   if (pack.confirmedDerivedFacts.length) {
