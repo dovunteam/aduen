@@ -67,6 +67,14 @@ describe('approved evidence archive', () => {
     expect(getEvidenceOriginal).not.toHaveBeenCalled()
   })
 
+  it('rejects incomplete operator reviews before reading originals', async () => {
+    const { pack } = await fixture()
+    const values = new Map<string, string>([['Aduen.operator-reviews.v1', JSON.stringify({ [pack.id]: { reviewerCode: 'OP-01', reviewedAt: '2026-09-24T00:00:00.000Z', notes: '', checks: { facts: true, route: true, deadlines: true, language: true, evidence: false } } })]])
+    vi.stubGlobal('localStorage', { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key) })
+    await expect(buildHandoffArchive(pack)).rejects.toThrow('operator review')
+    expect(getEvidenceOriginal).not.toHaveBeenCalled()
+  })
+
   it('rejects missing or altered originals instead of exporting an incomplete archive', async () => {
     const { pack } = await fixture()
     vi.mocked(getEvidenceOriginal).mockResolvedValue(null)
