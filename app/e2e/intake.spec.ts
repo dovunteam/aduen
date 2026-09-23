@@ -178,6 +178,38 @@ test('scanned PDF OCR creates review candidates without changing the original', 
   expect(await archive.file('evidence-originals/01-synthetic-scanned-receipt.pdf')!.async('nodebuffer')).toEqual(original)
 })
 
+test('hybrid PDFs OCR image-bearing pages alongside searchable text', async ({ page }) => {
+  test.setTimeout(120_000)
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  const image = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1200; canvas.height = 260
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = '#000'; context.font = 'bold 84px Arial'; context.fillText('Total RM 130.00', 30, 160)
+    return canvas.toDataURL('image/png')
+  })
+  const pdf = new jsPDF()
+  pdf.text('Order no. SYN-HYBRID-2048.', 10, 15)
+  pdf.addImage(image, 'PNG', 10, 30, 190, 45)
+  await page.getByLabel('Original file').setInputFiles({ name: 'synthetic-hybrid-receipt.pdf', mimeType: 'application/pdf', buffer: Buffer.from(pdf.output('arraybuffer')) })
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await expect(page.getByRole('alert')).toContainText('Local OCR checked image-bearing pages')
+  await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
+  await page.getByRole('button', { name: 'Add evidence' }).click({ timeout: 120_000 })
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
+  const candidates = page.locator('article.candidate')
+  await expect(candidates).toHaveCount(2)
+  const amountCandidate = candidates.nth(0)
+  await expect(amountCandidate).toContainText('ocr-local-v1')
+  const referenceCandidate = candidates.nth(1)
+  await expect(referenceCandidate).toContainText('SYN-HYBRID-2048')
+  await expect(referenceCandidate).toContainText('ocr-local-v1')
+})
+
 test('rejects oversized evidence before content scanning', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)
