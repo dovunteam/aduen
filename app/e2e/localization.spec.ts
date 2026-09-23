@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
-async function addBmEvidence(page: import('@playwright/test').Page, type: string, name: string) {
-  await page.getByLabel('Fail asal').setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(`Synthetic ${name}.`) })
+async function addBmEvidence(page: import('@playwright/test').Page, type: string, name: string, content = `Synthetic ${name}.`) {
+  await page.getByLabel('Fail asal').setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(content) })
   await page.getByLabel('Apakah jenis rekod?').selectOption(type)
   await page.getByRole('button', { name: 'Tambah bukti' }).click()
   await expect(page.getByText(name, { exact: true })).toBeVisible()
@@ -35,7 +35,7 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await page.getByLabel('Lokasi anda').selectOption('malaysia')
   await page.getByLabel('Penjual atau peniaga').fill('Kedai Contoh')
   await page.getByLabel('Lokasi penjual').selectOption('malaysia')
-  await page.getByLabel('Tarikh pembelian').fill('2026-09-01')
+  await page.getByLabel('Tarikh pembelian').fill('2026-09-03')
   await page.getByLabel('Jumlah dibayar (MYR)', { exact: true }).fill('120')
   await page.getByLabel('Kaedah pembayaran').selectOption('Card')
   await page.getByLabel('Tujuan pembelian').selectOption('personal')
@@ -58,12 +58,23 @@ test('Bahasa Malaysia case details preserve stable domain values', async ({ page
   await addBmEvidence(page, 'receipt', 'resit.txt')
   await addBmEvidence(page, 'payment', 'bayaran.txt')
   await addBmEvidence(page, 'listing', 'iklan.txt')
-  await addBmEvidence(page, 'message', 'mesej.txt')
+  await addBmEvidence(page, 'message', 'mesej.txt', 'No. rujukan: ADU-1234. Dibayar RM120.00 pada 3 September 2026. Nama pelanggan: Pengguna Contoh. Saya memohon bayaran balik.')
   await page.getByRole('button', { name: 'Semak kes' }).click()
+  await expect(page.getByRole('heading', { name: 'Semak setiap calon.' })).toBeVisible()
+  await expect(page.getByText('plain-text-v2', { exact: true })).toBeVisible()
+  const confirmCandidate = page.getByRole('button', { name: 'Sahkan', exact: true })
+  await expect(confirmCandidate).toHaveCount(5)
+  for (let index = 0; index < 5; index += 1) {
+    await expect(confirmCandidate.nth(index)).toBeEnabled()
+    await confirmCandidate.nth(index).click()
+  }
+  await page.getByRole('button', { name: 'Teruskan ke Semakan Aduen' }).click()
   await expect(page.getByRole('heading', { name: 'Semak rekod.' })).toBeVisible()
   await expect(page.getByText('Garis masa Aduen', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Sediakan permintaan peniaga' }).click()
   await expect(page.getByRole('heading', { name: 'Semak sebelum mengeksport.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Fakta terbitan disahkan/ })).toBeVisible()
+  await expect(page.getByText('plain-text-v2').last()).toBeVisible()
   await expect(page.locator('.request-preview')).toContainText('Tuan/Puan Kedai Contoh')
   await expect(page.locator('.request-preview')).toContainText('masih belum diterima')
   await expect(page.locator('.request-preview')).not.toContainText('I am writing')

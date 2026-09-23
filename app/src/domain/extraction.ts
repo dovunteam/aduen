@@ -16,14 +16,14 @@ export type EvidenceExtraction = {
   id: string
   evidenceId: string
   createdAt: string
-  extractorVersion: 'plain-text-v1'
+  extractorVersion: 'plain-text-v1' | 'plain-text-v2'
   candidates: ExtractionCandidate[]
 }
 
 export function isValidEvidenceExtraction(value: unknown): value is EvidenceExtraction {
   if (!value || typeof value !== 'object') return false
   const extraction = value as Partial<EvidenceExtraction>
-  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && extraction.extractorVersion === 'plain-text-v1' && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
+  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2'].includes(extraction.extractorVersion as string) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
 }
 
 function candidate(field: ExtractedField, value: string, confidence: number, text: string, start: number, end: number): ExtractionCandidate {
@@ -39,30 +39,48 @@ export function extractCandidateFacts(text: string): ExtractionCandidate[] {
   const seen = new Set<string>()
   const add = (item: ExtractionCandidate) => { const key = `${item.field}:${item.value}`; if (!seen.has(key)) { seen.add(key); results.push(item) } }
 
-  for (const match of text.matchAll(/\bRM\s*([0-9][0-9,]*(?:\.\d{1,2})?)\b/gi)) {
+  for (const match of text.matchAll(/\b(?:RM|MYR)\s*([0-9][0-9,]*(?:\.\d{1,2})?)\b/gi)) {
     const raw = match[1].replaceAll(',', '')
     add(candidate('amount', Number(raw).toFixed(2), 0.92, text, match.index, match.index + match[0].length))
   }
+  const addDate = (value: string, confidence: number, match: RegExpMatchArray) => {
+    if (match.index !== undefined && isValidCandidateValue('date', value)) add(candidate('date', value, confidence, text, match.index, match.index + match[0].length))
+  }
   for (const match of text.matchAll(/\b(20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b/g)) {
-    add(candidate('date', `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`, 0.88, text, match.index, match.index + match[0].length))
+    addDate(`${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`, 0.88, match)
   }
   for (const match of text.matchAll(/\b(0?[1-9]|[12]\d|3[01])[/.](0?[1-9]|1[0-2])[/.](20\d{2})\b/g)) {
-    add(candidate('date', `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`, 0.76, text, match.index, match.index + match[0].length))
+    addDate(`${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`, 0.76, match)
+  }
+  const monthNumbers: Record<string, string> = { jan: '01', january: '01', januari: '01', feb: '02', february: '02', februari: '02', mar: '03', march: '03', mac: '03', apr: '04', april: '04', may: '05', mei: '05', jun: '06', june: '06', jul: '07', july: '07', julai: '07', aug: '08', august: '08', ogos: '08', sep: '09', sept: '09', september: '09', oct: '10', october: '10', oktober: '10', nov: '11', november: '11', dec: '12', december: '12', disember: '12' }
+  for (const match of text.matchAll(/\b(0?[1-9]|[12]\d|3[01])\s+(Jan(?:uary|uari)?|Feb(?:ruary|ruari)?|Mar(?:ch)?|Mac|Apr(?:il)?|May|Mei|Jun(?:e)?|Jul(?:y|ai)?|Aug(?:ust)?|Ogos|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Oktober|Nov(?:ember)?|Dec(?:ember)?|Disember)\s+(20\d{2})\b/gi)) {
+    const month = monthNumbers[match[2].toLowerCase()]
+    addDate(`${match[3]}-${month}-${match[1].padStart(2, '0')}`, 0.78, match)
   }
   for (const match of text.matchAll(/\b(?:order|invoice|reference|ref)\s*(?:number|no\.?|#|:)\s*([A-Z0-9][A-Z0-9-]{3,})\b/gi)) {
     add(candidate('reference', match[1], 0.86, text, match.index, match.index + match[0].length))
   }
+  for (const match of text.matchAll(/\b(?:nombor\s+(?:pesanan|invois|rujukan)|no\.?\s+rujukan|rujukan)\s*(?:no\.?|#|:)?\s*([A-Z0-9][A-Z0-9-]{3,})\b/gi)) {
+    add(candidate('reference', match[1], 0.82, text, match.index, match.index + match[0].length))
+  }
   for (const match of text.matchAll(/\b(?:request(?:ed)?|seek(?:ing)?|remedy|want|ask(?:ed)?)\s+(?:for\s+)?(?:a\s+)?(refund|replacement|repair|delivery|cancellation)\b/gi)) {
     add(candidate('remedy', match[1].toLowerCase(), 0.82, text, match.index, match.index + match[0].length))
   }
-  for (const match of text.matchAll(/\b(?:customer|buyer|consumer)\s+name\s*[:-]\s*([A-Za-z][A-Za-z '-]{1,79}?)(?=[.!?](?:\s|$)|$)/gi)) {
+  const malayRemedies: Record<string, string> = { 'bayaran balik': 'refund', 'bayaran semula': 'refund', penggantian: 'replacement', pembaikan: 'repair', penghantaran: 'delivery', pembatalan: 'cancellation' }
+  for (const match of text.matchAll(/\b(?:memohon|meminta|minta|mahukan|penyelesaian\s+diminta)\s+(bayaran\s+balik|bayaran\s+semula|penggantian|pembaikan|penghantaran|pembatalan)\b/gi)) {
+    add(candidate('remedy', malayRemedies[match[1].toLowerCase()], 0.8, text, match.index, match.index + match[0].length))
+  }
+  for (const match of text.matchAll(/\b(?:customer|buyer|consumer)\s+name\s*[:-]\s*(\p{L}[\p{L}\p{M} .’'-]{1,79}?)(?=[.!?](?:\s|$)|$)/giu)) {
+    add(candidate('name', match[1].trim(), 0.78, text, match.index, match.index + match[0].length))
+  }
+  for (const match of text.matchAll(/\bnama\s+(?:pelanggan|pembeli|pengguna)\s*[:-]\s*(\p{L}[\p{L}\p{M} .’'-]{1,79}?)(?=[.!?](?:\s|$)|$)/giu)) {
     add(candidate('name', match[1].trim(), 0.78, text, match.index, match.index + match[0].length))
   }
   return results
 }
 
 export function createEvidenceExtraction(evidenceId: string, text: string, now = new Date()): EvidenceExtraction {
-  return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion: 'plain-text-v1', candidates: extractCandidateFacts(text) }
+  return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion: 'plain-text-v2', candidates: extractCandidateFacts(text) }
 }
 
 export function reviewCandidate(candidateValue: ExtractionCandidate, status: ExtractionCandidate['status'], correctedValue?: string, now = new Date()): ExtractionCandidate {
@@ -80,7 +98,7 @@ export function isValidCandidateValue(field: ExtractedField, value: string): boo
     return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
   }
   if (field === 'remedy') return ['delivery', 'replacement', 'repair', 'cancellation', 'refund'].includes(value.toLowerCase())
-  if (field === 'name') return value.length <= 80 && /^[A-Za-z][A-Za-z .'-]*$/.test(value)
+  if (field === 'name') return value.length <= 80 && /^\p{L}[\p{L}\p{M} .’'-]*$/u.test(value)
   return value.length <= 200 && !Array.from(value).some((character) => character.charCodeAt(0) < 32)
 }
 

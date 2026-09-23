@@ -46,9 +46,25 @@ describe('bounded text extraction', () => {
     expect(candidates.map(({ field, value }) => ({ field, value }))).toEqual([{ field: 'name', value: 'Synthetic Test Consumer' }])
   })
 
+  it('extracts Malay amounts, dates, references, remedies, and Unicode names as unconfirmed candidates', () => {
+    const candidates = extractCandidateFacts('No. rujukan: ADU-1234. Dibayar MYR 1,250.50 pada 3 September 2026. Nama pelanggan: Nur Aisyah Binti Ömer. Saya memohon bayaran balik.')
+    expect(candidates.map(({ field, value }) => ({ field, value }))).toEqual([
+      { field: 'amount', value: '1250.50' },
+      { field: 'date', value: '2026-09-03' },
+      { field: 'reference', value: 'ADU-1234' },
+      { field: 'remedy', value: 'refund' },
+      { field: 'name', value: 'Nur Aisyah Binti Ömer' },
+    ])
+    expect(candidates.every((item) => item.status === 'unconfirmed' && item.sourceExcerpt.length > 0)).toBe(true)
+  })
+
+  it('does not offer invalid calendar dates as candidates', () => {
+    expect(extractCandidateFacts('Tarikh: 31/02/2026 or 31 Februari 2026.')).toEqual([])
+  })
+
   it('marks every extracted value unconfirmed by default', () => {
     const extraction = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00Z'))
-    expect(extraction.extractorVersion).toBe('plain-text-v1')
+    expect(extraction.extractorVersion).toBe('plain-text-v2')
     expect(extraction.candidates[0].status).toBe('unconfirmed')
   })
 
@@ -63,6 +79,7 @@ describe('bounded text extraction', () => {
   it('validates stored extraction records before review', () => {
     const valid = createEvidenceExtraction('evidence-1', 'Paid RM 25.00', new Date('2026-09-20T10:00:00.000Z'))
     expect(isValidEvidenceExtraction(valid)).toBe(true)
+    expect(isValidEvidenceExtraction({ ...valid, extractorVersion: 'plain-text-v1' })).toBe(true)
     expect(isValidEvidenceExtraction({ ...valid, createdAt: 'not-a-date' })).toBe(false)
     expect(isValidEvidenceExtraction({ ...valid, candidates: [{ ...valid.candidates[0], confidence: 2 }] })).toBe(false)
   })
