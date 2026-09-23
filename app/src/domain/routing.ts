@@ -20,13 +20,30 @@ export type RouteEvaluation = {
 }
 
 export type TtpmAssessment = { status: 'excluded' | 'uncertain'; reason: string }
-export function assessTtpmPrerequisites(draft: CaseDraft): TtpmAssessment {
+export function assessTtpmPrerequisites(draft: CaseDraft, now = new Date()): TtpmAssessment {
   if (!draft.purpose || !draft.category) return { status: 'uncertain', reason: 'TTPM check: confirm the purchase purpose and category.' }
   if (draft.purpose === 'business') return { status: 'excluded', reason: 'TTPM check: business or professional purchase is outside the documented consumer scope.' }
   if (['healthcare', 'professional_service', 'land', 'aviation', 'personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'].includes(draft.category)) return { status: 'excluded', reason: 'TTPM check: this recorded category is listed as excluded or assigned to a sector-specific process.' }
   const amount = Number(draft.amount)
   if (!Number.isFinite(amount) || amount <= 0) return { status: 'uncertain', reason: 'TTPM check: confirm the transaction amount.' }
-  return { status: 'uncertain', reason: 'TTPM applies the RM50,000 limit to the claim amount and its three-year limit to when the claim accrued. Aduen records transaction amount and purchase date only, so it cannot assess either limit; verify both with TTPM.' }
+  const claimAmount = Number(draft.claimAmount)
+  const amountNote = !draft.claimAmount
+    ? 'The legal claim amount has not been entered.'
+    : !Number.isFinite(claimAmount) || claimAmount <= 0
+      ? 'The legal claim amount is invalid.'
+      : claimAmount > 50000
+        ? 'The entered legal claim amount is above RM50,000.'
+        : 'The entered legal claim amount is at or below RM50,000.'
+  const accrued = draft.claimAccruedDate ? new Date(`${draft.claimAccruedDate}T00:00:00Z`) : null
+  const cutoff = new Date(Date.UTC(now.getUTCFullYear() - 3, now.getUTCMonth(), now.getUTCDate()))
+  const dateNote = !draft.claimAccruedDate
+    ? 'The claim-accrual date has not been entered.'
+    : !accrued || !Number.isFinite(accrued.getTime()) || accrued.toISOString().slice(0, 10) !== draft.claimAccruedDate
+      ? 'The claim-accrual date is invalid.'
+      : accrued < cutoff
+        ? 'The entered claim-accrual date is more than three years ago.'
+        : 'The entered claim-accrual date is within three years.'
+  return { status: 'uncertain', reason: `TTPM publishes a RM50,000 claim-amount limit and a three-year limit measured from when the claim accrued. ${amountNote} ${dateNote} Treat this as a pre-check only and verify the current position with TTPM.` }
 }
 
 export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[], now = new Date()): RouteEvaluation {
