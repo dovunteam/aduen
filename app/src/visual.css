@@ -20,10 +20,8 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button, .primary, .secondary { transition: background-color .18s, border-color .18s, box-shadow .18s, transform .18s; }
 .app-shell { background: #f7f8f2; }
 .topbar { height: 92px; max-width: 1440px; width: 100%; margin-inline: auto; padding-inline: clamp(24px, 5.5vw, 80px); background: transparent; border-bottom: 1px solid var(--line); }
-.wordmark { display: inline-flex; align-items: center; gap: 10px; font-size: 30px; font-weight: 650; letter-spacing: -.055em; }
-.wordmark .brand-symbol { display: grid; place-items: center; width: 37px; height: 40px; margin: 0; color: var(--ink); }
-.brand-symbol svg { width: 31px; height: 31px; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.wordmark .brand-period { margin-left: -10px; color: #ad7740; }
+.wordmark { display: inline-flex; align-items: center; width: 154px; border: 0; background: transparent; padding: 0; cursor: pointer; }
+.aduen-brand { display: block; width: 145px; height: auto; }
 .header-actions { gap: 25px; }
 .locale-switch { border-color: #dbe1d7; border-radius: 7px; padding: 3px; background: #eeefe7; gap: 2px; }
 .locale-switch button { min-height: 29px; min-width: 34px; border-radius: 4px; }
@@ -271,9 +269,8 @@ input[type='checkbox'] { width: 17px; height: 17px; }
 }
 @media (max-width: 760px) {
   .topbar { height: 76px; padding-inline: 22px; }
-  .wordmark { font-size: 27px; }
-  .wordmark .brand-symbol { width: 30px; }
-  .brand-symbol svg { width: 28px; }
+  .wordmark { width: 132px; }
+  .aduen-brand { width: 126px; }
   .header-actions { gap: 16px; }
   .pilot-label { display: none; }
   .data-link { font-size: 11px; }
@@ -338,9 +335,8 @@ input[type='checkbox'] { width: 17px; height: 17px; }
 }
 @media (max-width: 380px) {
   .topbar { padding-inline: 16px; }
-  .wordmark { font-size: 23px; gap: 6px; }
-  .wordmark .brand-period { margin-left: -6px; }
-  .wordmark .brand-symbol { width: 25px; }
+  .wordmark { width: 112px; }
+  .aduen-brand { width: 108px; }
   .header-actions { gap: 10px; }
   .locale-switch button { min-width: 28px; }
   .hero-copy h1 { font-size: 39px; }
