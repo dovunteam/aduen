@@ -76,7 +76,10 @@ function evaluateRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
   const scope = assessScope(draft)
   if (scope.result === 'uncertain') return {
     ...base, routeName: 'Manual scope review', recommendedAction: 'Clarify the category and seller jurisdiction before preparing a routed complaint.',
-    matchingFacts: scope.reasons, unmetPrerequisites: [...missing, 'Reviewed category and seller jurisdiction'],
+    matchingFacts: scope.reasons, unmetPrerequisites: [...missing, ...[
+      !draft.purpose && 'Purchase purpose', !draft.consumerLocation && 'Consumer location',
+      !draft.category && 'Purchase category', !draft.sellerLocation && 'Seller location',
+    ].filter((item): item is string => Boolean(item)), 'Reviewed category and seller jurisdiction'],
     exclusionsChecked: ['Prototype scope uncertainty retained'], confidence: 'uncertain',
   }
   const amount = Number(draft.amount)
