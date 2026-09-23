@@ -45,9 +45,9 @@ export async function scanEvidenceFile(file: File): Promise<EvidenceRisk[]> {
   if (file.type === 'text/plain') return detectEvidenceRisks(await file.text())
   if (file.type === 'application/pdf') {
     try {
-      const { extractPdfText } = await import('./pdfTextExtraction')
+      const { extractPdfText, PDF_TEXT_MAX_CHARACTERS, PDF_TEXT_MAX_PAGES } = await import('./pdfTextExtraction')
       const text = await extractPdfText(file)
-      if (text) return [...detectEvidenceRisks(text), { code: 'pdf_text_partial', message: 'Searchable PDF text was checked for common sensitive patterns. Scanned, image-only, or other content outside the text layer may not be covered; review every page manually.' }]
+      if (text) return [...detectEvidenceRisks(text), { code: 'pdf_text_partial', message: `Searchable PDF text (up to ${PDF_TEXT_MAX_CHARACTERS.toLocaleString('en-MY')} characters across ${PDF_TEXT_MAX_PAGES} pages) was checked for common sensitive patterns. Scanned, image-only, and remaining content may not be covered; review every page manually.` }]
     } catch { /* Keep the manual-review warning if the PDF cannot be parsed. */ }
   }
   return [{ code: 'binary_unscanned', message: 'This image or PDF was not scanned for sensitive content. Review it manually before storing or sharing.' }]
