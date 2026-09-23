@@ -10,6 +10,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "check:encoding": "node scripts/check-no-em-dashes.mjs",
+    "check:docs": "node scripts/check-doc-index.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:all": "playwright test",
