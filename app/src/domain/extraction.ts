@@ -18,14 +18,14 @@ export type EvidenceExtraction = {
   id: string
   evidenceId: string
   createdAt: string
-  extractorVersion: 'plain-text-v1' | 'plain-text-v2' | 'plain-text-v3' | 'plain-text-v4' | 'pdf-text-v1' | 'ocr-local-v1'
+  extractorVersion: 'plain-text-v1' | 'plain-text-v2' | 'plain-text-v3' | 'plain-text-v4' | 'plain-text-v5' | 'pdf-text-v1' | 'ocr-local-v1'
   candidates: ExtractionCandidate[]
 }
 
 export function isValidEvidenceExtraction(value: unknown): value is EvidenceExtraction {
   if (!value || typeof value !== 'object') return false
   const extraction = value as Partial<EvidenceExtraction>
-  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2', 'plain-text-v3', 'plain-text-v4', 'pdf-text-v1', 'ocr-local-v1'].includes(extraction.extractorVersion as string) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
+  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2', 'plain-text-v3', 'plain-text-v4', 'plain-text-v5', 'pdf-text-v1', 'ocr-local-v1'].includes(extraction.extractorVersion as string) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate)
 }
 
 function candidate(field: ExtractedField, value: string, confidence: number, text: string, start: number, end: number, dateRole?: ExtractionCandidate['dateRole']): ExtractionCandidate {
@@ -83,16 +83,16 @@ export function extractCandidateFacts(text: string): ExtractionCandidate[] {
   for (const match of text.matchAll(/\b(?:memohon|meminta|minta|mahukan|penyelesaian\s+diminta)\s+(bayaran\s+balik|bayaran\s+semula|penggantian|pembaikan|penghantaran|pembatalan)\b/gi)) {
     add(candidate('remedy', malayRemedies[match[1].toLowerCase()], 0.8, text, match.index, match.index + match[0].length))
   }
-  for (const match of text.matchAll(/\b(?:customer|buyer|consumer)\s+name\s*[:-]\s*(\p{L}[\p{L}\p{M} .’'-]{1,79}?)(?=[.!?](?:\s|$)|$)/giu)) {
+  for (const match of text.matchAll(/\b(?:(?:customer|buyer|consumer|purchaser)\s+name|name\s+of\s+(?:the\s+)?(?:customer|buyer|consumer|purchaser))\s*[:-]\s*(\p{L}[\p{L}\p{M} .\u2019'-]{1,79}?)(?=[.!?](?:\s|$)|\r?\n|$)/giu)) {
     add(candidate('name', match[1].trim(), 0.78, text, match.index, match.index + match[0].length))
   }
-  for (const match of text.matchAll(/\bnama\s+(?:pelanggan|pembeli|pengguna)\s*[:-]\s*(\p{L}[\p{L}\p{M} .’'-]{1,79}?)(?=[.!?](?:\s|$)|$)/giu)) {
+  for (const match of text.matchAll(/\bnama\s+(?:penuh\s+)?(?:pelanggan|pembeli|pengguna)\s*[:-]\s*(\p{L}[\p{L}\p{M} .\u2019'-]{1,79}?)(?=[.!?](?:\s|$)|\r?\n|$)/giu)) {
     add(candidate('name', match[1].trim(), 0.78, text, match.index, match.index + match[0].length))
   }
   return results
 }
 
-export function createEvidenceExtraction(evidenceId: string, text: string, now = new Date(), extractorVersion: EvidenceExtraction['extractorVersion'] = 'plain-text-v4'): EvidenceExtraction {
+export function createEvidenceExtraction(evidenceId: string, text: string, now = new Date(), extractorVersion: EvidenceExtraction['extractorVersion'] = 'plain-text-v5'): EvidenceExtraction {
   return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion, candidates: extractCandidateFacts(text) }
 }
 
@@ -111,7 +111,7 @@ export function isValidCandidateValue(field: ExtractedField, value: string): boo
     return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
   }
   if (field === 'remedy') return ['delivery', 'replacement', 'repair', 'cancellation', 'refund'].includes(value.toLowerCase())
-  if (field === 'name') return value.length <= 80 && /^\p{L}[\p{L}\p{M} .’'-]*$/u.test(value)
+  if (field === 'name') return value.length <= 80 && /^\p{L}[\p{L}\p{M} .\u2019'-]*$/u.test(value)
   return value.length <= 200 && !Array.from(value).some((character) => character.charCodeAt(0) < 32)
 }
 
