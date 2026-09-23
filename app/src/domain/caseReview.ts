@@ -80,9 +80,17 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
   const extractedReferences = [...new Set(confirmed.filter((item) => item.field === 'reference').map((item) => item.confirmedValue).filter(Boolean))]
   if (new Set(extractedReferences.map((reference) => reference?.trim().toLowerCase())).size > 1) conflicts.push('Confirmed evidence contains different order or reference numbers.')
   if (draft.orderReference && extractedReferences.some((reference) => reference?.trim().toLowerCase() !== draft.orderReference.trim().toLowerCase())) conflicts.push('A confirmed extracted reference differs from the entered order or reference number.')
-  const extractedPurchaseDates = [...new Set(confirmed.filter((item) => item.field === 'date' && item.dateRole === 'purchase').map((item) => item.confirmedValue).filter(Boolean))]
-  if (extractedPurchaseDates.length > 1) conflicts.push('Confirmed evidence contains multiple dates explicitly labelled as purchase dates.')
-  if (draft.purchaseDate && extractedPurchaseDates.some((date) => date !== draft.purchaseDate)) conflicts.push(`A confirmed date labelled as a purchase date differs from the entered purchase date of ${draft.purchaseDate}.`)
+  const datedFields = [
+    { role: 'purchase', label: 'purchase', value: draft.purchaseDate },
+    { role: 'promised', label: 'promised performance', value: draft.promisedDate },
+    { role: 'delivery', label: 'delivery', value: null },
+    { role: 'contact', label: 'merchant contact', value: draft.contactDate },
+  ] as const
+  for (const { role, label, value } of datedFields) {
+    const eventDates = [...new Set(confirmed.filter((item) => item.field === 'date' && item.dateRole === role).map((item) => item.confirmedValue).filter(Boolean))]
+    if (eventDates.length > 1) conflicts.push(`Confirmed evidence contains multiple dates labelled for ${label}.`)
+    if (value && eventDates.some((date) => date !== value)) conflicts.push(`A confirmed date labelled for ${label} differs from the entered ${label} date of ${value}.`)
+  }
   const extractedRemedies = [...new Set(confirmed.filter((item) => item.field === 'remedy').map((item) => item.confirmedValue?.toLowerCase()).filter(Boolean))]
   if (extractedRemedies.length > 1) conflicts.push('Confirmed evidence contains different requested remedies.')
   if (draft.remedy && extractedRemedies.some((remedy) => remedy !== draft.remedy)) conflicts.push(`A confirmed extracted remedy differs from the entered requested remedy of ${draft.remedy}.`)
