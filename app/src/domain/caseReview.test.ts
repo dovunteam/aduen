@@ -75,7 +75,7 @@ describe('fact conflicts', () => {
     extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
     expect(findFactConflicts({ ...EMPTY_DRAFT, purchaseDate: '2026-08-01' }, [extraction])[0]).toContain('purchase date')
   })
-  it('compares confirmed delivery, promised, and contact dates only with the same event', () => {
+  it('compares same-event dates and flags contradictory event chronology', () => {
     const deliveryA = createEvidenceExtraction('e1', 'Delivery date: 2026-08-03')
     const deliveryB = createEvidenceExtraction('e2', 'Tarikh penghantaran: 2026-08-04')
     const promised = createEvidenceExtraction('e3', 'Promised delivery date: 2026-08-05')
@@ -85,7 +85,27 @@ describe('fact conflicts', () => {
     const conflicts = findFactConflicts(draft, [deliveryA, deliveryB, promised, contact])
     expect(conflicts).toContain('Confirmed evidence contains multiple dates labelled for delivery.')
     expect(conflicts).toContain('A confirmed date labelled for merchant contact differs from the entered merchant contact date of 2026-08-07.')
-    expect(conflicts.some((conflict) => conflict.includes('promised performance'))).toBe(false)
+    expect(conflicts).toContain('A confirmed delivery date occurs before the promised performance date.')
+  })
+  it('flags confirmed purchase, promised, and delivery dates that appear out of order', () => {
+    const purchase = createEvidenceExtraction('e1', 'Purchase date: 2026-08-04')
+    const promised = createEvidenceExtraction('e2', 'Promised delivery date: 2026-08-03')
+    const delivery = createEvidenceExtraction('e3', 'Delivery date: 2026-08-02')
+    for (const extraction of [purchase, promised, delivery]) extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
+
+    expect(findFactConflicts(EMPTY_DRAFT, [purchase, promised, delivery])).toEqual(expect.arrayContaining([
+      'A confirmed promised performance date occurs before the recorded purchase date.',
+      'A confirmed delivery date occurs before the recorded purchase date.',
+      'A confirmed delivery date occurs before the promised performance date.',
+    ]))
+  })
+  it('accepts a confirmed purchase, promise, and delivery in chronological order', () => {
+    const purchase = createEvidenceExtraction('e1', 'Purchase date: 2026-08-01')
+    const promised = createEvidenceExtraction('e2', 'Promised delivery date: 2026-08-02')
+    const delivery = createEvidenceExtraction('e3', 'Delivery date: 2026-08-03')
+    for (const extraction of [purchase, promised, delivery]) extraction.candidates[0] = reviewCandidate(extraction.candidates[0], 'confirmed')
+
+    expect(findFactConflicts(EMPTY_DRAFT, [purchase, promised, delivery])).toEqual([])
   })
   it('flags a confirmed consumer name that differs from the case record', () => {
     const extraction = createEvidenceExtraction('e1', 'Customer name: Another Synthetic Consumer.')

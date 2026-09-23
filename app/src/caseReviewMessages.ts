@@ -24,6 +24,9 @@ export function localizeFactConflict(conflict: string, locale: Locale): string {
     'Confirmed evidence contains different requested remedies.': 'Bukti yang disahkan menunjukkan penyelesaian diminta yang berbeza.',
     'Confirmed evidence contains different consumer names.': 'Bukti yang disahkan mengandungi nama pengguna yang berbeza.',
     'A confirmed extracted consumer name differs from the entered case name.': 'Nama pengguna yang diekstrak dan disahkan berbeza daripada nama kes yang dimasukkan.',
+    'A confirmed promised performance date occurs before the recorded purchase date.': 'Tarikh prestasi yang dijanjikan berlaku sebelum tarikh pembelian yang direkodkan.',
+    'A confirmed delivery date occurs before the recorded purchase date.': 'Tarikh penghantaran yang disahkan berlaku sebelum tarikh pembelian yang direkodkan.',
+    'A confirmed delivery date occurs before the promised performance date.': 'Tarikh penghantaran yang disahkan berlaku sebelum tarikh prestasi yang dijanjikan.',
   }
   if (fixed[conflict]) return fixed[conflict]
 
