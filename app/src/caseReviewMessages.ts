@@ -20,6 +20,7 @@ export function localizeFactConflict(conflict: string, locale: Locale): string {
   const fixed: Record<string, string> = {
     'Confirmed evidence contains different transaction amounts.': 'Bukti yang disahkan menunjukkan jumlah transaksi yang berbeza.',
     'Confirmed evidence contains different refund amounts.': 'Bukti yang disahkan menunjukkan jumlah bayaran balik yang berbeza.',
+    'The requested refund amount is greater than the recorded transaction amount.': 'Jumlah bayaran balik yang diminta lebih besar daripada jumlah transaksi yang direkodkan.',
     'Confirmed evidence contains different order or reference numbers.': 'Bukti yang disahkan mengandungi nombor pesanan atau rujukan yang berbeza.',
     'Confirmed evidence contains different invoice numbers.': 'Bukti yang disahkan mengandungi nombor invois yang berbeza.',
     'A confirmed extracted reference differs from the entered order or reference number.': 'Nombor rujukan yang diekstrak dan disahkan berbeza daripada nombor pesanan atau rujukan yang dimasukkan.',

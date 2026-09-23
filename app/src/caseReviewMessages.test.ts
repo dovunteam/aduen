@@ -5,6 +5,7 @@ describe('case review conflict messages', () => {
   it('localizes semantic fact conflicts in Bahasa Malaysia', () => {
     expect(localizeFactConflict('Confirmed evidence contains different transaction amounts.', 'ms')).toContain('jumlah transaksi yang berbeza')
     expect(localizeFactConflict('Confirmed evidence contains different refund amounts.', 'ms')).toContain('jumlah bayaran balik yang berbeza')
+    expect(localizeFactConflict('The requested refund amount is greater than the recorded transaction amount.', 'ms')).toContain('lebih besar')
     expect(localizeFactConflict('Confirmed evidence contains different invoice numbers.', 'ms')).toContain('nombor invois yang berbeza')
     expect(localizeFactConflict('A confirmed extracted refund amount differs from the entered requested refund amount of MYR 25.00.', 'ms')).toContain('MYR 25.00')
     expect(localizeFactConflict('Confirmed evidence contains multiple dates labelled for merchant contact.', 'ms')).toContain('hubungan dengan peniaga')

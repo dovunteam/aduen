@@ -110,6 +110,7 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
   const refundAmounts = amountsFor('refund')
   if (refundAmounts.length > 1) conflicts.push('Confirmed evidence contains different refund amounts.')
   const requestedRefund = Number(draft.remedyAmount)
+  if (draft.remedy === 'refund' && enteredAmount > 0 && requestedRefund > enteredAmount) conflicts.push('The requested refund amount is greater than the recorded transaction amount.')
   if (draft.remedy === 'refund' && requestedRefund > 0 && refundAmounts.some((amount) => Math.abs(amount - Math.round(requestedRefund * 100)) >= 1)) conflicts.push(`A confirmed extracted refund amount differs from the entered requested refund amount of MYR ${requestedRefund.toFixed(2)}.`)
   const references = confirmed.filter((item) => item.field === 'reference' && item.confirmedValue)
   const roleForReference = (item: typeof references[number]) => item.referenceRole ?? (/\b(?:invoice|invois)\b/i.test(item.sourceExcerpt) ? 'invoice' : /\b(?:order|pesanan)\b/i.test(item.sourceExcerpt) ? 'order' : 'generic')
