@@ -5,8 +5,10 @@ import { PgCaseStore } from '../dist/caseStore.js'
 
 const databaseUrl = process.env.DATABASE_URL
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl, max: 1 }) : null
+const maintenanceUrl = process.env.DATABASE_URL_MAINTENANCE
+const maintenancePool = maintenanceUrl ? new Pool({ connectionString: maintenanceUrl, max: 1 }) : null
 
-after(async () => { await pool?.end() })
+after(async () => { await Promise.all([pool?.end(), maintenancePool?.end()]) })
 
 test('PostgreSQL RLS isolates case reads, writes, and owner reassignment', { skip: !pool }, async () => {
   const id = crypto.randomUUID()
@@ -55,6 +57,44 @@ test('PostgreSQL store scopes CRUD and records minimized mutation events', { ski
   assert.equal(await store.delete(otherOwner, id, 2), false)
   assert.equal(await store.delete(owner, id, 2), true)
   assert.equal(await store.get(owner, id), null)
+})
+
+test('PostgreSQL retention role can delete expired audit events without reading case data', { skip: !pool || !maintenancePool }, async () => {
+  const owner = `retention-test-${crypto.randomUUID()}`
+  const caseId = crypto.randomUUID()
+  const apiClient = await pool.connect()
+  try {
+    await apiClient.query('BEGIN')
+    await setSubject(apiClient, owner)
+    await apiClient.query(
+      'INSERT INTO aduen_case_audit_events (owner_subject, case_id, action, occurred_at) VALUES ($1, $2, $3, now() - interval \'40 days\'), ($1, $2, $3, now())',
+      [owner, caseId, 'case_updated'],
+    )
+    await apiClient.query('COMMIT')
+  } catch (error) {
+    await apiClient.query('ROLLBACK').catch(() => undefined)
+    throw error
+  } finally { apiClient.release() }
+
+  const client = await maintenancePool.connect()
+  try {
+    await assert.rejects(client.query('SELECT * FROM aduen_case_audit_events'), (error) => error.code === '42501')
+    await assert.rejects(client.query('SELECT owner_subject FROM aduen_case_audit_events'), (error) => error.code === '42501')
+    await assert.rejects(client.query('SELECT * FROM aduen_cases'), (error) => error.code === '42501')
+    await assert.rejects(client.query('DELETE FROM aduen_cases'), (error) => error.code === '42501')
+
+    await client.query('BEGIN')
+    const unsetCutoff = await client.query("DELETE FROM aduen_case_audit_events WHERE occurred_at < now() + interval '1 day'")
+    assert.equal(unsetCutoff.rowCount, 0)
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    await client.query("SELECT set_config('aduen.audit_cutoff', $1, true)", [cutoff])
+    const expired = await client.query('DELETE FROM aduen_case_audit_events WHERE occurred_at < $1::timestamptz', [cutoff])
+    assert.equal(expired.rowCount, 1)
+    await client.query('COMMIT')
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined)
+    throw error
+  } finally { client.release() }
 })
 
 async function setSubject(client, subject) {
