@@ -49,6 +49,7 @@ services:
       AUTH_ISSUER: ${AUTH_ISSUER:?Set AUTH_ISSUER in .env}
       AUTH_JWKS_URL: ${AUTH_JWKS_URL:?Set AUTH_JWKS_URL in .env}
       AUTH_AUDIENCE: ${AUTH_AUDIENCE:-aduen-api}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to the exact browser application origins}
     ports:
       - 127.0.0.1:${API_PORT:-8080}:8080
     depends_on:
