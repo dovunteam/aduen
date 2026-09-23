@@ -141,6 +141,7 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
   if (outOfOrder(purchaseDates, promisedDates)) conflicts.push('A confirmed promised performance date occurs before the recorded purchase date.')
   if (outOfOrder(purchaseDates, deliveryDates)) conflicts.push('A confirmed delivery date occurs before the recorded purchase date.')
   if (outOfOrder(promisedDates, deliveryDates)) conflicts.push('A confirmed delivery date occurs before the promised performance date.')
+  if (draft.purchaseDate && draft.claimAccruedDate && draft.claimAccruedDate < draft.purchaseDate) conflicts.push('The entered claim-accrual date occurs before the recorded purchase date.')
   const extractedRemedies = [...new Set(confirmed.filter((item) => item.field === 'remedy').map((item) => item.confirmedValue?.toLowerCase()).filter(Boolean))]
   if (extractedRemedies.length > 1) conflicts.push('Confirmed evidence contains different requested remedies.')
   if (draft.remedy && extractedRemedies.some((remedy) => remedy !== draft.remedy)) conflicts.push(`A confirmed extracted remedy differs from the entered requested remedy of ${draft.remedy}.`)

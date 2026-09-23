@@ -30,6 +30,7 @@ export function localizeFactConflict(conflict: string, locale: Locale): string {
     'A confirmed promised performance date occurs before the recorded purchase date.': 'Tarikh prestasi yang dijanjikan berlaku sebelum tarikh pembelian yang direkodkan.',
     'A confirmed delivery date occurs before the recorded purchase date.': 'Tarikh penghantaran yang disahkan berlaku sebelum tarikh pembelian yang direkodkan.',
     'A confirmed delivery date occurs before the promised performance date.': 'Tarikh penghantaran yang disahkan berlaku sebelum tarikh prestasi yang dijanjikan.',
+    'The entered claim-accrual date occurs before the recorded purchase date.': 'Tarikh tuntutan bermula yang dimasukkan berlaku sebelum tarikh pembelian yang direkodkan.',
   }
   if (fixed[conflict]) return fixed[conflict]
 
