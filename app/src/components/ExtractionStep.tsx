@@ -35,7 +35,7 @@ export function ExtractionStep({ locale, initialExtractions, evidence, onBack, o
   return <section className="page form-page extraction-page">
     <div className="eyebrow">{text.eyebrow}</div><h1>{text.title}</h1>
     <p className="lede">{text.lede}</p>
-    <div className="extraction-summary"><div><strong>{candidates.length}</strong><span>{text.candidates}</span></div><div><strong>{pending}</strong><span>{text.awaiting}</span></div><div><strong>plain-text-v2</strong><span>{text.version}</span></div></div>
+    <div className="extraction-summary"><div><strong>{candidates.length}</strong><span>{text.candidates}</span></div><div><strong>{pending}</strong><span>{text.awaiting}</span></div><div><strong>plain-text-v3</strong><span>{text.version}</span></div></div>
     <div className="candidate-list">{candidates.map(({ record, item }) => <article className={`candidate ${item.status}`} key={item.id}>
       <div className="candidate-meta"><span>{fieldLabel(item.field, locale)}</span><strong>{fileName(record.evidenceId)}</strong><small>{record.extractorVersion} · {Math.round(item.confidence * 100)}% {text.confidence}</small></div>
       <div className="candidate-value"><label>{text.candidateValue}<input value={edits[item.id] ?? item.confirmedValue ?? item.value} disabled={item.status !== 'unconfirmed'} onChange={(event) => setEdits((current) => ({ ...current, [item.id]: event.target.value }))} /></label><blockquote>“…{item.sourceExcerpt}…”</blockquote>{item.status !== 'unconfirmed' && <p className="decision-label">{item.status === 'confirmed' ? text.confirmed(item.confirmedValue ?? item.value) : text.rejected}</p>}</div>
