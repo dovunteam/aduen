@@ -10,7 +10,7 @@ export function OutOfScopeStep({ locale, draft, assessment, onEdit, onDelete }: 
   const handoffCopy = handoff ? handoffText(handoff.destination, locale, handoff.current) : null
 
   return <section className="page narrow-page scope-page">
-    <div className="scope-mark">—</div><div className="eyebrow">{text.eyebrow}</div><h1>{text.title}</h1><p className="lede">{text.lede}</p>
+    <div className="scope-mark">-</div><div className="eyebrow">{text.eyebrow}</div><h1>{text.title}</h1><p className="lede">{text.lede}</p>
     <div className="scope-reasons"><strong>{text.reasonsTitle}</strong><ul>{assessment.reasons.map((reason) => <li key={reason}>{scopeReason(reason, locale)}</li>)}</ul></div>
     <div className="notice"><div><span className="notice-mark">i</span><div><h2>{text.whatNext}</h2><p>{text.nextCopy}</p>{handoff && handoffCopy && <div className="official-links"><a href={handoff.url} target="_blank" rel="noreferrer">{handoffCopy.link}</a><p className="source-note">{handoffCopy.note(handoff.checked)}</p></div>}</div></div></div>
     <div className="actions split"><button className="secondary" onClick={() => void onDelete()}>{text.delete}</button><button className="primary" onClick={onEdit}>{text.review} <span>→</span></button></div>

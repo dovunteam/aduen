@@ -46,7 +46,7 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[], now 
 function evaluateRoute(draft: CaseDraft, checks: CheckItem[]): RouteEvaluation {
   const missing = checks.filter((item) => item.level === 'required' && !item.satisfied).map((item) => item.label)
   const base = {
-    source: 'Aduen Case Routing Rules — R-010 Merchant-first',
+    source: 'Aduen Case Routing Rules - R-010 Merchant-first',
     sourceUrl: 'https://github.com/dovunteam/aduen/blob/main/docs/Aduen_Case_Routing_Rules.md#r-010-merchant-first',
     sourceType: 'product-default' as const,
     sourceChecked: '2026-09-23',
