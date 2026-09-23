@@ -15,8 +15,8 @@ echo Usage: run-aduen.bat [dev^|test^|lint^|build^|e2e^|verify]
 exit /b 1
 
 :dev
-echo Starting Aduen development server...
-npm run dev
+echo Starting Aduen development server and opening the local page...
+npm run dev -- --open
 exit /b %errorlevel%
 
 :test
