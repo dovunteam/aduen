@@ -19,6 +19,7 @@ export function localizeFactConflict(conflict: string, locale: Locale): string {
   if (locale === 'en') return conflict
   const fixed: Record<string, string> = {
     'Confirmed evidence contains different transaction amounts.': 'Bukti yang disahkan menunjukkan jumlah transaksi yang berbeza.',
+    'Confirmed evidence contains different refund amounts.': 'Bukti yang disahkan menunjukkan jumlah bayaran balik yang berbeza.',
     'Confirmed evidence contains different order or reference numbers.': 'Bukti yang disahkan mengandungi nombor pesanan atau rujukan yang berbeza.',
     'A confirmed extracted reference differs from the entered order or reference number.': 'Nombor rujukan yang diekstrak dan disahkan berbeza daripada nombor pesanan atau rujukan yang dimasukkan.',
     'Confirmed evidence contains different requested remedies.': 'Bukti yang disahkan menunjukkan penyelesaian diminta yang berbeza.',
@@ -32,6 +33,8 @@ export function localizeFactConflict(conflict: string, locale: Locale): string {
 
   const amountMismatch = conflict.match(/^A confirmed extracted amount differs from the entered transaction amount of MYR ([\d.]+)\.$/)
   if (amountMismatch) return `Jumlah yang diekstrak dan disahkan berbeza daripada jumlah transaksi yang dimasukkan sebanyak MYR ${amountMismatch[1]}.`
+  const refundMismatch = conflict.match(/^A confirmed extracted refund amount differs from the entered requested refund amount of MYR ([\d.]+)\.$/)
+  if (refundMismatch) return `Jumlah bayaran balik yang diekstrak dan disahkan berbeza daripada jumlah bayaran balik yang diminta sebanyak MYR ${refundMismatch[1]}.`
 
   const multipleDates = conflict.match(/^Confirmed evidence contains multiple dates labelled for (purchase|promised performance|delivery|merchant contact)\.$/)
   if (multipleDates) return `Bukti yang disahkan mengandungi beberapa tarikh yang dilabel untuk ${eventLabels[multipleDates[1]]}.`

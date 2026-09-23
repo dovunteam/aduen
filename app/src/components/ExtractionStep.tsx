@@ -36,9 +36,9 @@ export function ExtractionStep({ locale, initialExtractions, evidence, onBack, o
   return <section className="page form-page extraction-page">
     <div className="eyebrow">{text.eyebrow}</div><h1>{text.title}</h1>
     <p className="lede">{text.lede}</p>
-    <div className="extraction-summary"><div><strong>{candidates.length}</strong><span>{text.candidates}</span></div><div><strong>{pending}</strong><span>{text.awaiting}</span></div><div><strong>{extractorVersions.join(', ') || 'plain-text-v5'}</strong><span>{text.version}</span></div></div>
+    <div className="extraction-summary"><div><strong>{candidates.length}</strong><span>{text.candidates}</span></div><div><strong>{pending}</strong><span>{text.awaiting}</span></div><div><strong>{extractorVersions.join(', ') || 'plain-text-v6'}</strong><span>{text.version}</span></div></div>
     <div className="candidate-list">{candidates.map(({ record, item }) => <article className={`candidate ${item.status}`} key={item.id}>
-      <div className="candidate-meta"><span>{fieldLabel(item.field, locale)}</span><strong>{fileName(record.evidenceId)}</strong><small>{record.extractorVersion} · {Math.round(item.confidence * 100)}% {text.confidence}</small></div>
+      <div className="candidate-meta"><span>{fieldLabel(item, locale)}</span><strong>{fileName(record.evidenceId)}</strong><small>{record.extractorVersion} · {Math.round(item.confidence * 100)}% {text.confidence}</small></div>
       <div className="candidate-value"><label>{text.candidateValue}<input value={edits[item.id] ?? item.confirmedValue ?? item.value} disabled={item.status !== 'unconfirmed'} onChange={(event) => setEdits((current) => ({ ...current, [item.id]: event.target.value }))} /></label><blockquote>“…{item.sourceExcerpt}…”</blockquote>{item.status !== 'unconfirmed' && <p className="decision-label">{item.status === 'confirmed' ? text.confirmed(item.confirmedValue ?? item.value) : text.rejected}</p>}</div>
       <div className="candidate-actions"><button type="button" disabled={item.status !== 'unconfirmed' || busyId === item.id} onClick={() => void decide(record, item, 'confirmed')}>{text.confirm}{edits[item.id] && edits[item.id] !== item.value ? text.correction : ''}</button><button type="button" disabled={item.status !== 'unconfirmed' || busyId === item.id} onClick={() => void decide(record, item, 'rejected')}>{text.reject}</button></div>
       {item.status !== 'unconfirmed' && <button type="button" disabled={busyId === item.id} onClick={() => void decide(record, item, 'unconfirmed')}>{locale === 'ms' ? 'Semak semula keputusan' : 'Review decision again'}</button>}
@@ -55,7 +55,13 @@ const extractionText = {
   ms: { eyebrow: 'Pengesahan fakta diekstrak', title: 'Semak setiap calon.', lede: 'Aduen mencari kemungkinan fakta dalam teks biasa dan PDF yang boleh dicari. Imej dan halaman PDF yang diimbas dibaca dengan OCR Bahasa Malaysia dan Inggeris pada peranti ini. OCR boleh tersilap atau terlepas kandungan. Calon ialah cadangan—bukan fakta kes—sehingga anda mengesahkan atau membetulkannya.', candidates: 'calon ditemui', awaiting: 'menunggu keputusan anda', version: 'versi pengekstrak', evidenceFile: 'Fail bukti', confidence: 'keyakinan corak · belum disahkan', candidateValue: 'Nilai calon', confirmed: (value: string) => `Disahkan sebagai ${value}`, rejected: 'Ditolak — tidak digunakan sebagai fakta', confirm: 'Sahkan', correction: ' pembetulan', reject: 'Tolak', privacyLead: 'Fail asal tidak berubah.', privacy: 'Keputusan anda disimpan pada calon terbitan dengan nilai yang diekstrak dan sebarang nilai yang dibetulkan dikekalkan.', back: '← Bukti', continue: 'Teruskan ke Semakan Aduen' },
 } as const
 
-function fieldLabel(field: ExtractionCandidate['field'], locale: Locale) {
+function fieldLabel(item: ExtractionCandidate, locale: Locale) {
+  if (item.field === 'amount' && item.amountRole) {
+    const amounts = locale === 'ms'
+      ? { transaction: 'Jumlah transaksi mungkin', refund: 'Jumlah bayaran balik mungkin', unclassified: 'Jumlah (jenis tidak pasti)' }
+      : { transaction: 'Possible transaction amount', refund: 'Possible refund amount', unclassified: 'Amount (role uncertain)' }
+    return amounts[item.amountRole]
+  }
   const labels = locale === 'ms' ? { amount: 'Jumlah', date: 'Tarikh', reference: 'Rujukan', remedy: 'Penyelesaian', name: 'Nama' } : { amount: 'Amount', date: 'Date', reference: 'Reference', remedy: 'Remedy', name: 'Name' }
-  return labels[field]
+  return labels[item.field]
 }

@@ -4,6 +4,8 @@ import { localizeFactConflict } from './caseReviewMessages'
 describe('case review conflict messages', () => {
   it('localizes semantic fact conflicts in Bahasa Malaysia', () => {
     expect(localizeFactConflict('Confirmed evidence contains different transaction amounts.', 'ms')).toContain('jumlah transaksi yang berbeza')
+    expect(localizeFactConflict('Confirmed evidence contains different refund amounts.', 'ms')).toContain('jumlah bayaran balik yang berbeza')
+    expect(localizeFactConflict('A confirmed extracted refund amount differs from the entered requested refund amount of MYR 25.00.', 'ms')).toContain('MYR 25.00')
     expect(localizeFactConflict('Confirmed evidence contains multiple dates labelled for merchant contact.', 'ms')).toContain('hubungan dengan peniaga')
     expect(localizeFactConflict('A confirmed date labelled for promised performance differs from the entered promised performance date of 2026-08-03.', 'ms')).toContain('2026-08-03')
     expect(localizeFactConflict('A confirmed extracted remedy differs from the entered requested remedy of refund.', 'ms')).toContain('bayaran balik')
