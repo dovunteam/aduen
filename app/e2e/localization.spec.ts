@@ -12,7 +12,7 @@ test('Bahasa Malaysia preference persists across the safety journey', async ({ p
   await page.getByRole('button', { name: 'BM' }).click()
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'ms')
-  await expect(page.getByRole('heading', { name: 'Susun semula pembelian yang bermasalah.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Ubah pembelian bermasalah menjadi laluan pemulihan yang jelas.' })).toBeVisible()
 
   await page.reload()
   await expect(page.getByRole('button', { name: 'BM' })).toHaveAttribute('aria-pressed', 'true')
