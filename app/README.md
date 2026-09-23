@@ -9,7 +9,7 @@ This directory contains the first interactive Aduen prototype. It currently supp
 - local text, image, and PDF previews with original-download controls;
 - text and image redacted-copy workflows that leave originals unchanged;
 - on-device PDF page redaction with flattened, image-only copies that leave originals unchanged;
-- bounded plain-text extraction with user confirmation or correction;
+- bounded plain-text and searchable-PDF text extraction with user confirmation or correction (scanned PDFs remain manual-review only);
 - issue-specific completeness checks and a sourced chronology;
 - versioned merchant-first routing;
 - user-reviewed PDF complaint packs;
@@ -40,4 +40,4 @@ npm run test:e2e
 
 ## Current boundary
 
-Accounts, image/PDF OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. PDF redaction renders pages locally and produces an image-only copy; inspect every page because text selection and vector detail are lost, and the tool cannot detect sensitive content automatically. English and Bahasa Malaysia are available for the prototype interface; source evidence and generated material retain their original language. See the [implementation ledger](../docs/Aduen_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).
+Accounts, image OCR, staff review, live official-route verification beyond merchant-first, malware scanning, external submission, notifications, and production security controls are not implemented. Searchable PDF text can be extracted locally; scanned PDFs and images are not OCR processed. PDF redaction renders pages locally and produces an image-only copy; inspect every page because text selection and vector detail are lost, and the tool cannot detect sensitive content automatically. English and Bahasa Malaysia are available for the prototype interface; source evidence and generated material retain their original language. See the [implementation ledger](../docs/Aduen_Implementation_Status.md) and governing [product documentation](../docs/00_PRODUCT_INDEX.md).

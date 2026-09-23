@@ -61,7 +61,15 @@ export async function addEvidence(file: File, input: EvidenceInput): Promise<Evi
     uploadedAt: new Date().toISOString(),
   }
   if (!isValidEvidenceMetadata(metadata)) throw new Error('Invalid evidence metadata.')
-  const extraction = file.type === 'text/plain' ? createEvidenceExtraction(metadata.id, (await file.text()).slice(0, 500_000)) : null
+  let extraction: EvidenceExtraction | null = null
+  if (file.type === 'text/plain') extraction = createEvidenceExtraction(metadata.id, (await file.text()).slice(0, 500_000))
+  else if (file.type === 'application/pdf') {
+    try {
+      const { extractPdfText } = await import('../domain/pdfTextExtraction')
+      const text = await extractPdfText(file)
+      if (text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'pdf-text-v1')
+    } catch { /* PDF text extraction is best-effort; preserve the original even if parsing fails. */ }
+  }
 
   const database = await openDatabase()
   const transaction = database.transaction([METADATA_STORE, ORIGINAL_STORE, EXTRACTION_STORE], 'readwrite')

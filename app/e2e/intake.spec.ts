@@ -43,6 +43,7 @@ async function addEvidence(page: import('@playwright/test').Page, type: string, 
   await page.getByLabel('Description').fill(description)
   await page.getByRole('button', { name: 'Add evidence' }).click()
   await expect(page.getByText(name)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add evidence' })).toBeEnabled()
 }
 
 test('uncertain scope prevents pack preparation even with complete evidence', async ({ page }) => {
@@ -425,6 +426,34 @@ test('extracted candidates require explicit confirmation, correction, or rejecti
   await expect(page.getByRole('heading', { name: 'Local activity history' })).toBeVisible()
   await page.getByText(/View \d+ recorded actions?/).click()
   await expect(page.getByText('Derived fact reviewed', { exact: true }).first()).toBeVisible()
+})
+
+test('searchable PDF text creates reviewable candidates without changing the original', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  const pdf = new jsPDF()
+  pdf.text('Order no. SYN-PDF-2048. Order date: 2026-08-01. Total RM 130.00.', 20, 20)
+  const original = Buffer.from(pdf.output('arraybuffer'))
+  await page.getByLabel('Original file').setInputFiles({ name: 'searchable-order.pdf', mimeType: 'application/pdf', buffer: original })
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await page.getByLabel('I reviewed these warnings and still need to include this original.').check()
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Check every candidate.' })).toBeVisible()
+  await expect(page.getByText('pdf-text-v1', { exact: true })).toBeVisible()
+  const cards = page.locator('article.candidate')
+  await expect(cards).toHaveCount(3)
+  await expect(cards.nth(0)).toContainText('130.00')
+  await expect(cards.nth(0).getByRole('button', { name: 'Confirm' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Data controls' }).click()
+  const archiveDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export ZIP' }).click()
+  const downloadedArchive = await archiveDownload
+  const archive = await JSZip.loadAsync(await readFile((await downloadedArchive.path())!))
+  const manifest = JSON.parse(await archive.file('case-record.json')!.async('string'))
+  expect(manifest.extractions[0].extractorVersion).toBe('pdf-text-v1')
+  expect(await archive.file('evidence-originals/01-searchable-order.pdf')!.async('nodebuffer')).toEqual(original)
 })
 
 test('confirmed amounts that disagree across evidence block request preparation', async ({ page }) => {
