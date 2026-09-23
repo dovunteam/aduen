@@ -32,7 +32,7 @@ npm run build
 exit /b %errorlevel%
 
 :e2e
-npm run test:e2e -- --project=chromium
+npm run test:e2e
 exit /b %errorlevel%
 
 :verify
