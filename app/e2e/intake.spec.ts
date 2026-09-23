@@ -104,6 +104,16 @@ test('uploaded images can be previewed and closed locally', async ({ page }) => 
   expect(await readFile((await originalFile.path())!)).toEqual(originalPng)
 })
 
+test('rejects oversized evidence before content scanning', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await page.getByLabel('Original file').setInputFiles({ name: 'oversized.txt', mimeType: 'text/plain', buffer: Buffer.alloc(10 * 1024 * 1024 + 1, 65) })
+  await page.getByRole('button', { name: 'Add evidence' }).click()
+  await expect(page.getByRole('alert')).toContainText('larger than the 10 MB prototype limit')
+  await expect(page.locator('.risk-review')).toHaveCount(0)
+})
+
 test('uploaded PDFs can be redacted locally into a flattened copy without changing the original', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page)

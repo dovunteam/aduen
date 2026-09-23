@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { addEvidence, deleteEvidence, getEvidenceOriginal, listEvidence, updateEvidenceInclusion } from '../data/evidenceRepository'
-import { EVIDENCE_TYPES, formatFileSize } from '../domain/evidence'
+import { EVIDENCE_TYPES, formatFileSize, validateEvidenceFile } from '../domain/evidence'
 import type { EvidenceMetadata, EvidenceType } from '../domain/evidence'
 import { scanEvidenceFile } from '../domain/evidenceSafety'
 import type { EvidenceRisk } from '../domain/evidenceSafety'
@@ -32,6 +32,9 @@ export function EvidenceStep({ locale, onBack, onChange, onContinue }: Props) {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!file) { setError(text.chooseFirst); return }
+    setError('')
+    const validationError = validateEvidenceFile(file)
+    if (validationError) { setError(localizeEvidenceError(validationError, locale)); return }
     setBusy(true); setError('')
     try {
       const detected = await scanEvidenceFile(file)
