@@ -22,7 +22,7 @@ export type TtpmAssessment = { status: 'excluded' | 'uncertain'; reason: string 
 export function assessTtpmPrerequisites(draft: CaseDraft): TtpmAssessment {
   if (!draft.purpose || !draft.category) return { status: 'uncertain', reason: 'TTPM check: confirm the purchase purpose and category.' }
   if (draft.purpose === 'business') return { status: 'excluded', reason: 'TTPM check: business or professional purchase is outside the documented consumer scope.' }
-  if (['healthcare', 'professional_service', 'land', 'aviation'].includes(draft.category)) return { status: 'excluded', reason: 'TTPM check: this recorded category is listed as excluded or sector-specific.' }
+  if (['healthcare', 'professional_service', 'land', 'aviation', 'personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'].includes(draft.category)) return { status: 'excluded', reason: 'TTPM check: this recorded category is listed as excluded or assigned to a sector-specific process.' }
   const amount = Number(draft.amount)
   if (!Number.isFinite(amount) || amount <= 0) return { status: 'uncertain', reason: 'TTPM check: confirm the transaction amount.' }
   return { status: 'uncertain', reason: 'TTPM applies the RM50,000 limit to the claim amount and its three-year limit to when the claim accrued. Aduen records transaction amount and purchase date only, so it cannot assess either limit; verify both with TTPM.' }
@@ -46,7 +46,7 @@ export function evaluateInitialRoute(draft: CaseDraft, checks: CheckItem[]): Rou
     ...base, routeName: 'Manual review', recommendedAction: 'This prototype is scoped to consumers in Malaysia.',
     matchingFacts: [`Consumer location: ${draft.consumerLocation || 'not confirmed'}`], unmetPrerequisites: draft.consumerLocation ? [] : ['Consumer location'], exclusionsChecked: ['Malaysian consumer scope'], confidence: draft.consumerLocation ? 'unsupported' : 'uncertain',
   }
-  if (['healthcare', 'professional_service', 'land'].includes(draft.category)) return {
+  if (['healthcare', 'professional_service', 'land', 'personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'].includes(draft.category)) return {
     ...base, routeName: 'Out of supported scope', recommendedAction: 'This category needs an independent route and is not handled by the prototype.',
     matchingFacts: [`Purchase category: ${draft.category.replaceAll('_', ' ')}`], unmetPrerequisites: [], exclusionsChecked: ['Sector exclusion'], confidence: 'unsupported',
   }

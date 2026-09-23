@@ -7,6 +7,14 @@ describe('initial routing', () => {
     const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', sellerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', amount: '125.50', contactHistory: 'none', ...override }, [])
     expect(route.confidence).toBe('uncertain')
     expect(route.routeName).toBe('Manual scope review')
+    expect(route.officialLinks).toBeUndefined()
+  })
+
+  it('does not route consumers outside Malaysia into a local complaint process', () => {
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'outside', purpose: 'personal' }, [])
+    expect(route.routeName).toBe('Manual review')
+    expect(route.confidence).toBe('unsupported')
+    expect(route.officialLinks).toBeUndefined()
   })
 
   it('does not approve incomplete scope facts from a saved draft', () => {
@@ -50,6 +58,12 @@ describe('initial routing', () => {
     expect(evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', purpose: 'personal', category: 'healthcare' }, []).confidence).toBe('unsupported')
     expect(evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', purpose: 'personal', category: 'aviation' }, []).routeName).toBe('Sector route review')
   })
+
+  it.each(['personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'] as const)('stops TTPM-excluded category %s before route selection', (category) => {
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', purpose: 'personal', category }, [])
+    expect(route.routeName).toBe('Out of supported scope')
+    expect(route.confidence).toBe('unsupported')
+  })
 })
 
 describe('TTPM prerequisite check', () => {
@@ -76,6 +90,7 @@ describe('TTPM prerequisite check', () => {
 
   it.each([
     [{ ...base, purpose: 'business' as const }, 'excluded'],
+    ...(['healthcare', 'professional_service', 'land', 'aviation', 'personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'] as const).map((category) => [{ ...base, category }, 'excluded'] as const),
     [{ ...base, amount: '50000.01' }, 'uncertain'],
     [{ ...base, purchaseDate: '2022-09-20' }, 'uncertain'],
     [{ ...base, purchaseDate: '2026-02-30' }, 'uncertain'],

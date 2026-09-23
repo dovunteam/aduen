@@ -14,6 +14,10 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('case repository', () => {
+  it.each(['personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'] as const)('persists supported exclusion category %s', (category) => {
+    expect(saveCaseDraft({ ...EMPTY_DRAFT, category }).draft.category).toBe(category)
+  })
+
   it('rejects a stored case with an unknown lifecycle status', () => {
     localStorage.setItem('Aduen.case-record.v1', JSON.stringify({ id: 'case-1', createdAt: '2026-09-21', updatedAt: '2026-09-21', status: 'invalid', draft: EMPTY_DRAFT, history: [] }))
     expect(readCase()).toBeNull()

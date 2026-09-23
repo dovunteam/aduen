@@ -212,6 +212,28 @@ test('an unsupported sector stops before evidence collection', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Add evidence' })).toHaveCount(0)
 })
 
+test('published TTPM exclusions have explicit intake categories and stop case preparation', async ({ page }) => {
+  await reachCaseDetails(page)
+  const exclusions = [
+    ['personal_injury', 'Claims arising from personal injury or death are excluded from TTPM jurisdiction.'],
+    ['wills_estates', 'Wills, inheritance, and estate-rights disputes are excluded from TTPM jurisdiction.'],
+    ['franchise', 'Franchise disputes are excluded from TTPM jurisdiction.'],
+    ['goodwill_ip', 'Goodwill, trade-secret, and intellectual-property disputes are excluded from TTPM jurisdiction.'],
+    ['other_tribunal', 'This subject may belong to another tribunal and is outside the prototype’s supported scope.'],
+  ] as const
+  await fillCase(page, { category: exclusions[0][0] })
+  for (const [index, [category, reason]] of exclusions.entries()) {
+    if (index > 0) {
+      await page.getByRole('button', { name: 'Review case details' }).click()
+      await page.getByLabel('Purchase category').selectOption(category)
+      await page.getByRole('button', { name: /Save case draft/ }).click()
+    }
+    await expect(page.getByRole('heading', { name: 'Aduen should not prepare this case.' })).toBeVisible()
+    await expect(page.getByText(reason, { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Add evidence' })).toHaveCount(0)
+  }
+})
+
 test('aviation cases receive the current CAAM handoff before evidence collection', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page, { category: 'aviation' })

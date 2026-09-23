@@ -24,6 +24,11 @@ const scopeText = {
 
 function scopeReason(reason: string, locale: Locale) {
   if (locale === 'en') return reason
+  if (reason === 'Claims arising from personal injury or death are excluded from TTPM jurisdiction.') return 'Tuntutan akibat kecederaan diri atau kematian dikecualikan daripada bidang kuasa TTPM.'
+  if (reason === 'Wills, inheritance, and estate-rights disputes are excluded from TTPM jurisdiction.') return 'Pertikaian wasiat, pewarisan, dan hak harta pusaka dikecualikan daripada bidang kuasa TTPM.'
+  if (reason === 'Franchise disputes are excluded from TTPM jurisdiction.') return 'Pertikaian francais dikecualikan daripada bidang kuasa TTPM.'
+  if (reason === 'Goodwill, trade-secret, and intellectual-property disputes are excluded from TTPM jurisdiction.') return 'Pertikaian nama baik, rahsia perdagangan, dan harta intelek dikecualikan daripada bidang kuasa TTPM.'
+  if (reason === 'This subject may belong to another tribunal and is outside the prototype’s supported scope.') return 'Perkara ini mungkin di bawah bidang kuasa tribunal lain dan di luar skop prototaip.'
   return ({ 'The purchase was for business or professional use.': 'Pembelian adalah untuk kegunaan perniagaan atau profesional.', 'The consumer is outside the prototype’s Malaysian scope.': 'Pengguna berada di luar skop Malaysia bagi prototaip ini.', 'Airline and airport matters need a current sector-specific process.': 'Hal syarikat penerbangan dan lapangan terbang memerlukan proses sektor khusus yang terkini.', 'Regulated financial-service complaints need a current provider and sector process.': 'Aduan perkhidmatan kewangan terkawal memerlukan proses penyedia dan sektor yang terkini.', 'Healthcare matters are excluded from this prototype.': 'Hal penjagaan kesihatan dikecualikan daripada prototaip ini.', 'Regulated professional services are excluded from this prototype.': 'Perkhidmatan profesional terkawal dikecualikan daripada prototaip ini.', 'Land and property matters are excluded from this prototype.': 'Hal tanah dan hartanah dikecualikan daripada prototaip ini.' } as Record<string, string>)[reason] ?? reason
 }
 
