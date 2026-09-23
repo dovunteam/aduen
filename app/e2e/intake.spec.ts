@@ -74,7 +74,7 @@ test('an overdue route source pauses supported route preparation', async ({ page
   await expect(page.getByRole('button', { name: 'Manual review needed' })).toBeDisabled()
   await page.getByRole('button', { name: 'BM' }).click()
   await expect(page.getByRole('heading', { name: 'Semakan sumber manual' })).toBeVisible()
-  await expect(page.getByText('Semakan sumber laluan ini sudah melebihi tempoh. Semak panduan rasmi semasa sebelum meneruskan.')).toBeVisible()
+  await expect(page.getByText('Semakan sumber laluan ini sudah melebihi tempoh. Semak panduan rasmi semasa sebelum mengambil langkah seterusnya.')).toBeVisible()
   await expect(page.getByText('Semak sumber laluan semasa')).toBeVisible()
 })
 
