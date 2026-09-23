@@ -6,7 +6,7 @@ import { EMPTY_DRAFT } from '../domain/case'
 import { EMPTY_SUBMISSION } from '../domain/status'
 
 vi.mock('./evidenceRepository', () => ({ getEvidenceOriginal: vi.fn(), listEvidence: vi.fn(), listExtractions: vi.fn().mockResolvedValue([]) }))
-vi.mock('./caseRepository', () => ({ readCase: () => null }))
+vi.mock('./caseRepository', () => ({ readCase: () => null, readCaseBackup: () => ({ id: 'backup-case' }) }))
 vi.mock('./consentRepository', () => ({ readConsent: () => null }))
 vi.mock('./packRepository', () => ({ listPacks: () => [] }))
 
@@ -19,7 +19,9 @@ describe('case archive', () => {
     vi.mocked(getEvidenceOriginal).mockResolvedValue(original)
     const zip = await JSZip.loadAsync(await buildCaseArchive(EMPTY_DRAFT, EMPTY_SUBMISSION))
     expect(await zip.file('evidence-originals/01-note.txt')!.async('string')).toBe('Synthetic private note')
-    expect(JSON.parse(await zip.file('case-record.json')!.async('string')).evidence[0].includeInPack).toBe(false)
+    const manifest = JSON.parse(await zip.file('case-record.json')!.async('string'))
+    expect(manifest.evidence[0].includeInPack).toBe(false)
+    expect(manifest.caseRecoveryBackup.id).toBe('backup-case')
     vi.mocked(getEvidenceOriginal).mockResolvedValue(null)
     await expect(buildCaseArchive(EMPTY_DRAFT, EMPTY_SUBMISSION)).rejects.toThrow('original missing')
     vi.mocked(getEvidenceOriginal).mockResolvedValue(new Blob(['altered']))

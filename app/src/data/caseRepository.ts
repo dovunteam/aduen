@@ -3,10 +3,12 @@ import type { CaseDraft, CaseRecord, CaseRecordStatus } from '../domain/case'
 import { recordAuditEvent } from './auditRepository'
 
 const CASE_KEY = 'Aduen.case-record.v1'
+const CASE_BACKUP_KEY = 'Aduen.case-record-backup.v1'
 const LEGACY_DRAFT_KEY = 'Aduen.case-draft.v1'
 const TUNTIVA_CASE_KEY = 'tuntiva.case-record.v1'
 const TUNTIVA_DRAFT_KEY = 'tuntiva.case-draft.v1'
 const CASE_STATUSES: CaseRecordStatus[] = ['draft', 'out_of_scope', 'evidence_collection', 'confirmation', 'review', 'ready_for_pack', 'approved', 'handed_off', 'awaiting_response', 'resolved', 'closed']
+let restoredCaseThisSession = false
 const ENUM_FIELDS = {
   consumerLocation: ['', 'malaysia', 'outside'], sellerLocation: ['', 'malaysia', 'outside', 'unknown'], currency: ['MYR'],
   purpose: ['', 'personal', 'business'], issue: ['', 'non_delivery', 'mismatch', 'missing_refund', 'cancellation', 'uncertain'],
@@ -18,13 +20,18 @@ export function readCase(): CaseRecord | null {
   try {
     const current = localStorage.getItem(CASE_KEY)
     if (current) {
-      return normaliseCaseRecord(JSON.parse(current))
+      try {
+        const record = normaliseCaseRecord(JSON.parse(current))
+        if (record) return record
+      } catch { /* Try the previous valid autosave when the current record is unreadable. */ }
     }
+    const backup = readBackup()
+    if (backup) return restoreBackup(backup)
     const oldRecord = localStorage.getItem(TUNTIVA_CASE_KEY)
     if (oldRecord) {
       const migrated = normaliseLegacyCaseRecord(JSON.parse(oldRecord))
       if (!migrated) return null
-      localStorage.setItem(CASE_KEY, JSON.stringify(migrated)); localStorage.removeItem(TUNTIVA_CASE_KEY)
+      localStorage.setItem(CASE_KEY, JSON.stringify(migrated)); writeBackup(migrated); localStorage.removeItem(TUNTIVA_CASE_KEY)
       return migrated
     }
     const legacy = localStorage.getItem(LEGACY_DRAFT_KEY) ?? localStorage.getItem(TUNTIVA_DRAFT_KEY)
@@ -32,10 +39,13 @@ export function readCase(): CaseRecord | null {
     const draft = { ...EMPTY_DRAFT, ...JSON.parse(legacy) }
     if (!isCaseDraft(draft)) return null
     const migrated = createCaseRecord(draft)
-    localStorage.setItem(CASE_KEY, JSON.stringify(migrated)); localStorage.removeItem(LEGACY_DRAFT_KEY); localStorage.removeItem(TUNTIVA_DRAFT_KEY)
+    localStorage.setItem(CASE_KEY, JSON.stringify(migrated)); writeBackup(migrated); localStorage.removeItem(LEGACY_DRAFT_KEY); localStorage.removeItem(TUNTIVA_DRAFT_KEY)
     return migrated
   } catch { return null }
 }
+
+export function wasCaseRestored(): boolean { return restoredCaseThisSession }
+export function readCaseBackup(): CaseRecord | null { return readBackup() }
 
 export function saveCaseDraft(draft: CaseDraft): CaseRecord {
   if (!isCaseDraft(draft)) throw new Error('Invalid case draft.')
@@ -46,6 +56,7 @@ export function saveCaseDraft(draft: CaseDraft): CaseRecord {
   const reviewed = changed && current.status !== 'draft'
     ? transitionCase(current, 'draft', 'case_details_changed') : current
   const saved = { ...reviewed, draft, updatedAt: new Date().toISOString() }
+  if (existing) writeBackup(existing)
   localStorage.setItem(CASE_KEY, JSON.stringify(saved))
   if (!existing) recordAuditEvent('case_created', saved.id, 'case record created')
   else if (changed) recordAuditEvent('case_edited', saved.id, 'case draft fields changed')
@@ -56,12 +67,32 @@ export function recordCaseTransition(draft: CaseDraft, status: CaseRecordStatus,
   const current = saveCaseDraft(draft)
   if (current.status === status && current.history.at(-1)?.action === action) return current
   const saved = transitionCase(current, status, action)
+  writeBackup(current)
   localStorage.setItem(CASE_KEY, JSON.stringify(saved))
   recordAuditEvent('case_transitioned', saved.id, `${status}: ${action}`)
   return saved
 }
 
-export function clearCase(): void { localStorage.removeItem(CASE_KEY); localStorage.removeItem(LEGACY_DRAFT_KEY); localStorage.removeItem(TUNTIVA_CASE_KEY); localStorage.removeItem(TUNTIVA_DRAFT_KEY) }
+export function clearCase(): void { localStorage.removeItem(CASE_KEY); localStorage.removeItem(CASE_BACKUP_KEY); localStorage.removeItem(LEGACY_DRAFT_KEY); localStorage.removeItem(TUNTIVA_CASE_KEY); localStorage.removeItem(TUNTIVA_DRAFT_KEY); restoredCaseThisSession = false }
+
+function readBackup(): CaseRecord | null {
+  try {
+    const value = localStorage.getItem(CASE_BACKUP_KEY)
+    return value ? normaliseCaseRecord(JSON.parse(value)) : null
+  } catch { return null }
+}
+
+function restoreBackup(record: CaseRecord): CaseRecord {
+  const firstRecovery = !restoredCaseThisSession
+  restoredCaseThisSession = true
+  try { localStorage.setItem(CASE_KEY, JSON.stringify(record)) } catch { /* The valid backup remains available for this session. */ }
+  if (firstRecovery) recordAuditEvent('case_recovered', record.id, 'previous valid case autosave restored')
+  return record
+}
+
+function writeBackup(record: CaseRecord): void {
+  try { localStorage.setItem(CASE_BACKUP_KEY, JSON.stringify(record)) } catch { /* Keep the primary autosave working if backup storage is unavailable. */ }
+}
 
 function normaliseCaseRecord(value: unknown): CaseRecord | null {
   if (!value || typeof value !== 'object') return null

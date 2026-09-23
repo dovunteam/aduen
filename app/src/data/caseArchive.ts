@@ -3,7 +3,7 @@ import type { CaseDraft } from '../domain/case'
 import type { SubmissionRecord } from '../domain/status'
 import { getEvidenceOriginal, listEvidence, listExtractions } from './evidenceRepository'
 import { readConsent } from './consentRepository'
-import { readCase } from './caseRepository'
+import { readCase, readCaseBackup } from './caseRepository'
 import { listPacks } from './packRepository'
 import { createAuditEvent, listAuditEvents, persistAuditEvent } from './auditRepository'
 import type { LocalAuditEvent } from './auditRepository'
@@ -18,6 +18,7 @@ export async function buildCaseArchive(draft: CaseDraft, submission: SubmissionR
     notice: 'User-controlled Aduen prototype export. Evidence originals have not been altered.',
     case: draft,
     caseRecord: readCase(),
+    caseRecoveryBackup: readCaseBackup(),
     packVersions: listPacks(),
     consent: readConsent(),
     submission,
