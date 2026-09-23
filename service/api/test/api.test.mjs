@@ -47,6 +47,7 @@ test('health is public and API responses disable caching and browser embedding',
   assert.equal(response.headers['cache-control'], 'no-store')
   assert.equal(response.headers['x-content-type-options'], 'nosniff')
   assert.equal(response.headers['x-frame-options'], 'DENY')
+  assert.match(response.headers['x-request-id'], /^[\da-f-]{36}$/iu)
 })
 
 test('browser access requires an exact allowed origin and exposes revision headers', async () => {
@@ -56,9 +57,35 @@ test('browser access requires an exact allowed origin and exposes revision heade
   assert.match(preflight.headers['access-control-allow-headers'], /authorization/iu)
   assert.match(preflight.headers['access-control-allow-headers'], /if-match/iu)
   assert.match(preflight.headers['access-control-expose-headers'], /etag/iu)
+  assert.match(preflight.headers['access-control-expose-headers'], /x-request-id/iu)
 
   const disallowed = await app.inject({ method: 'GET', url: '/v1/cases', headers: { origin: 'https://attacker.example.test' } })
   assert.equal(disallowed.headers['access-control-allow-origin'], undefined)
+})
+
+test('request logs correlate responses without recording case IDs, queries, tokens, or bodies', async () => {
+  const record = makeRecord('550e8400-e29b-41d4-a716-446655440099')
+  record.draft.consumerName = 'Synthetic Private Name'
+  const token = await signToken({ sub: 'synthetic-private-subject' })
+  const entries = []
+  const loggingApp = createApp(new MemoryCaseStore(), authenticator, ['https://app.example.test'], (entry) => entries.push(entry))
+  await loggingApp.ready()
+  try {
+    const response = await loggingApp.inject({ method: 'POST', url: '/v1/cases?private=query-value', headers: bearer(token), payload: record })
+    assert.equal(response.statusCode, 201)
+    assert.equal(response.headers['x-request-id'], entries[0].requestId)
+    const unmatched = await loggingApp.inject({ method: 'GET', url: '/unmatched/550e8400-e29b-41d4-a716-446655440098?private=unmatched-value' })
+    assert.equal(unmatched.statusCode, 404)
+  } finally { await loggingApp.close() }
+
+  assert.equal(entries.length, 2)
+  assert.deepEqual(Object.keys(entries[0]).sort(), ['durationMs', 'event', 'method', 'requestId', 'route', 'statusCode'].sort())
+  assert.deepEqual(entries[0], { event: 'api_request', requestId: entries[0].requestId, method: 'POST', route: '/v1/cases', statusCode: 201, durationMs: entries[0].durationMs })
+  assert.equal(entries[1].event, 'api_request')
+  assert.equal(entries[1].method, 'GET')
+  assert.equal(entries[1].statusCode, 404)
+  const serialized = JSON.stringify(entries)
+  for (const sensitive of [record.id, '550e8400-e29b-41d4-a716-446655440098', record.draft.consumerName, 'private=query-value', 'unmatched-value', token, 'synthetic-private-subject']) assert.equal(serialized.includes(sensitive), false)
 })
 
 test('production refuses missing database TLS and insecure identity endpoints', () => {
