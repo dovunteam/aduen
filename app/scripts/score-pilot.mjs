@@ -16,6 +16,7 @@ const required = ['caseId', 'packApproved', 'merchantDecisionOrValidHandoff', 'p
 const missing = required.filter((field) => !rows.headers.includes(field))
 if (missing.length) fail(`Missing CSV columns: ${missing.join(', ')}`)
 const cases = rows.records.map((record, index) => ({ ...record, row: index + 2 }))
+validateCases(cases)
 const included = cases.filter((record) => record.finalCountDecision.trim().toLowerCase() === 'include')
 const count = included.length
 const approvedPacks = countWhere(included, 'packApproved', 'yes')
@@ -57,6 +58,22 @@ function parseCsv(value) {
   const headers = rows.shift()?.map((header) => header.trim()) ?? []
   for (const values of rows.filter((items) => items.some((item) => item.trim()))) records.push(Object.fromEntries(headers.map((header, index) => [header, values[index]?.trim() ?? ''])))
   return { headers, records }
+}
+
+function validateCases(records) {
+  const seen = new Set()
+  const errors = []
+  for (const record of records) {
+    const id = record.caseId.trim()
+    if (!id) errors.push(`row ${record.row}: caseId is required`)
+    if (seen.has(id)) errors.push(`row ${record.row}: duplicate caseId ${id}`)
+    seen.add(id)
+    for (const field of ['packApproved', 'merchantDecisionOrValidHandoff']) if (!['yes', 'no'].includes(record[field].trim().toLowerCase())) errors.push(`row ${record.row}: ${field} must be Yes or No`)
+    if (!['include', 'exclude'].includes(record.finalCountDecision.trim().toLowerCase())) errors.push(`row ${record.row}: finalCountDecision must be Include or Exclude`)
+    if (!['paid', 'not paid', 'not tested'].includes(record.paymentEvidence.trim().toLowerCase())) errors.push(`row ${record.row}: paymentEvidence must be Paid, Not paid, or Not tested`)
+    if (!['none', 'factual', 'routing', 'privacy'].includes(record.materialError.trim().toLowerCase())) errors.push(`row ${record.row}: materialError must be None, Factual, Routing, or Privacy`)
+  }
+  if (errors.length) fail(`Invalid pilot CSV:\n${errors.join('\n')}`)
 }
 
 function countWhere(records, field, expected) { return records.filter((record) => record[field].trim().toLowerCase() === expected).length }
