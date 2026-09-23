@@ -31,6 +31,26 @@ describe('initial routing', () => {
     expect(route.sourceUrl).toMatch(/^https:\/\//)
   })
 
+  it('keeps a recently reviewed source supported through the 180-day review window', () => {
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', sellerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', amount: '125.50', contactHistory: 'none' }, [], new Date('2027-03-22T12:00:00Z'))
+    expect(route.routeName).toBe('Merchant or platform first')
+    expect(route.confidence).toBe('supported')
+  })
+
+  it.each([new Date('2027-03-23T00:00:00Z'), new Date('2028-01-01T00:00:00Z')])('degrades a supported route when its source check is overdue at %s', (now) => {
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, consumerLocation: 'malaysia', sellerLocation: 'malaysia', purpose: 'personal', category: 'general_goods', issue: 'non_delivery', remedy: 'refund', amount: '125.50', contactHistory: 'none' }, [], now)
+    expect(route.routeName).toBe('Manual source review')
+    expect(route.confidence).toBe('uncertain')
+    expect(route.unmetPrerequisites).toContain('Review current route source')
+    expect(route.matchingFacts).toContain('Rule source last checked: 2026-09-23')
+  })
+
+  it('keeps an unsupported route unchanged when its source check is old', () => {
+    const route = evaluateInitialRoute({ ...EMPTY_DRAFT, purpose: 'business' }, [], new Date('2028-01-01T00:00:00Z'))
+    expect(route.routeName).toBe('Manual review')
+    expect(route.confidence).toBe('unsupported')
+  })
+
   it('does not force a business purchase into a consumer route', () => {
     const route = evaluateInitialRoute({ ...EMPTY_DRAFT, purpose: 'business' }, [])
     expect(route.routeName).toBe('Manual review')

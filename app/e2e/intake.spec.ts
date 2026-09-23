@@ -60,6 +60,20 @@ test('uncertain scope prevents pack preparation even with complete evidence', as
   await expect(page.getByRole('button', { name: 'Prepare merchant request' })).toHaveCount(0)
 })
 
+test('an overdue route source pauses supported route preparation', async ({ page }) => {
+  await page.clock.install({ time: new Date('2027-03-23T12:00:00Z') })
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.getByRole('button', { name: /Add evidence/ }).click()
+  await addEvidence(page, 'receipt', 'stale-route-receipt.txt', 'receipt')
+  await addEvidence(page, 'payment', 'stale-route-payment.txt', 'payment')
+  await addEvidence(page, 'listing', 'stale-route-listing.txt', 'listing')
+  await page.getByRole('button', { name: /Review case/ }).click()
+  await expect(page.getByRole('heading', { name: 'Manual source review' })).toBeVisible()
+  await expect(page.getByText('This route source review is overdue. Check current official guidance before taking the next step.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Manual review needed' })).toBeDisabled()
+})
+
 test('urgent risk blocks the ordinary intake path', async ({ page }) => {
   await acceptBoundary(page)
   await page.getByLabel('A payment or transaction was not authorised by me').check()
