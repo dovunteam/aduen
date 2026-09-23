@@ -1,0 +1,66 @@
+name: aduen-local-service
+
+services:
+  database:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aduen}
+      POSTGRES_USER: ${POSTGRES_MIGRATOR_USER:-aduen_migrator}
+      POSTGRES_PASSWORD: ${POSTGRES_MIGRATOR_PASSWORD:?Set POSTGRES_MIGRATOR_PASSWORD in .env}
+      ADUEN_API_PASSWORD: ${ADUEN_API_PASSWORD:?Set ADUEN_API_PASSWORD in .env}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    ports:
+      - 127.0.0.1:${POSTGRES_PORT:-54329}:5432
+    volumes:
+      - aduen-local-db:/var/lib/postgresql/data
+      - ./service/api/docker/init-db.sh:/docker-entrypoint-initdb.d/001-create-api-role.sh:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  migrate:
+    profiles: [tools]
+    build:
+      context: ./service/api
+    command: [node, dist/migrate.js]
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL_MIGRATOR: ${DATABASE_URL_MIGRATOR:?Set DATABASE_URL_MIGRATOR in .env}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+    depends_on:
+      database:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./service/api
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      HOST: 0.0.0.0
+      PORT: 8080
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      AUTH_ISSUER: ${AUTH_ISSUER:?Set AUTH_ISSUER in .env}
+      AUTH_JWKS_URL: ${AUTH_JWKS_URL:?Set AUTH_JWKS_URL in .env}
+      AUTH_AUDIENCE: ${AUTH_AUDIENCE:-aduen-api}
+    ports:
+      - 127.0.0.1:${API_PORT:-8080}:8080
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8080/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 4s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  aduen-local-db:

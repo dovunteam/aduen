@@ -13,6 +13,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  case-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: service/api
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: service/api/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Start PostgreSQL for row policy verification
+        run: docker compose --file ../../compose.yaml --env-file ../../.env.example up --detach database
+      - name: Apply the case schema
+        run: docker compose --file ../../compose.yaml --env-file ../../.env.example --profile tools run --build --rm migrate
+      - name: Verify PostgreSQL owner isolation
+        run: npm run test:postgres
+        env:
+          DATABASE_URL: postgres://aduen_api:replace-with-another-local-only-password@127.0.0.1:54329/aduen
+      - run: npm audit --audit-level=high
+      - name: Remove the synthetic database
+        if: always()
+        run: docker compose --file ../../compose.yaml --env-file ../../.env.example down --volumes --remove-orphans
+
   verify:
     runs-on: windows-latest
     timeout-minutes: 20
@@ -27,6 +55,7 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm test
       - run: npm run build

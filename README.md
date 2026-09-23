@@ -43,7 +43,7 @@ The Aduen product proposition is not yet validated. There is no evidence in this
 
 ## Product status
 
-An early local-first web prototype is available in [`app`](app/README.md). It now covers the core workflow from consent and urgent triage through evidence capture, local previews and supported redacted copies, completeness checks, merchant-first routing, operator-reviewed user-approved PDF packs, outcome tracking, local audit history, configurable local retention expiry, and data export or deletion. It is not a production service and has no regulator integration, legal review, account system, server-side evidence storage, or payment handling.
+An early local-first web prototype is available in [`app`](app/README.md). It now covers the core workflow from consent and urgent triage through evidence capture, local previews and supported redacted copies, completeness checks, merchant-first routing, operator-reviewed user-approved PDF packs, outcome tracking, local audit history, configurable local retention expiry, and data export or deletion. A separate synthetic-data [case API foundation](service/api/README.md) adds OIDC-protected structured-case storage with PostgreSQL ownership policies, but the browser app is not connected to it, no identity provider or hosting environment is configured, and it is not approved for real consumer records. Aduen still has no regulator integration, legal review, account lifecycle, server-side evidence storage, or payment handling.
 
 ## Quick run and verify
 
