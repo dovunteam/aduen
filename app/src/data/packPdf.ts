@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf'
 import type { ComplaintPack } from '../domain/complaintPack'
-import { packFileName } from '../domain/complaintPack'
+import { confirmedFactLabel, packFileName } from '../domain/complaintPack'
 import { recordAuditEvent } from './auditRepository'
 
 export function downloadComplaintPackPdf(pack: ComplaintPack): void {
@@ -51,7 +51,7 @@ export function createComplaintPackPdf(pack: ComplaintPack): jsPDF {
   pack.evidence.forEach((item, index) => line(`${index + 1}. ${item.fileName} | ${text.evidenceTypes[item.sourceType as keyof typeof text.evidenceTypes] ?? item.sourceType.replaceAll('_', ' ')} | ${item.eventDate || text.unknownDate}\n${text.sha}: ${item.sha256}`))
   if (pack.confirmedDerivedFacts.length) {
     heading(text.confirmedFacts)
-    pack.confirmedDerivedFacts.forEach((item) => line(`${item.field}: ${item.value}\n${text.extracted}: ${item.extractedValue} | ${text.evidenceId}: ${item.evidenceId} | ${item.extractorVersion}`))
+    pack.confirmedDerivedFacts.forEach((item) => line(`${confirmedFactLabel(item, pack.locale)}: ${item.value}\n${text.extracted}: ${item.extractedValue} | ${text.evidenceId}: ${item.evidenceId} | ${item.extractorVersion}`))
   }
   heading(text.route)
   line(`${pack.route.routeName}\n${text.ruleVersion}: ${pack.route.ruleVersion}\n${text.sourceChecked}: ${pack.route.sourceChecked}\n${text.source}: ${pack.route.sourceUrl}`)

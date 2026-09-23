@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_DRAFT } from './case'
-import { approveComplaintPack, createComplaintPack, packFileName } from './complaintPack'
+import { approveComplaintPack, confirmedFactLabel, createComplaintPack, packFileName } from './complaintPack'
 import type { EvidenceMetadata } from './evidence'
 import type { RouteEvaluation } from './routing'
+import { createEvidenceExtraction, reviewCandidate } from './extraction'
 
 const route: RouteEvaluation = { routeName: 'Merchant or platform first', recommendedAction: 'Write', matchingFacts: [], unmetPrerequisites: [], exclusionsChecked: [], source: 'R-010', sourceUrl: 'https://example.test/rule', sourceType: 'product-default', sourceChecked: '20 September 2026', ruleVersion: 'MY-R010-2026.09.20', confidence: 'supported', officialLinks: [{ label: 'Example destination', url: 'https://example.test/destination' }] }
 const item: EvidenceMetadata = { id: 'e1', fileName: 'receipt.pdf', mimeType: 'application/pdf', size: 100, sha256: 'abc', sourceType: 'receipt', eventDate: '2026-05-01', description: 'Order receipt', includeInPack: true, uploadedAt: '2026-05-01T00:00:00Z' }
@@ -29,5 +30,15 @@ describe('complaint pack', () => {
 
   it('accepts an explicit immutable version number', () => {
     expect(createComplaintPack(EMPTY_DRAFT, [], route, new Date(), 3).version).toBe(3)
+  })
+
+  it('preserves the candidate and possible amount role for distinct confirmed figures', () => {
+    const extraction = createEvidenceExtraction(item.id, 'Total RM 120.00\nRefund RM 25.00')
+    extraction.candidates = extraction.candidates.map((candidate) => reviewCandidate(candidate, 'confirmed'))
+    const pack = createComplaintPack(EMPTY_DRAFT, [item], route, new Date(), 1, [extraction], 'ms')
+    expect(pack.confirmedDerivedFacts.map(({ amountRole }) => amountRole)).toEqual(['transaction', 'refund'])
+    expect(pack.confirmedDerivedFacts.map(({ candidateId }) => candidateId)).toEqual(extraction.candidates.map(({ id }) => id))
+    expect(pack.confirmedDerivedFacts.map((fact) => confirmedFactLabel(fact, 'ms'))).toEqual(['Jumlah transaksi mungkin', 'Jumlah bayaran balik mungkin'])
+    expect(confirmedFactLabel({ ...pack.confirmedDerivedFacts[0], amountRole: undefined }, 'en')).toBe('Amount')
   })
 })

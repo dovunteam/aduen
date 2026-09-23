@@ -2,10 +2,12 @@ import type { CaseDraft } from './case'
 import { buildTimeline } from './caseReview'
 import type { EvidenceMetadata } from './evidence'
 import type { RouteEvaluation } from './routing'
-import type { EvidenceExtraction } from './extraction'
+import type { EvidenceExtraction, ExtractedAmountRole } from './extraction'
 import { createMerchantRequest } from './merchantRequest'
 import type { MerchantRequest } from './merchantRequest'
 import type { Locale } from '../i18n'
+
+export type ConfirmedDerivedFact = { field: string; value: string; extractedValue: string; evidenceId: string; extractorVersion: string; candidateId?: string; amountRole?: ExtractedAmountRole }
 
 export type ComplaintPack = {
   locale: Locale
@@ -21,7 +23,7 @@ export type ComplaintPack = {
   route: Pick<RouteEvaluation, 'routeName' | 'ruleVersion' | 'sourceChecked' | 'sourceUrl' | 'officialLinks'>
   timeline: ReturnType<typeof buildTimeline>
   evidence: Array<Pick<EvidenceMetadata, 'id' | 'fileName' | 'sourceType' | 'eventDate' | 'description' | 'sha256'>>
-  confirmedDerivedFacts: Array<{ field: string; value: string; extractedValue: string; evidenceId: string; extractorVersion: string }>
+  confirmedDerivedFacts: ConfirmedDerivedFact[]
   merchantRequest: MerchantRequest
   disclaimer: string
   declaration: string
@@ -37,7 +39,7 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
     route: { routeName: route.routeName, ruleVersion: route.ruleVersion, sourceChecked: route.sourceChecked, sourceUrl: route.sourceUrl, officialLinks: route.officialLinks },
     timeline: buildTimeline(draft, included),
     evidence: included.map(({ id, fileName, sourceType, eventDate, description, sha256 }) => ({ id, fileName, sourceType, eventDate, description, sha256 })),
-    confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion }))),
+    confirmedDerivedFacts: extractions.filter((record) => included.some((item) => item.id === record.evidenceId)).flatMap((record) => record.candidates.filter((item) => item.status === 'confirmed' && item.confirmedValue).map((item) => ({ field: item.field, value: item.confirmedValue as string, extractedValue: item.value, evidenceId: record.evidenceId, extractorVersion: record.extractorVersion, candidateId: item.id, ...(item.field === 'amount' && item.amountRole ? { amountRole: item.amountRole } : {}) }))),
     merchantRequest: createMerchantRequest(draft, locale),
     disclaimer: locale === 'ms'
       ? 'Disediakan berdasarkan butiran yang disahkan pengguna dan bukti yang dipilih. Aduen membantu menyusun kes dan memberi maklumat laluan umum; Aduen tidak menjamin pemulihan atau menyediakan khidmat perwakilan undang-undang.'
@@ -46,6 +48,19 @@ export function createComplaintPack(draft: CaseDraft, evidence: EvidenceMetadata
       ? `Saya, ${draft.consumerName || 'pengguna'}, mengesahkan bahawa maklumat dalam pek ini adalah tepat setakat pengetahuan saya dan saya diberi kuasa untuk memberikannya.`
       : `I, ${draft.consumerName || 'the consumer'}, confirm that the information in this pack is accurate to the best of my knowledge and that I am authorised to provide it.`,
   }
+}
+
+export function confirmedFactLabel(fact: ConfirmedDerivedFact, locale: Locale): string {
+  if (fact.field === 'amount' && fact.amountRole) {
+    const roles = locale === 'ms'
+      ? { transaction: 'Jumlah transaksi mungkin', refund: 'Jumlah bayaran balik mungkin', unclassified: 'Jumlah (jenis tidak pasti)' }
+      : { transaction: 'Possible transaction amount', refund: 'Possible refund amount', unclassified: 'Amount (role uncertain)' }
+    return roles[fact.amountRole]
+  }
+  const labels = locale === 'ms'
+    ? { amount: 'Jumlah', date: 'Tarikh', reference: 'Rujukan', remedy: 'Penyelesaian', name: 'Nama' }
+    : { amount: 'Amount', date: 'Date', reference: 'Reference', remedy: 'Remedy', name: 'Name' }
+  return labels[fact.field as keyof typeof labels] ?? fact.field
 }
 
 export function approveComplaintPack(pack: ComplaintPack, now = new Date()): ComplaintPack {

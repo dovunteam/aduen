@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { approveComplaintPack } from '../domain/complaintPack'
+import { approveComplaintPack, confirmedFactLabel } from '../domain/complaintPack'
 import type { ComplaintPack } from '../domain/complaintPack'
 import type { Locale } from '../i18n'
 import { recordAuditEvent } from '../data/auditRepository'
@@ -54,7 +54,7 @@ export function PackStep({ locale, initialPack, onBack, onContinue, onApproved }
       <PackSection title={text.merchantRequest}><p><strong>{text.subject}: {pack.merchantRequest.subject}</strong></p><pre className="request-preview">{pack.merchantRequest.body}</pre><small>{text.generatedOnly}: {pack.merchantRequest.generatedFrom.join(', ')}</small></PackSection>
       <PackSection title={text.chronology}><ol>{pack.timeline.map((item) => <li key={item.id}><time>{item.date || text.dateUnknown}</time><span><strong>{item.label}</strong><small>{item.detail} · {item.source}</small></span></li>)}</ol></PackSection>
       <PackSection title={`${text.evidenceIndex} · ${pack.evidence.length}`}><ol className="pack-evidence">{pack.evidence.map((item) => <li key={item.id}><strong>{item.fileName}</strong><small>{item.sourceType.replaceAll('_', ' ')} · {item.eventDate || text.dateUnknown} · SHA-256 {item.sha256.slice(0, 16)}…</small></li>)}</ol></PackSection>
-      {pack.confirmedDerivedFacts.length > 0 && <PackSection title={`${text.confirmedFacts} · ${pack.confirmedDerivedFacts.length}`}><ol className="pack-evidence">{pack.confirmedDerivedFacts.map((item) => <li key={`${item.evidenceId}-${item.field}`}><strong>{item.field}: {item.value}</strong><small>{text.extractedAs} {item.extractedValue} · {text.evidence} {item.evidenceId} · {item.extractorVersion}</small></li>)}</ol></PackSection>}
+      {pack.confirmedDerivedFacts.length > 0 && <PackSection title={`${text.confirmedFacts} · ${pack.confirmedDerivedFacts.length}`}><ol className="pack-evidence">{pack.confirmedDerivedFacts.map((item, index) => <li key={item.candidateId ?? `${item.evidenceId}-${index}`}><strong>{confirmedFactLabel(item, locale)}: {item.value}</strong><small>{text.extractedAs} {item.extractedValue} · {text.evidence} {item.evidenceId} · {item.extractorVersion}</small></li>)}</ol></PackSection>}
       <PackSection title={text.routeRecord}><p><strong>{pack.route.routeName}</strong></p><small>{text.rule} {pack.route.ruleVersion} · {text.sourceChecked} {pack.route.sourceChecked} · <a href={pack.route.sourceUrl} target="_blank" rel="noreferrer">{text.source}</a></small>{pack.route.officialLinks?.length ? <div className="official-links"><strong>{text.destinations}</strong>{pack.route.officialLinks.map((link) => <a href={link.url} target="_blank" rel="noreferrer" key={link.url}>{link.label}</a>)}</div> : null}</PackSection>
       <PackSection title={text.declaration}><p>{pack.declaration}</p></PackSection>
       <footer>{pack.disclaimer}</footer>
