@@ -13,10 +13,21 @@ describe('evidence safety scan', () => {
     expect(codes).toContain('identity_number')
   })
 
+  it('flags Bahasa Malaysia authentication and identity-document language', () => {
+    const codes = detectEvidenceRisks('Simpan kata laluan dan kod pengesahan. Nombor kad pengenalan: 901231-14-5678.').map((risk) => risk.code)
+    expect(codes).toContain('authentication_secret')
+    expect(codes).toContain('identity_number')
+  })
+
   it('flags explicit third-party information language', () => {
     expect(detectEvidenceRisks('This screenshot contains someone else\'s phone number.').map((risk) => risk.code)).toContain('third_party_data')
     expect(detectEvidenceRisks('This screenshot contains another person\u2019s email address.').map((risk) => risk.code)).toContain('third_party_data')
     expect(detectEvidenceRisks('My own phone number is included.').map((risk) => risk.code)).not.toContain('third_party_data')
+  })
+
+  it('flags Bahasa Malaysia descriptions of another person’s information', () => {
+    expect(detectEvidenceRisks('Tangkapan skrin ini mengandungi maklumat orang lain.').map((risk) => risk.code)).toContain('third_party_data')
+    expect(detectEvidenceRisks('Nombor telefon ini milik orang lain.').map((risk) => risk.code)).toContain('third_party_data')
   })
 
   it('flags possible contact details without assuming whose they are', () => {
