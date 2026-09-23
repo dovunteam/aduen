@@ -69,6 +69,15 @@ export async function addEvidence(file: File, input: EvidenceInput): Promise<Evi
       const text = await extractPdfText(file)
       if (text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'pdf-text-v1')
     } catch { /* PDF text extraction is best-effort; preserve the original even if parsing fails. */ }
+    if (!extraction?.candidates.length) {
+      const { extractLocalOcrText } = await import('../domain/localOcr')
+      const text = await extractLocalOcrText(file, file.type)
+      if (text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'ocr-local-v1')
+    }
+  } else if (file.type.startsWith('image/')) {
+    const { extractLocalOcrText } = await import('../domain/localOcr')
+    const text = await extractLocalOcrText(file, file.type)
+    if (text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'ocr-local-v1')
   }
 
   const database = await openDatabase()

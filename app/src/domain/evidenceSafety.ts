@@ -1,4 +1,4 @@
-export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'contact_details' | 'binary_unscanned' | 'pdf_text_partial'; message: string }
+export type EvidenceRisk = { code: 'card_number' | 'authentication_secret' | 'identity_number' | 'third_party_data' | 'contact_details' | 'binary_unscanned' | 'pdf_text_partial' | 'ocr_partial'; message: string }
 
 function passesLuhn(value: string): boolean {
   let sum = 0; let alternate = false
@@ -46,9 +46,21 @@ export async function scanEvidenceFile(file: File): Promise<EvidenceRisk[]> {
   if (file.type === 'application/pdf') {
     try {
       const { extractPdfText, PDF_TEXT_MAX_CHARACTERS, PDF_TEXT_MAX_PAGES } = await import('./pdfTextExtraction')
-      const text = await extractPdfText(file)
+      let text = await extractPdfText(file)
+      if (!text) {
+        const { extractLocalOcrText, OCR_MAX_PDF_PAGES, OCR_MAX_TEXT_CHARACTERS } = await import('./localOcr')
+        text = await extractLocalOcrText(file, file.type)
+        if (text) return [...detectEvidenceRisks(text), { code: 'ocr_partial', message: `Local OCR checked up to ${OCR_MAX_TEXT_CHARACTERS.toLocaleString('en-MY')} characters across ${OCR_MAX_PDF_PAGES} pages. OCR may miss sensitive content; review every page manually.` }]
+      }
       if (text) return [...detectEvidenceRisks(text), { code: 'pdf_text_partial', message: `Searchable PDF text (up to ${PDF_TEXT_MAX_CHARACTERS.toLocaleString('en-MY')} characters across ${PDF_TEXT_MAX_PAGES} pages) was checked for common sensitive patterns. Scanned, image-only, and remaining content may not be covered; review every page manually.` }]
     } catch { /* Keep the manual-review warning if the PDF cannot be parsed. */ }
+  }
+  if (file.type.startsWith('image/')) {
+    try {
+      const { extractLocalOcrText, OCR_MAX_TEXT_CHARACTERS } = await import('./localOcr')
+      const text = await extractLocalOcrText(file, file.type)
+      if (text) return [...detectEvidenceRisks(text), { code: 'ocr_partial', message: `Local OCR checked up to ${OCR_MAX_TEXT_CHARACTERS.toLocaleString('en-MY')} characters. OCR may miss sensitive content; review the image manually.` }]
+    } catch { /* Keep the manual-review warning if OCR is unavailable. */ }
   }
   return [{ code: 'binary_unscanned', message: 'This image or PDF was not scanned for sensitive content. Review it manually before storing or sharing.' }]
 }
