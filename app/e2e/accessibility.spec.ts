@@ -89,6 +89,15 @@ test('evidence review, pack approval, and status screens have no serious automat
   await expectNoHighImpactViolations(page)
   await page.getByRole('button', { name: 'Prepare merchant request' }).click()
   await expect(page.getByText('Aduen CASE PACK')).toBeVisible()
+  await page.getByLabel('Reviewer code').fill('SYNTH-OPERATOR-01')
+  for (const label of [
+    'Transaction identity and amount match the evidence',
+    'Routing eligibility and uncertainty are reviewed',
+    'Dates and deadline assumptions are checked',
+    'Unsupported allegations and conclusions are removed',
+    'Evidence selection and redaction are reviewed',
+  ]) await page.getByLabel(label).check()
+  await page.getByRole('button', { name: 'Record operator review' }).click()
   await page.getByLabel(/I reviewed this pack/).check()
   const pdfDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: /Approve and export PDF/ }).click()

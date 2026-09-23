@@ -6,9 +6,12 @@ import { createComplaintPackPdf } from './packPdf'
 import { safeFileName } from './caseArchive'
 import { createAuditEvent, listAuditEvents, persistAuditEvent } from './auditRepository'
 import type { LocalAuditEvent } from './auditRepository'
+import { readOperatorReview } from './operatorReviewRepository'
 
 export async function buildHandoffArchive(pack: ComplaintPack, additionalAuditEvents: LocalAuditEvent[] = []): Promise<Uint8Array> {
   if (!pack.approvedAt) throw new Error('Approve the pack before exporting it.')
+  const operatorReview = readOperatorReview(pack.id)
+  if (!operatorReview) throw new Error('Record the operator review before exporting the handoff.')
   const zip = new JSZip()
   zip.file(packFileName(pack), createComplaintPackPdf(pack).output('arraybuffer'))
   const evidenceFolder = zip.folder('selected-evidence')
@@ -28,7 +31,7 @@ export async function buildHandoffArchive(pack: ComplaintPack, additionalAuditEv
     exportVersion: 1,
     exportedAt: new Date().toISOString(),
     notice: 'User-approved Aduen handoff archive. It contains the approved pack and only the evidence selected for that pack.',
-    pack: { id: pack.id, version: pack.version, approvedAt: pack.approvedAt, route: pack.route },
+    pack: { id: pack.id, version: pack.version, approvedAt: pack.approvedAt, route: pack.route, operatorReview },
     auditLog: [...listAuditEvents(), ...additionalAuditEvents],
     evidence: manifestEvidence,
   }, null, 2))
