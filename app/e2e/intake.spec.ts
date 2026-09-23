@@ -161,6 +161,23 @@ test('draft deletion can be cancelled and confirmed deletion removes saved case 
   await expect(page.getByRole('button', { name: /Resume saved case/ })).toHaveCount(0)
 })
 
+test('deletion reports failure when the browser cannot remove the local audit log', async ({ page }) => {
+  await reachCaseDetails(page)
+  await fillCase(page)
+  await page.evaluate(() => {
+    const removeItem = Storage.prototype.removeItem
+    Storage.prototype.removeItem = function (key: string) {
+      if (key === 'Aduen.audit-log.v1') throw new DOMException('Storage is blocked', 'SecurityError')
+      return removeItem.call(this, key)
+    }
+  })
+  await page.getByRole('button', { name: 'Data controls' }).click()
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Delete all case data' }).click()
+  await expect(page.getByRole('alert')).toContainText('Deletion did not complete')
+  expect(await page.evaluate(() => localStorage.getItem('Aduen.case-record.v1'))).not.toBeNull()
+})
+
 test('an unsupported sector stops before evidence collection', async ({ page }) => {
   await reachCaseDetails(page)
   await fillCase(page, { category: 'healthcare' })

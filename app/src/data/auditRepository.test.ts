@@ -20,6 +20,11 @@ describe('local audit log', () => {
     expect(listAuditEvents()).toEqual([])
   })
 
+  it('surfaces storage failures so case deletion cannot report success with an uncleared log', () => {
+    vi.stubGlobal('localStorage', { removeItem: () => { throw new DOMException('Storage is blocked', 'SecurityError') } })
+    expect(() => clearAuditEvents()).toThrow('Storage is blocked')
+  })
+
   it('keeps only the newest 500 events', () => {
     for (let index = 0; index < 505; index += 1) recordAuditEvent('evidence_downloaded', `e${index}`, 'original')
     const events = listAuditEvents()
