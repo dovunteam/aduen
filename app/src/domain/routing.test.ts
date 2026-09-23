@@ -128,6 +128,11 @@ describe('TTPM prerequisite check', () => {
     expect(result.reason).toContain('more than three years ago')
   })
 
+  it('uses the route evaluation date for the accrual pre-check', () => {
+    const route = evaluateInitialRoute({ ...base, consumerLocation: 'malaysia', sellerLocation: 'malaysia', issue: 'non_delivery', remedy: 'refund', contactHistory: 'contacted', contactDate: '2026-09-20', claimAccruedDate: '2023-09-24' }, [], new Date('2026-09-24T00:00:00Z'))
+    expect(route.matchingFacts.join(' ')).toContain('within three years')
+  })
+
   it.each([
     [{ ...base, purpose: 'business' as const }, 'excluded'],
     ...(['healthcare', 'professional_service', 'land', 'aviation', 'personal_injury', 'wills_estates', 'franchise', 'goodwill_ip', 'other_tribunal'] as const).map((category) => [{ ...base, category }, 'excluded'] as const),
