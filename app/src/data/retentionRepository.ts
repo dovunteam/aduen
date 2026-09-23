@@ -5,6 +5,7 @@ import { clearEvidence } from './evidenceRepository'
 import { clearOperatorReviews } from './operatorReviewRepository'
 import { clearPacks } from './packRepository'
 import { clearSubmission } from './statusRepository'
+import { recordAuditEvent } from './auditRepository'
 
 export type RetentionRecord = { setAt: string; expiresAt: string; days: 30 | 90 | 365 }
 
@@ -23,6 +24,7 @@ export function readRetention(): RetentionRecord | null {
 export function saveRetention(days: RetentionRecord['days'], now = new Date()): RetentionRecord {
   const record: RetentionRecord = { setAt: now.toISOString(), expiresAt: new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString(), days }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(record))
+  recordAuditEvent('retention_updated', 'retention', `local retention set to ${days} days`)
   return record
 }
 
