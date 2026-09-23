@@ -52,4 +52,12 @@ describe('complaint pack', () => {
     expect(pack.timeline).toContainEqual(expect.objectContaining({ date: '2026-05-03', source: 'confirmed extracted fact', detail: 'receipt.pdf' }))
     expect(pack.timeline.some((entry) => entry.date === '2026-05-04')).toBe(false)
   })
+
+  it('preserves order and invoice reference roles in confirmed pack facts', () => {
+    const extraction = createEvidenceExtraction(item.id, 'Order no. ADU-1234\nInvoice no. INV-5678')
+    extraction.candidates = extraction.candidates.map((candidate) => reviewCandidate(candidate, 'confirmed'))
+    const pack = createComplaintPack(EMPTY_DRAFT, [item], route, new Date(), 1, [extraction], 'ms')
+    expect(pack.confirmedDerivedFacts.map(({ referenceRole }) => referenceRole)).toEqual(['order', 'invoice'])
+    expect(pack.confirmedDerivedFacts.map((fact) => confirmedFactLabel(fact, 'ms'))).toEqual(['Nombor pesanan', 'Nombor invois'])
+  })
 })

@@ -1,6 +1,7 @@
 export type ExtractedField = 'amount' | 'date' | 'reference' | 'remedy' | 'name'
 export type ExtractedDateRole = 'purchase' | 'promised' | 'delivery' | 'contact' | 'unclassified'
 export type ExtractedAmountRole = 'transaction' | 'refund' | 'unclassified'
+export type ExtractedReferenceRole = 'order' | 'invoice' | 'generic'
 export type ExtractionCandidate = {
   id: string
   field: ExtractedField
@@ -13,6 +14,7 @@ export type ExtractionCandidate = {
   confirmedValue: string | null
   dateRole?: ExtractedDateRole
   amountRole?: ExtractedAmountRole
+  referenceRole?: ExtractedReferenceRole
   reviewHistory?: Array<{ at: string; previousStatus: ExtractionCandidate['status']; previousValue: string | null; status: ExtractionCandidate['status']; value: string | null }>
 }
 
@@ -20,24 +22,27 @@ export type EvidenceExtraction = {
   id: string
   evidenceId: string
   createdAt: string
-  extractorVersion: 'plain-text-v1' | 'plain-text-v2' | 'plain-text-v3' | 'plain-text-v4' | 'plain-text-v5' | 'plain-text-v6' | 'pdf-text-v1' | 'pdf-text-v2' | 'ocr-local-v1' | 'ocr-local-v2'
+  extractorVersion: 'plain-text-v1' | 'plain-text-v2' | 'plain-text-v3' | 'plain-text-v4' | 'plain-text-v5' | 'plain-text-v6' | 'plain-text-v7' | 'pdf-text-v1' | 'pdf-text-v2' | 'pdf-text-v3' | 'ocr-local-v1' | 'ocr-local-v2' | 'ocr-local-v3'
   candidates: ExtractionCandidate[]
 }
 
 export function isValidEvidenceExtraction(value: unknown): value is EvidenceExtraction {
   if (!value || typeof value !== 'object') return false
   const extraction = value as Partial<EvidenceExtraction>
-  const roleAware = ['plain-text-v6', 'pdf-text-v2', 'ocr-local-v2'].includes(extraction.extractorVersion as string)
-  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2', 'plain-text-v3', 'plain-text-v4', 'plain-text-v5', 'plain-text-v6', 'pdf-text-v1', 'pdf-text-v2', 'ocr-local-v1', 'ocr-local-v2'].includes(extraction.extractorVersion as string) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate) && (!roleAware || extraction.candidates.every((item: ExtractionCandidate) => item.field !== 'amount' || item.amountRole !== undefined))
+  const version = extraction.extractorVersion as string
+  const amountRoleAware = ['plain-text-v6', 'plain-text-v7', 'pdf-text-v2', 'pdf-text-v3', 'ocr-local-v2', 'ocr-local-v3'].includes(version)
+  const referenceRoleAware = ['plain-text-v7', 'pdf-text-v3', 'ocr-local-v3'].includes(version)
+  return typeof extraction.id === 'string' && extraction.id.length > 0 && typeof extraction.evidenceId === 'string' && extraction.evidenceId.length > 0 && typeof extraction.createdAt === 'string' && isIsoTimestamp(extraction.createdAt) && ['plain-text-v1', 'plain-text-v2', 'plain-text-v3', 'plain-text-v4', 'plain-text-v5', 'plain-text-v6', 'plain-text-v7', 'pdf-text-v1', 'pdf-text-v2', 'pdf-text-v3', 'ocr-local-v1', 'ocr-local-v2', 'ocr-local-v3'].includes(version) && Array.isArray(extraction.candidates) && extraction.candidates.every(isValidCandidate) && (!amountRoleAware || extraction.candidates.every((item: ExtractionCandidate) => item.field !== 'amount' || item.amountRole !== undefined)) && (!referenceRoleAware || extraction.candidates.every((item: ExtractionCandidate) => item.field !== 'reference' || item.referenceRole !== undefined))
 }
 
-function candidate(field: ExtractedField, value: string, confidence: number, text: string, start: number, end: number, dateRole?: ExtractionCandidate['dateRole'], amountRole?: ExtractedAmountRole): ExtractionCandidate {
+function candidate(field: ExtractedField, value: string, confidence: number, text: string, start: number, end: number, dateRole?: ExtractionCandidate['dateRole'], amountRole?: ExtractedAmountRole, referenceRole?: ExtractedReferenceRole): ExtractionCandidate {
   return {
     id: crypto.randomUUID(), field, value, confidence,
     sourceExcerpt: text.slice(Math.max(0, start - 24), Math.min(text.length, end + 24)).replace(/\s+/g, ' ').trim(),
     start, end, status: 'unconfirmed', confirmedValue: null,
     ...(field === 'date' ? { dateRole: dateRole ?? 'unclassified' } : {}),
     ...(field === 'amount' ? { amountRole: amountRole ?? 'unclassified' } : {}),
+    ...(field === 'reference' ? { referenceRole: referenceRole ?? 'generic' } : {}),
   }
 }
 
@@ -58,10 +63,16 @@ function classifyDate(text: string, start: number): NonNullable<ExtractionCandid
   return 'unclassified'
 }
 
+function classifyReference(value: string): ExtractedReferenceRole {
+  if (/\b(?:order|pesanan)\b/i.test(value)) return 'order'
+  if (/\b(?:invoice|invois)\b/i.test(value)) return 'invoice'
+  return 'generic'
+}
+
 export function extractCandidateFacts(text: string): ExtractionCandidate[] {
   const results: ExtractionCandidate[] = []
   const seen = new Set<string>()
-  const role = (item: ExtractionCandidate) => item.dateRole ?? item.amountRole
+  const role = (item: ExtractionCandidate) => item.dateRole ?? item.amountRole ?? item.referenceRole
   const keyFor = (item: ExtractionCandidate) => `${item.field}:${item.value}:${role(item) ?? ''}`
   const add = (item: ExtractionCandidate) => {
     const itemRole = role(item)
@@ -93,10 +104,10 @@ export function extractCandidateFacts(text: string): ExtractionCandidate[] {
     addDate(`${match[3]}-${month}-${match[1].padStart(2, '0')}`, 0.78, match)
   }
   for (const match of text.matchAll(/\b(?:order|invoice|reference|ref)\s*(?:number|no\.?|#|:)\s*([A-Z0-9][A-Z0-9-]{3,})\b/gi)) {
-    add(candidate('reference', match[1], 0.86, text, match.index, match.index + match[0].length))
+    add(candidate('reference', match[1], 0.86, text, match.index, match.index + match[0].length, undefined, undefined, classifyReference(match[0])))
   }
   for (const match of text.matchAll(/\b(?:nombor\s+(?:pesanan|invois|rujukan)|no\.?\s+rujukan|rujukan)\s*(?:no\.?|#|:)?\s*([A-Z0-9][A-Z0-9-]{3,})\b/gi)) {
-    add(candidate('reference', match[1], 0.82, text, match.index, match.index + match[0].length))
+    add(candidate('reference', match[1], 0.82, text, match.index, match.index + match[0].length, undefined, undefined, classifyReference(match[0])))
   }
   for (const match of text.matchAll(/\b(?:request(?:ed)?|seek(?:ing)?|remedy|want|ask(?:ed)?)\s+(?:for\s+)?(?:a\s+)?(refund|replacement|repair|delivery|cancellation)\b/gi)) {
     add(candidate('remedy', match[1].toLowerCase(), 0.82, text, match.index, match.index + match[0].length))
@@ -114,7 +125,7 @@ export function extractCandidateFacts(text: string): ExtractionCandidate[] {
   return results
 }
 
-export function createEvidenceExtraction(evidenceId: string, text: string, now = new Date(), extractorVersion: EvidenceExtraction['extractorVersion'] = 'plain-text-v6'): EvidenceExtraction {
+export function createEvidenceExtraction(evidenceId: string, text: string, now = new Date(), extractorVersion: EvidenceExtraction['extractorVersion'] = 'plain-text-v7'): EvidenceExtraction {
   return { id: crypto.randomUUID(), evidenceId, createdAt: now.toISOString(), extractorVersion, candidates: extractCandidateFacts(text) }
 }
 
@@ -143,6 +154,7 @@ function isValidCandidate(value: unknown): value is ExtractionCandidate {
   if (typeof candidateValue.id !== 'string' || !candidateValue.id || typeof candidateValue.field !== 'string' || !['amount', 'date', 'reference', 'remedy', 'name'].includes(candidateValue.field) || typeof candidateValue.value !== 'string' || typeof candidateValue.confidence !== 'number' || !Number.isFinite(candidateValue.confidence) || candidateValue.confidence < 0 || candidateValue.confidence > 1 || typeof candidateValue.sourceExcerpt !== 'string' || typeof candidateValue.start !== 'number' || !Number.isInteger(candidateValue.start) || candidateValue.start < 0 || typeof candidateValue.end !== 'number' || !Number.isInteger(candidateValue.end) || candidateValue.end < candidateValue.start || !['unconfirmed', 'confirmed', 'rejected'].includes(candidateValue.status as string) || (candidateValue.confirmedValue !== null && typeof candidateValue.confirmedValue !== 'string')) return false
   if (candidateValue.dateRole !== undefined && (candidateValue.field !== 'date' || !['purchase', 'promised', 'delivery', 'contact', 'unclassified'].includes(candidateValue.dateRole))) return false
   if (candidateValue.amountRole !== undefined && (candidateValue.field !== 'amount' || !['transaction', 'refund', 'unclassified'].includes(candidateValue.amountRole))) return false
+  if (candidateValue.referenceRole !== undefined && (candidateValue.field !== 'reference' || !['order', 'invoice', 'generic'].includes(candidateValue.referenceRole))) return false
   const confirmedValid = candidateValue.confirmedValue === null || candidateValue.status !== 'confirmed' || isValidCandidateValue(candidateValue.field as ExtractedField, candidateValue.confirmedValue)
   return confirmedValid && (!candidateValue.reviewHistory || (Array.isArray(candidateValue.reviewHistory) && candidateValue.reviewHistory.every(isValidReview)))
 }

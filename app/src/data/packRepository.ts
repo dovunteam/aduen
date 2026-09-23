@@ -49,7 +49,7 @@ function isComplaintPack(value: unknown): value is ComplaintPack {
 function isConfirmedDerivedFact(value: unknown): value is ConfirmedDerivedFact {
   if (!value || typeof value !== 'object') return false
   const fact = value as Partial<ConfirmedDerivedFact>
-  return isSafeText(fact.field, 120, true) && isSafeText(fact.value, 500, true) && isSafeText(fact.extractedValue, 500, true) && isSafeText(fact.evidenceId, 100, true) && isSafeText(fact.extractorVersion, 100, true) && (fact.candidateId === undefined || isSafeText(fact.candidateId, 100, true)) && (fact.amountRole === undefined || (fact.field === 'amount' && ['transaction', 'refund', 'unclassified'].includes(fact.amountRole)))
+  return isSafeText(fact.field, 120, true) && isSafeText(fact.value, 500, true) && isSafeText(fact.extractedValue, 500, true) && isSafeText(fact.evidenceId, 100, true) && isSafeText(fact.extractorVersion, 100, true) && (fact.candidateId === undefined || isSafeText(fact.candidateId, 100, true)) && (fact.amountRole === undefined || (fact.field === 'amount' && ['transaction', 'refund', 'unclassified'].includes(fact.amountRole))) && (fact.referenceRole === undefined || (fact.field === 'reference' && ['order', 'invoice', 'generic'].includes(fact.referenceRole)))
 }
 
 function isSafeRoute(route: ComplaintPack['route'] | undefined): boolean {

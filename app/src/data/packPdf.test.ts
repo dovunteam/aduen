@@ -26,10 +26,14 @@ describe('complaint pack PDF localization', () => {
     const pack = { ...base, confirmedDerivedFacts: [
       { field: 'amount', value: '120.00', extractedValue: '120.00', evidenceId: 'e1', extractorVersion: 'plain-text-v6', candidateId: 'c1', amountRole: 'transaction' as const },
       { field: 'amount', value: '25.00', extractedValue: '25.00', evidenceId: 'e1', extractorVersion: 'plain-text-v6', candidateId: 'c2', amountRole: 'refund' as const },
+      { field: 'reference', value: 'ADU-1234', extractedValue: 'ADU-1234', evidenceId: 'e1', extractorVersion: 'plain-text-v7', candidateId: 'c3', referenceRole: 'order' as const },
+      { field: 'reference', value: 'INV-5678', extractedValue: 'INV-5678', evidenceId: 'e1', extractorVersion: 'plain-text-v7', candidateId: 'c4', referenceRole: 'invoice' as const },
     ] }
     const content = new TextDecoder('windows-1252').decode(createComplaintPackPdf(pack).output('arraybuffer'))
     expect(content).toContain('Possible transaction amount: 120.00')
     expect(content).toContain('Possible refund amount: 25.00')
+    expect(content).toContain('Order reference: ADU-1234')
+    expect(content).toContain('Invoice number: INV-5678')
   })
 
   it('exports confirmed extracted dates in the chronology with their provenance', () => {

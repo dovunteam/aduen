@@ -72,14 +72,14 @@ export async function addEvidence(file: File, input: EvidenceInput): Promise<Evi
     try {
       const { extractLocalOcrText } = await import('../domain/localOcr')
       const hybrid = await extractLocalOcrText(file, file.type)
-      if (hybrid.usedOcr && hybrid.text) extraction = createEvidenceExtraction(metadata.id, hybrid.text, new Date(), 'ocr-local-v2')
+      if (hybrid.usedOcr && hybrid.text) extraction = createEvidenceExtraction(metadata.id, hybrid.text, new Date(), 'ocr-local-v3')
     } catch { /* OCR is best-effort; preserve the original and any searchable text. */ }
-    if (!extraction && text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'pdf-text-v2')
+    if (!extraction && text) extraction = createEvidenceExtraction(metadata.id, text, new Date(), 'pdf-text-v3')
   } else if (file.type.startsWith('image/')) {
     try {
       const { extractLocalOcrText } = await import('../domain/localOcr')
       const result = await extractLocalOcrText(file, file.type)
-      if (result.text) extraction = createEvidenceExtraction(metadata.id, result.text, new Date(), 'ocr-local-v2')
+      if (result.text) extraction = createEvidenceExtraction(metadata.id, result.text, new Date(), 'ocr-local-v3')
     } catch { /* OCR is best-effort; preserve the original for manual review. */ }
   }
 

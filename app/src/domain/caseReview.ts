@@ -111,9 +111,16 @@ export function findFactConflicts(draft: CaseDraft, extractions: EvidenceExtract
   if (refundAmounts.length > 1) conflicts.push('Confirmed evidence contains different refund amounts.')
   const requestedRefund = Number(draft.remedyAmount)
   if (draft.remedy === 'refund' && requestedRefund > 0 && refundAmounts.some((amount) => Math.abs(amount - Math.round(requestedRefund * 100)) >= 1)) conflicts.push(`A confirmed extracted refund amount differs from the entered requested refund amount of MYR ${requestedRefund.toFixed(2)}.`)
-  const extractedReferences = [...new Set(confirmed.filter((item) => item.field === 'reference').map((item) => item.confirmedValue).filter(Boolean))]
-  if (new Set(extractedReferences.map((reference) => reference?.trim().toLowerCase())).size > 1) conflicts.push('Confirmed evidence contains different order or reference numbers.')
-  if (draft.orderReference && extractedReferences.some((reference) => reference?.trim().toLowerCase() !== draft.orderReference.trim().toLowerCase())) conflicts.push('A confirmed extracted reference differs from the entered order or reference number.')
+  const references = confirmed.filter((item) => item.field === 'reference' && item.confirmedValue)
+  const roleForReference = (item: typeof references[number]) => item.referenceRole ?? (/\b(?:invoice|invois)\b/i.test(item.sourceExcerpt) ? 'invoice' : /\b(?:order|pesanan)\b/i.test(item.sourceExcerpt) ? 'order' : 'generic')
+  const referencesFor = (role: 'order' | 'invoice' | 'generic') => [...new Set(references.filter((item) => roleForReference(item) === role).map((item) => item.confirmedValue?.trim().toLowerCase()))]
+  const orderReferences = referencesFor('order')
+  const invoiceReferences = referencesFor('invoice')
+  const genericReferences = referencesFor('generic')
+  if (orderReferences.length > 1 || genericReferences.length > 1) conflicts.push('Confirmed evidence contains different order or reference numbers.')
+  if (invoiceReferences.length > 1) conflicts.push('Confirmed evidence contains different invoice numbers.')
+  const caseReferences = orderReferences.length ? orderReferences : genericReferences
+  if (draft.orderReference && caseReferences.some((reference) => reference !== draft.orderReference.trim().toLowerCase())) conflicts.push('A confirmed extracted reference differs from the entered order or reference number.')
   const datedFields = [
     { role: 'purchase', label: 'purchase', value: draft.purchaseDate },
     { role: 'promised', label: 'promised performance', value: draft.promisedDate },
