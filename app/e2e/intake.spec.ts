@@ -27,16 +27,20 @@ async function fillCase(page: import('@playwright/test').Page, overrides: { purp
   await page.getByLabel('Your location').selectOption(overrides.consumerLocation ?? 'malaysia')
   await page.getByLabel('Seller or merchant').fill('Synthetic Store')
   await page.getByLabel('Seller location').selectOption('malaysia')
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByLabel('Purchase date').fill('2026-08-01')
   await page.getByLabel('Amount paid (MYR)').fill(overrides.amount ?? '125.50')
   if (overrides.claimAmount) await page.getByLabel('Estimated legal claim amount (MYR)').fill(overrides.claimAmount)
   if (overrides.claimAccruedDate) await page.getByLabel('Date the claim accrued').fill(overrides.claimAccruedDate)
   await page.getByLabel('Payment method').selectOption({ label: 'Card' })
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByLabel('Purchase purpose').selectOption(overrides.purpose ?? 'personal')
   await page.getByLabel('Purchase category').selectOption(overrides.category ?? 'general_goods')
   await page.getByLabel('What went wrong?').selectOption('non_delivery')
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByLabel('Primary remedy').selectOption('refund')
   await page.getByLabel('Refund amount (RM)').fill(overrides.refundAmount ?? '125.50')
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByLabel('Merchant contact').selectOption(overrides.contactHistory ?? 'none')
   if (overrides.contactDate) await page.getByLabel('Date of latest contact').fill(overrides.contactDate)
   await page.getByRole('button', { name: /Save case draft/ }).click()
@@ -53,6 +57,45 @@ async function addEvidence(page: import('@playwright/test').Page, type: string, 
   await expect(page.getByText(name)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Add evidence' })).toBeEnabled()
 }
+
+async function advanceCaseTo(page: import('@playwright/test').Page, targetSection: number) {
+  const form = page.locator('.case-form')
+  await expect(form).toBeVisible()
+  let currentSection = Number(await form.getAttribute('data-section'))
+  while (currentSection < targetSection) {
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    currentSection += 1
+    await expect(form).toHaveAttribute('data-section', String(currentSection))
+  }
+  expect(currentSection).toBe(targetSection)
+}
+
+test('case details are split into five guided sections with required-field checks', async ({ page }) => {
+  await reachCaseDetails(page)
+  const form = page.locator('.case-form')
+  await expect(form).toHaveAttribute('data-section', '0')
+  await expect(page.getByText('Section 1 of 5')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Transaction', level: 2 })).toBeVisible()
+  await expect(page.getByLabel('Purchase date')).toBeHidden()
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await expect(form).toHaveAttribute('data-section', '0')
+
+  await page.getByLabel('Your name or chosen case name').fill('Synthetic Consumer')
+  await page.getByLabel('Your location').selectOption('malaysia')
+  await page.getByLabel('Seller or merchant').fill('Synthetic Store')
+  await page.getByLabel('Seller location').selectOption('malaysia')
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await expect(form).toHaveAttribute('data-section', '1')
+  await expect(page.getByText('Section 2 of 5')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Payment details', level: 2 })).toBeVisible()
+  await page.getByLabel('Purchase date').fill('2026-08-01')
+  await page.getByLabel('Amount paid (MYR)').fill('125.50')
+  await page.getByLabel('Payment method').selectOption('Card')
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await page.getByRole('button', { name: 'Previous section', exact: true }).click()
+  await expect(page.getByLabel('Amount paid (MYR)')).toHaveValue('125.50')
+  await expect(page.getByLabel('Seller or merchant')).toBeHidden()
+})
 
 async function recordOperatorReview(page: import('@playwright/test').Page) {
   await page.getByLabel('Reviewer code').fill('SYNTH-OPERATOR-01')
@@ -412,7 +455,10 @@ test('published TTPM exclusions have explicit intake categories and stop case pr
   for (const [index, [category, reason]] of exclusions.entries()) {
     if (index > 0) {
       await page.getByRole('button', { name: 'Review case details' }).click()
+      await expect(page.locator('.case-form')).toHaveAttribute('data-section', '0')
+      await advanceCaseTo(page, 2)
       await page.getByLabel('Purchase category').selectOption(category)
+      await advanceCaseTo(page, 4)
       await page.getByRole('button', { name: /Save case draft/ }).click()
     }
     await expect(page.getByRole('heading', { name: 'Aduen should not prepare this case.' })).toBeVisible()
@@ -447,7 +493,10 @@ test('overdue sector sources hide time-dependent instructions but keep official 
   ] as const) {
     if (index > 0) {
       await page.getByRole('button', { name: 'Review case details' }).click()
+      await expect(page.locator('.case-form')).toHaveAttribute('data-section', '0')
+      await advanceCaseTo(page, 2)
       await page.getByLabel('Purchase category').selectOption(category)
+      await advanceCaseTo(page, 4)
       await page.getByRole('button', { name: /Save case draft/ }).click()
     } else {
       await fillCase(page, { category })

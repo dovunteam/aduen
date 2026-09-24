@@ -162,6 +162,30 @@ h2 { color: var(--ink); font-weight: 700; }
   .hero-start, .hero-learn { flex-basis: auto; }
 }
 .progress-mobile { display: none; }
+.case-section-progress { display: grid; gap: 9px; max-width: 620px; margin: 27px 0 0; }
+.case-section-progress > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.case-section-progress span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.case-section-progress strong { color: var(--ink); font-size: 13px; text-align: right; }
+.case-section-meter { display: block; width: 100%; height: 5px; overflow: hidden; appearance: none; border: 0; border-radius: 5px; background: #dce5e8; }
+.case-section-meter::-webkit-progress-bar { border-radius: 5px; background: #dce5e8; }
+.case-section-meter::-webkit-progress-value { border-radius: 5px; background: var(--teal); }
+.case-section-meter::-moz-progress-bar { border-radius: 5px; background: var(--teal); }
+.case-form > .form-section { display: none; }
+.case-form[data-section="0"] > .form-section:nth-child(2),
+.case-form[data-section="1"] > .form-section:nth-child(2),
+.case-form[data-section="2"] > .form-section:nth-child(3),
+.case-form[data-section="3"] > .form-section:nth-child(4),
+.case-form[data-section="4"] > .form-section:nth-child(5) { display: grid; }
+.case-form[data-section="0"] > .form-section:nth-child(2) .fields > label:nth-of-type(n + 6),
+.case-form[data-section="1"] > .form-section:nth-child(2) .fields > label:nth-of-type(-n + 5) { display: none; }
+.route-preview { color: #fff; }
+.route-preview h2, .route-preview .route-details strong { color: #fff; }
+.route-preview .route-details p, .route-preview .route-details ul { color: #e0ece8; }
+.candidate-actions button:first-child { color: #fff; background: #075868; }
+.workspace-next { color: #fff; }
+.workspace-next h2 { color: #fff; }
+.workspace-next p { color: #e0ece8; }
+.app-shell > footer, .app-shell > footer p, .app-shell > footer span { color: #fff; }
 @media (max-width: 760px) {
   .progress { display: block; padding: 12px 20px 14px; }
   .progress-mobile { display: grid; gap: 8px; }
