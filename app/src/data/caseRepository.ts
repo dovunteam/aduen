@@ -47,6 +47,29 @@ export function readCase(): CaseRecord | null {
 export function wasCaseRestored(): boolean { return restoredCaseThisSession }
 export function readCaseBackup(): CaseRecord | null { return readBackup() }
 
+export function hasAnyStoredCase(): boolean {
+  return [CASE_KEY, CASE_BACKUP_KEY, LEGACY_DRAFT_KEY, TUNTIVA_CASE_KEY, TUNTIVA_DRAFT_KEY].some((key) => localStorage.getItem(key) !== null)
+}
+
+export function importHostedCaseAsLocalDraft(hosted: CaseRecord): CaseRecord {
+  if (!isValidCaseRecord(hosted)) throw new Error('Hosted case record is invalid.')
+  if (hasAnyStoredCase()) throw new Error('This browser already contains a local case record.')
+  const now = new Date(Math.max(Date.now(), new Date(hosted.updatedAt).getTime() + 1)).toISOString()
+  const imported: CaseRecord = {
+    id: crypto.randomUUID(),
+    createdAt: now,
+    updatedAt: now,
+    status: 'draft',
+    draft: hosted.draft,
+    history: [...hosted.history, { at: now, actor: 'system', action: 'hosted_copy_imported_as_new_local_draft', status: 'draft' }],
+  }
+  if (!isValidCaseRecord(imported)) throw new Error('Hosted case record could not be prepared for local use.')
+  localStorage.setItem(CASE_KEY, JSON.stringify(imported))
+  writeBackup(imported)
+  recordAuditEvent('hosted_case_imported', hosted.id, 'structured hosted case copied into a new local draft')
+  return imported
+}
+
 export function saveCaseDraft(draft: CaseDraft): CaseRecord {
   if (!isCaseDraft(draft)) throw new Error('Invalid case draft.')
   const existing = readCase()
