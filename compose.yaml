@@ -97,6 +97,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to the exact browser application origins}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
       RATE_LIMIT_HMAC_KEY: ${RATE_LIMIT_HMAC_KEY:-}
+      METRICS_BEARER_TOKEN: ${METRICS_BEARER_TOKEN:-}
     ports:
       - 127.0.0.1:${API_PORT:-8080}:8080
     depends_on:

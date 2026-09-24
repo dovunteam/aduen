@@ -14,6 +14,7 @@ export type ApiConfig = {
   corsOrigins: string[]
   trustedProxies: string[]
   rateLimitHmacKey: string | null
+  metricsBearerToken: string | null
   nodeEnv: string
 }
 
@@ -53,8 +54,11 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const rateLimitHmacKey = env.RATE_LIMIT_HMAC_KEY?.trim() || null
   if (rateLimitHmacKey && Buffer.byteLength(rateLimitHmacKey, 'utf8') < 32) throw new Error('RATE_LIMIT_HMAC_KEY must contain at least 32 UTF-8 bytes.')
   if (nodeEnv === 'production' && !rateLimitHmacKey) throw new Error('RATE_LIMIT_HMAC_KEY is required for shared production rate limiting.')
+  const metricsBearerToken = env.METRICS_BEARER_TOKEN?.trim() || null
+  if (metricsBearerToken && Buffer.byteLength(metricsBearerToken, 'utf8') < 32) throw new Error('METRICS_BEARER_TOKEN must contain at least 32 UTF-8 bytes.')
+  if (nodeEnv === 'production' && !metricsBearerToken) throw new Error('METRICS_BEARER_TOKEN is required for protected production metrics.')
 
-  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, nodeEnv }
+  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, metricsBearerToken, nodeEnv }
 }
 
 function isIpOrCidr(value: string): boolean {
