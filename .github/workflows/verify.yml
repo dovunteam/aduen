@@ -128,9 +128,11 @@ jobs:
           docker image load --input api-image.tar
           sha256sum --check api-image.tar.sha256
           expected_image_id=$(sed -n 's/^image_id=//p' api-image-metadata.txt)
-          actual_image_id=$(docker image inspect --format '{{.Id}}' "$TESTED_IMAGE")
+          archive_config=$(tar -xOf api-image.tar manifest.json | jq -er '.[0].Config')
+          archive_image_id="sha256:$(tar -xOf api-image.tar "$archive_config" | sha256sum | cut -d ' ' -f 1)"
           test -n "$expected_image_id"
-          test "$actual_image_id" = "$expected_image_id"
+          test "$archive_image_id" = "$expected_image_id"
+          docker image inspect "$TESTED_IMAGE" >/dev/null
       - name: Upload API image SBOM and metadata
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
