@@ -1,6 +1,6 @@
 import { createRemoteJWKSet, customFetch, errors, jwtVerify } from 'jose'
 
-export type Authenticate = (authorization: string | undefined) => Promise<string>
+export type Authenticate = ((authorization: string | undefined) => Promise<string>) & { checkProvider(): Promise<void> }
 export type AuthOptions = { issuer: string; jwksUrl: string; audience: string; maxTokenAgeSeconds?: number }
 
 export class AuthenticationUnavailable extends Error {
@@ -23,7 +23,7 @@ export function createAuthenticator(options: AuthOptions): Authenticate {
     },
   })
 
-  return async (authorization) => {
+  const authenticate = (async (authorization: string | undefined) => {
     const match = authorization?.match(/^Bearer ([A-Za-z0-9._~-]+)$/u)
     if (!match) throw new Error('unauthorized')
 
@@ -41,7 +41,18 @@ export function createAuthenticator(options: AuthOptions): Authenticate {
       if (isProviderUnavailable(error)) throw new AuthenticationUnavailable()
       throw new Error('unauthorized')
     }
+  }) as Authenticate
+
+  authenticate.checkProvider = async () => {
+    try {
+      if (!keySet.fresh) await keySet.reload()
+      if (!keySet.jwks()?.keys.length) throw new Error('No signing keys are available.')
+    } catch {
+      throw new AuthenticationUnavailable()
+    }
   }
+
+  return authenticate
 }
 
 function isProviderUnavailable(error: unknown): boolean {
