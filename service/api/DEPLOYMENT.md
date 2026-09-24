@@ -1,0 +1,64 @@
+# Provider-neutral deployment contract
+
+This document describes how to run the Aduen case API in an OCI-compatible container environment. It does not select an infrastructure, identity, database, secret-management, or backup vendor. The current repository contains no production deployment configuration, and the service remains a synthetic-data foundation. Completing this contract is not approval to accept real consumer records.
+
+## Runtime topology
+
+- Build the image from `service/api/Dockerfile` and deploy the resulting immutable image digest. The image listens on port `8080`, runs as the unprivileged `node` user, and includes a container health check for `/health/ready`.
+- Run API replicas as stateless processes. Provide an externally operated PostgreSQL database over TLS. Do not expose PostgreSQL to browsers or the public network.
+- Expose the API only through a TLS-terminating HTTPS ingress. Restrict direct access to the container port. Set `TRUSTED_PROXIES` to the ingress addresses that the API actually receives as its network peer; do not trust the entire cluster or public address space.
+- The static browser application calls the API from the user’s browser. Set `VITE_API_BASE_URL` to the public HTTPS API base URL; if it contains a path prefix, route that prefix to the API’s `/v1` endpoints. Set the browser’s exact HTTPS origin in the API’s `CORS_ORIGINS`. Build the client with the provider-neutral `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, `VITE_OIDC_REDIRECT_URI`, `VITE_OIDC_POST_LOGOUT_REDIRECT_URI`, and `VITE_OIDC_SCOPE` values. Register those redirect URIs and the API audience with the chosen OIDC issuer before enabling sign-in.
+
+Each API process opens a PostgreSQL pool of up to 10 connections. Account for that pool across the maximum replica count and the database connection limit. Production rate-limit counters are shared in PostgreSQL, so all replicas must use the same `RATE_LIMIT_HMAC_KEY`; rotating it changes the rate-limit key namespace and should be coordinated across replicas.
+
+## Database roles and migrations
+
+Provision a database, TLS certificate validation, and three distinct roles before deploying the API:
+
+| Role | Use | Required boundary |
+|---|---|---|
+| Schema owner / migrator | One-shot migration job only | Owns schema and applies the versioned migrations; never supplied to API replicas |
+| `aduen_api` | API runtime | Restricted login role; not a table owner, superuser, or RLS bypass role |
+| `aduen_retention` | Scheduled expiry jobs | Can expire approved records through timestamp-only policies; cannot read case content or owner identifiers |
+
+Create roles using the managed database’s supported provisioning process. `service/api/docker/init-db.sh` is for the local Compose database bootstrap; it is not a managed-database provisioning workflow. Provide a short-lived `DATABASE_URL_MIGRATOR` only to the migration job. Run `npm run migrate` from the API image once before rolling out new replicas. The migrator serializes concurrent runs and rejects changed or unknown migration history. Take and verify a pre-change backup before a schema rollout. Migrations are not automatically reversed; recover with a forward fix or the approved restore procedure.
+
+API replicas use only `DATABASE_URL` for the restricted runtime role. Configure `DATABASE_SSL=true`; the client validates the server certificate. Startup checks the protected tables, role privileges, ownership boundaries, and exact migration ledger. A failed guard must stop rollout rather than trigger a permissive fallback.
+
+## API environment
+
+Inject these values through the runtime’s secret and configuration facilities. Do not bake credentials into the image or browser bundle.
+
+| Variable | Required production value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `HOST` / `PORT` | Bind to the container interface and the port exposed by the image, normally `0.0.0.0` / `8080` |
+| `DATABASE_URL` | Restricted `aduen_api` login URL |
+| `DATABASE_SSL` | `true` |
+| `AUTH_ISSUER` | HTTPS issuer matching the access token’s `iss` claim |
+| `AUTH_JWKS_URL` | HTTPS JWKS endpoint for the configured issuer |
+| `AUTH_AUDIENCE` | API audience registered with the issuer |
+| `AUTH_MAX_TOKEN_AGE_SECONDS` | Explicit whole-second maximum from 60 to 86400; default is 3600 |
+| `CORS_ORIGINS` | Comma-separated exact HTTPS browser origins; no paths or wildcard |
+| `TRUSTED_PROXIES` | Exact ingress peer IP addresses or CIDRs observed by the API |
+| `RATE_LIMIT_HMAC_KEY` | Random secret with at least 32 UTF-8 bytes, identical across replicas |
+| `HOSTED_CASE_RETENTION_DAYS` | Explicit policy-approved whole number from 1 to 3650 |
+
+The issuer does not need to be a specific vendor. Its access tokens must use RS256 or ES256, include `iss`, `sub`, `aud`, `iat`, and `exp`, and be verifiable at the configured JWKS endpoint. Offline refresh is disabled in the client. Account recovery, logout/session revocation, issuer registration, and the production redirect policy still need explicit review.
+
+## Release and operations sequence
+
+1. Approve the data purpose, privacy notice, account lifecycle, audit and hosted-case retention periods, expiry cadence, backup expiry, recovery objectives, and incident process. Do not enable real-record intake while these decisions are open.
+2. Provision the database roles, TLS, network rules, secret injection, and a production OIDC registration. Set the retention value only after policy approval.
+3. Build the API image and review the dependency audit in CI; scan the final image according to the selected runtime’s security policy and record its immutable digest. Build the browser application with the production API base URL and OIDC public settings. Register both browser redirect URIs with the issuer.
+4. Apply migrations with the separate migrator job. Verify the migration ledger and runtime role using the restricted API connection before shifting traffic.
+5. Roll out the API image behind HTTPS ingress. Route readiness from `/health/ready`; use `/health/live` only to detect a failed process. Allow graceful `SIGTERM` shutdown and give open requests time to finish. Verify CORS and browser security headers at the deployed origins.
+6. Schedule one-shot maintenance containers from the same immutable API image: run `node dist/pruneAudit.js` with `DATABASE_URL_MAINTENANCE` and approved `AUDIT_RETENTION_DAYS`; run `node dist/pruneHostedCases.js` with the maintenance URL and the same approved `HOSTED_CASE_RETENTION_DAYS` as the API. (The local npm scripts build first and are for development.) Alert on nonzero job exits without logging credentials or case data.
+7. Configure encrypted PostgreSQL backups with `backupArchiveCli.js seal`, retain key IDs and prior decryption keys according to the approved recovery policy, and restore into an isolated database using `backupArchiveCli.js open` before `pg_restore`. Run and record recurring restore drills.
+8. Verify owner isolation, access/deletion/export behavior, database TLS and role restrictions, ingress proxy trust, rate limiting, secret rotation, retention jobs, backup restoration, request-log redaction, and incident response before considering real-record intake.
+
+## Readiness signals and remaining gates
+
+`/health/live` reports process liveness. `/health/ready` checks database connectivity; it does not test the OIDC issuer, JWKS reachability, ingress, or browser configuration. Authentication requests return unavailable if JWKS retrieval fails. Monitor API status codes and latency, health checks, database saturation, migration failures, retention-job exits, and backup/restore outcomes using infrastructure monitoring that does not capture request bodies, tokens, owner subjects, case identifiers, or query strings.
+
+This runbook does not provide an infrastructure-specific deployment, scheduler, monitoring integration, production OIDC registration, managed secret store, backup target, or retention schedule. Those must be selected and verified for the chosen operating environment before the service can be treated as production-ready.
