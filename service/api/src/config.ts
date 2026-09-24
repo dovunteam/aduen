@@ -6,6 +6,7 @@ export type ApiConfig = {
   port: number
   databaseUrl: string
   databaseSsl: boolean
+  databasePoolMax: number
   issuer: string
   jwksUrl: string
   audience: string
@@ -25,6 +26,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const host = env.HOST?.trim() || '127.0.0.1'
   if (nodeEnv === 'production' && host !== '0.0.0.0') throw new Error('HOST=0.0.0.0 is required in production so the container can receive ingress traffic.')
   const databaseUrl = required(env.DATABASE_URL, 'DATABASE_URL')
+  const databasePoolMax = Number(env.DATABASE_POOL_MAX ?? '10')
+  if (!Number.isInteger(databasePoolMax) || databasePoolMax < 1 || databasePoolMax > 100) throw new Error('DATABASE_POOL_MAX must be a whole number from 1 to 100.')
   const issuer = required(env.AUTH_ISSUER, 'AUTH_ISSUER')
   const jwksUrl = required(env.AUTH_JWKS_URL, 'AUTH_JWKS_URL')
   const audience = required(env.AUTH_AUDIENCE, 'AUTH_AUDIENCE')
@@ -65,7 +68,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   if (metricsBearerToken && Buffer.byteLength(metricsBearerToken, 'utf8') < 32) throw new Error('METRICS_BEARER_TOKEN must contain at least 32 UTF-8 bytes.')
   if (nodeEnv === 'production' && !metricsBearerToken) throw new Error('METRICS_BEARER_TOKEN is required for protected production metrics.')
 
-  return { host, port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, rateLimitHmacPreviousKey, metricsBearerToken, nodeEnv }
+  return { host, port, databaseUrl, databaseSsl, databasePoolMax, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, rateLimitHmacPreviousKey, metricsBearerToken, nodeEnv }
 }
 
 function isIpOrCidr(value: string): boolean {
