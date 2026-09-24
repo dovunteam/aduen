@@ -96,6 +96,17 @@ function App() {
     recordAuditEvent('hosted_case_saved', record.id, 'structured case record saved to hosted account')
   }
 
+  async function loadHostedCases(cursor?: string) {
+    if (!hosted || !identitySignedIn) throw new Error('Hosted case storage is unavailable.')
+    return hosted.api.list(100, cursor)
+  }
+
+  async function deleteHostedCase(id: string, revision: number) {
+    if (!hosted || !identitySignedIn) throw new Error('Hosted case storage is unavailable.')
+    await hosted.api.delete(id, revision)
+    recordAuditEvent('hosted_case_deleted', id, 'hosted case record deleted from account')
+  }
+
   async function beginHostedSignIn() {
     if (!hosted) return
     try { await hosted.identity.beginSignIn() } catch { setIdentityError(true) }
@@ -192,7 +203,7 @@ function App() {
   return <div className={`app-shell ${step === 'welcome' || step === 'workspace' ? 'is-welcome' : 'is-workflow'}`}>
     <header className="topbar"><button className="wordmark" type="button" onClick={() => setStep('welcome')} aria-label={text.home}><AduenBrand /></button>{step === 'welcome' && <nav className="header-nav" aria-label={locale === 'ms' ? 'Navigasi utama' : 'Main navigation'}><a href="#how-it-works">{locale === 'ms' ? 'Cara ia berfungsi' : 'How it works'}</a><a href="#before-title">{locale === 'ms' ? 'Apa yang kami bantu' : 'What we cover'}</a></nav>}<div className="header-actions">{readCase() && readConsent() && step !== 'workspace' && <button className="data-link" onClick={() => setStep('workspace')}>{locale === 'ms' ? 'Kes saya' : 'My case'}</button>}<div className="locale-switch" aria-label="Language / Bahasa"><button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button><button type="button" aria-pressed={locale === 'ms'} onClick={() => setLocale('ms')}>BM</button></div><button className="data-link" type="button" onClick={openDataControls}>{text.dataControls}</button>{hosted && <button className="data-link" type="button" onClick={() => identitySignedIn ? void beginHostedSignOut() : void beginHostedSignIn()}>{identitySignedIn ? (locale === 'ms' ? 'Log keluar' : 'Sign out') : (locale === 'ms' ? 'Log masuk' : 'Sign in')}</button>}<div className="pilot-label"><span /> {text.prototype}</div></div></header>
     <main>
-      <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div aria-current={index + 1 === progress ? 'step' : undefined} className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>
+      {step !== 'data' && <nav className="progress" aria-label={text.progressLabel}>{text.progress.map((label, index) => <div aria-current={index + 1 === progress ? 'step' : undefined} className={index + 1 <= progress ? 'progress-item active' : 'progress-item'} key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</div>)}</nav>}
       {storageError && <div className="storage-error" role="alert"><p>{storageError}</p>{unsaved && <button type="button" className="secondary" onClick={() => persistDraft(draft)}>{locale === 'ms' ? 'Cuba simpan lagi' : 'Retry saving'}</button>}</div>}
       {caseRecovered && <div className="storage-error" role="status"><p>{locale === 'ms' ? 'Simpanan kes terdahulu dipulihkan kerana rekod terkini tidak dapat dibaca. Semak butiran kes yang dipulihkan sebelum meneruskan.' : 'A previous case autosave was restored because the latest record could not be read. Review the restored case details before continuing.'}</p><button type="button" className="secondary" onClick={() => setCaseRecovered(false)}>{locale === 'ms' ? 'Tutup' : 'Dismiss'}</button></div>}
 
@@ -232,7 +243,7 @@ function App() {
       {step === 'review' && <ReviewStep locale={locale} caseId={readCase()?.id ?? 'case'} draft={draft} evidence={reviewEvidence} extractions={extractions} onBack={() => setStep('evidence')} onPrepare={(route) => void runAction(() => { recordCaseTransition(draft, 'ready_for_pack', 'route_confirmed'); const pack = createComplaintPack(draft, reviewEvidence, route, new Date(), nextPackVersion(), extractions, locale); savePack(pack); setComplaintPack(pack); setStep('pack') })} />}
       {step === 'pack' && complaintPack && <PackStep locale={locale} initialPack={complaintPack} onBack={() => setStep('review')} onApproved={(approved) => { savePack(approved); recordCaseTransition(draft, 'approved', `pack_v${approved.version}_approved`); setComplaintPack(approved) }} onContinue={() => setStep('status')} />}
       {step === 'status' && <StatusStep locale={locale} onBack={() => setStep(complaintPack ? 'pack' : 'review')} onStatusChange={(status) => recordCaseTransition(draft, status, 'external_status_recorded')} />}
-      {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} hostedConfigured={Boolean(hosted)} signedIn={identitySignedIn} identityError={identityError} onSignIn={beginHostedSignIn} onSaveHosted={syncHostedCase} />}
+      {step === 'data' && <DataControls locale={locale} draft={draft} onBack={() => setStep(returnStep)} onDelete={startOver} hostedConfigured={Boolean(hosted)} signedIn={identitySignedIn} identityError={identityError} onSignIn={beginHostedSignIn} onSaveHosted={syncHostedCase} onListHosted={loadHostedCases} onDeleteHosted={deleteHostedCase} />}
     </main>
     <footer><div className="footer-brand"><AduenBrand compact /><span>{locale === 'ms' ? 'Susun. Jelaskan. Ambil langkah seterusnya.' : 'Organise. Clarify. Take the next step.'}</span></div><p>{text.footer}</p></footer>
   </div>
