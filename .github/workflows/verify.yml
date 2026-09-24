@@ -97,6 +97,7 @@ jobs:
           test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$api_container")" = true
           test "$(docker inspect --format '{{json .HostConfig.CapDrop}}' "$api_container")" = '["ALL"]'
           test "$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$api_container")" = '["no-new-privileges:true"]'
+          docker exec "$api_container" sh -c '! command -v npm && ! command -v npx && ! command -v corepack && ! command -v yarn'
           curl --fail --silent http://127.0.0.1:8080/health/live
           curl --fail --silent http://127.0.0.1:8080/health/ready
       - name: Scan the API image for high and critical vulnerabilities
