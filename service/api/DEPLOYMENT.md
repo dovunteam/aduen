@@ -9,7 +9,7 @@ This document describes how to run the Aduen case API in an OCI-compatible conta
 - Expose the API only through a TLS-terminating HTTPS ingress. Restrict direct access to the container port. Set `TRUSTED_PROXIES` to the ingress addresses that the API actually receives as its network peer; do not trust the entire cluster or public address space.
 - The static browser application calls the API from the user’s browser. Set `VITE_API_BASE_URL` to the public HTTPS API base URL; if it contains a path prefix, route that prefix to the API’s `/v1` endpoints. Set the browser’s exact HTTPS origin in the API’s `CORS_ORIGINS`. Build the client with the provider-neutral `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, `VITE_OIDC_REDIRECT_URI`, `VITE_OIDC_POST_LOGOUT_REDIRECT_URI`, and `VITE_OIDC_SCOPE` values. Register those redirect URIs and the API audience with the chosen OIDC issuer before enabling sign-in.
 
-Each API process opens a PostgreSQL pool of up to 10 connections. Account for that pool across the maximum replica count and the database connection limit. Production rate-limit counters are shared in PostgreSQL, so all replicas must use the same `RATE_LIMIT_HMAC_KEY`; rotating it changes the rate-limit key namespace and should be coordinated across replicas.
+Each API process opens a PostgreSQL pool of up to 10 connections. Account for that pool across the maximum replica count and the database connection limit. Production rate-limit counters are shared in PostgreSQL, so all replicas must use the same `RATE_LIMIT_HMAC_KEY`. For rotation, set the new active key in `RATE_LIMIT_HMAC_KEY` and the old key in `RATE_LIMIT_HMAC_KEY_PREVIOUS` on every replica before rolling them; both namespaces are incremented and the higher count enforces the limit. After every replica has used both keys for at least one 60-second window, remove `RATE_LIMIT_HMAC_KEY_PREVIOUS`.
 
 ## Database roles and migrations
 
@@ -45,6 +45,7 @@ Inject these values through the runtime’s secret and configuration facilities.
 | `CORS_ORIGINS` | Comma-separated exact HTTPS browser origins; no paths or wildcard |
 | `TRUSTED_PROXIES` | Exact ingress peer IP addresses or CIDRs observed by the API |
 | `RATE_LIMIT_HMAC_KEY` | Random secret with at least 32 UTF-8 bytes, identical across replicas |
+| `RATE_LIMIT_HMAC_KEY_PREVIOUS` | Optional prior rate-limit key used temporarily during a coordinated rotation |
 | `METRICS_BEARER_TOKEN` | Random secret with at least 32 UTF-8 bytes; keep it only in the scraper and API secret stores |
 | `HOSTED_CASE_RETENTION_DAYS` | Explicit policy-approved whole number from 1 to 3650 |
 
