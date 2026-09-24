@@ -21,6 +21,8 @@ export type ApiConfig = {
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const nodeEnv = env.NODE_ENV ?? 'development'
   if (!['development', 'test', 'production'].includes(nodeEnv)) throw new Error('NODE_ENV must be development, test, or production.')
+  const host = env.HOST?.trim() || '127.0.0.1'
+  if (nodeEnv === 'production' && host !== '0.0.0.0') throw new Error('HOST=0.0.0.0 is required in production so the container can receive ingress traffic.')
   const databaseUrl = required(env.DATABASE_URL, 'DATABASE_URL')
   const issuer = required(env.AUTH_ISSUER, 'AUTH_ISSUER')
   const jwksUrl = required(env.AUTH_JWKS_URL, 'AUTH_JWKS_URL')
@@ -58,7 +60,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   if (metricsBearerToken && Buffer.byteLength(metricsBearerToken, 'utf8') < 32) throw new Error('METRICS_BEARER_TOKEN must contain at least 32 UTF-8 bytes.')
   if (nodeEnv === 'production' && !metricsBearerToken) throw new Error('METRICS_BEARER_TOKEN is required for protected production metrics.')
 
-  return { host: env.HOST ?? '127.0.0.1', port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, metricsBearerToken, nodeEnv }
+  return { host, port, databaseUrl, databaseSsl, issuer, jwksUrl, audience, authMaxTokenAgeSeconds, hostedCaseRetentionDays, corsOrigins: [...new Set(corsOrigins)], trustedProxies, rateLimitHmacKey, metricsBearerToken, nodeEnv }
 }
 
 function isIpOrCidr(value: string): boolean {
