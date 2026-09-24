@@ -82,8 +82,9 @@ function App() {
       try {
         const redirectPath = new URL(import.meta.env.VITE_OIDC_REDIRECT_URI, window.location.origin).pathname
         if (window.location.pathname === redirectPath && (window.location.search.includes('code=') || window.location.search.includes('error='))) {
-          await hosted.identity.completeSignIn()
+          const callbackUrl = window.location.href
           window.history.replaceState({}, document.title, '/')
+          await hosted.identity.completeSignIn(callbackUrl)
         }
         setIdentitySignedIn(Boolean(await hosted.identity.getAccessToken()))
       } catch {
