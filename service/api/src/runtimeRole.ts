@@ -1,4 +1,5 @@
 import type { Pool } from 'pg'
+import { readMigrations } from './migrationManifest.js'
 
 const protectedTables = ['aduen_cases', 'aduen_case_audit_events', 'aduen_api_rate_limits']
 
@@ -10,6 +11,10 @@ type RuntimeRoleRow = {
   rolreplication: boolean
   protected_table_count: number
   owns_protected_table: boolean
+}
+
+export class ProductionDatabaseGuardError extends Error {
+  constructor(message: string) { super(message); this.name = 'ProductionDatabaseGuardError' }
 }
 
 export async function assertRestrictedRuntimeRole(pool: Pick<Pool, 'query'>): Promise<void> {
@@ -40,6 +45,17 @@ export async function assertRestrictedRuntimeRole(pool: Pick<Pool, 'query'>): Pr
 
   const role = result.rows[0]
   if (!role || role.protected_table_count !== protectedTables.length || role.rolsuper || role.rolbypassrls || role.rolcreatedb || role.rolcreaterole || role.rolreplication || role.owns_protected_table) {
-    throw new Error('The production API database role must be restricted and must not own protected tables.')
+    throw new ProductionDatabaseGuardError('The production API database role must be restricted and must not own protected tables.')
+  }
+}
+
+export async function assertCurrentMigrations(pool: Pick<Pool, 'query'>): Promise<void> {
+  const [recorded, expected] = await Promise.all([
+    pool.query<{ name: string; checksum: string }>('SELECT name, checksum FROM aduen_schema_migrations'),
+    readMigrations(),
+  ])
+  const actualChecksums = new Map(recorded.rows.map((row) => [row.name, row.checksum]))
+  if (actualChecksums.size !== expected.length || expected.some((migration) => actualChecksums.get(migration.name) !== migration.checksum)) {
+    throw new ProductionDatabaseGuardError('The production API database schema does not match this service. Apply the database migrations before startup.')
   }
 }
