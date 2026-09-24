@@ -137,7 +137,7 @@ test('request logs correlate responses without recording case IDs, queries, toke
 })
 
 test('production refuses missing database TLS and insecure identity endpoints', () => {
-  const config = { NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost/aduen', AUTH_ISSUER: 'http://identity.example.test/', AUTH_JWKS_URL: 'http://identity.example.test/jwks', AUTH_AUDIENCE: 'aduen-api', CORS_ORIGINS: 'https://app.example.test', DATABASE_SSL: 'false' }
+  const config = { NODE_ENV: 'production', HOST: '0.0.0.0', DATABASE_URL: 'postgres://localhost/aduen', AUTH_ISSUER: 'http://identity.example.test/', AUTH_JWKS_URL: 'http://identity.example.test/jwks', AUTH_AUDIENCE: 'aduen-api', CORS_ORIGINS: 'https://app.example.test', DATABASE_SSL: 'false' }
   assert.throws(() => readConfig(config), /DATABASE_SSL=true is required/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true' }), /must use HTTPS/u)
   assert.throws(() => readConfig({ ...config, NODE_ENV: 'prod' }), /NODE_ENV must/u)
