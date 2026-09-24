@@ -30,7 +30,7 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
     app.addHook('onRequest', async (request, reply) => {
       if (request.url === '/health/live' || request.url === '/health/ready') return
       const result = await new Promise<{ current: number; ttl: number }>((resolve, reject) => {
-        sharedRateLimitStore.incr(`ip:${request.ip}`, (error, value) => error ? reject(error) : resolve(value!), 60_000, 120)
+        sharedRateLimitStore.incr(request.ip, (error, value) => error ? reject(error) : resolve(value!), 60_000, 120)
       }).catch(() => null)
       if (!result) return reply.code(503).send({ error: 'rate_limit_unavailable' })
       if (result.current > 120) return reply.code(429).header('Retry-After', String(Math.max(1, Math.ceil(result.ttl / 1000)))).send({ error: 'rate_limited' })
