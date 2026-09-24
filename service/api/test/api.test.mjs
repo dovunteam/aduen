@@ -214,11 +214,17 @@ test('account data deletion removes every hosted case for that subject and is id
   for (const record of [aliceCase, aliceCaseTwo]) assert.equal((await app.inject({ method: 'POST', url: '/v1/cases', headers: bearer(aliceToken), payload: record })).statusCode, 201)
   assert.equal((await app.inject({ method: 'POST', url: '/v1/cases', headers: bearer(bobToken), payload: bobCase })).statusCode, 201)
 
+  const exported = await app.inject({ method: 'GET', url: '/v1/account/data/export', headers: bearer(aliceToken) })
+  assert.equal(exported.statusCode, 200)
+  assert.deepEqual(new Set(exported.json().cases.map((item) => item.record.id)), new Set([aliceCase.id, aliceCaseTwo.id]))
+  assert.equal(exported.headers['cache-control'], 'no-store')
+
   const deleted = await app.inject({ method: 'DELETE', url: '/v1/account/data', headers: bearer(aliceToken) })
   assert.equal(deleted.statusCode, 204)
   assert.equal(store.records.has(`delete-account-a:${aliceCase.id}`), false)
   assert.equal(store.records.has(`delete-account-a:${aliceCaseTwo.id}`), false)
   assert.equal(store.records.has(`delete-account-b:${bobCase.id}`), true)
+  assert.deepEqual((await store.exportAll('delete-account-b')).map((item) => item.record.id), [bobCase.id])
   assert.equal((await app.inject({ method: 'DELETE', url: '/v1/account/data', headers: bearer(aliceToken) })).statusCode, 204)
   assert.equal((await app.inject({ method: 'GET', url: '/v1/account/data' })).statusCode, 401)
 })
@@ -256,6 +262,7 @@ class MemoryCaseStore {
   async list(subject, limit) {
     return { cases: [...this.records.entries()].filter(([key]) => key.startsWith(`${subject}:`)).slice(0, limit).map(([, value]) => value), nextCursor: null }
   }
+  async exportAll(subject) { return [...this.records.entries()].filter(([key]) => key.startsWith(`${subject}:`)).map(([, value]) => value) }
   async get(subject, id) { return this.records.get(`${subject}:${id}`) ?? null }
   async create(subject, record) {
     const key = `${subject}:${record.id}`

@@ -85,6 +85,8 @@ test('PostgreSQL account deletion removes only that subject cases and audit rows
   await store.create(owner, makeRecord(ownerId))
   await store.create(otherOwner, makeRecord(otherId))
 
+  assert.deepEqual((await store.exportAll(owner)).map((item) => item.record.id), [ownerId])
+
   await store.deleteAccountData(owner)
   assert.equal((await store.list(owner, 50)).cases.length, 0)
   assert.equal((await store.get(otherOwner, otherId))?.record.id, otherId)
