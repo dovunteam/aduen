@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 
-const migrationNames = ['001_case_records.sql', '002_audit_retention.sql', '003_shared_rate_limits.sql', '004_hosted_case_retention.sql']
+const migrationNames = ['001_case_records.sql', '002_audit_retention.sql', '003_shared_rate_limits.sql', '004_hosted_case_retention.sql', '005_account_data_deletion.sql']
 
 export type Migration = { name: string; checksum: string; sql: string }
 

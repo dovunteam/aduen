@@ -120,6 +120,13 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
     } catch { return reply.code(500).send({ error: 'internal_error' }) }
   })
 
+  app.delete('/v1/account/data', async (request, reply) => {
+    try {
+      await store.deleteAccountData(request.userSubject!)
+      return reply.code(204).send()
+    } catch { return reply.code(500).send({ error: 'internal_error' }) }
+  })
+
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({ error: 'not_found' }))
   app.setErrorHandler((error, _request, reply) => {
     const statusCode = error instanceof Error && 'statusCode' in error ? error.statusCode : undefined
