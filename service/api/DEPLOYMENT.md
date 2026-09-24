@@ -21,7 +21,9 @@ Provision a database, TLS certificate validation, and three distinct roles befor
 | `aduen_api` | API runtime | Restricted login role; not a table owner, superuser, or RLS bypass role |
 | `aduen_retention` | Scheduled expiry jobs | Can expire approved records through timestamp-only policies; cannot read case content or owner identifiers |
 
-Create roles using the managed database’s supported provisioning process. `service/api/docker/init-db.sh` is for the local Compose database bootstrap; it is not a managed-database provisioning workflow. Provide a short-lived `DATABASE_URL_MIGRATOR` only to the migration job. Run `npm run migrate` from the API image once before rolling out new replicas. The migrator serializes concurrent runs and rejects changed or unknown migration history. Take and verify a pre-change backup before a schema rollout. Migrations are not automatically reversed; recover with a forward fix or the approved restore procedure.
+For standard PostgreSQL, `service/api/deploy/postgres-roles.sql` creates the three least-privilege login roles and grants the minimum connection and schema privileges used by the migrations. Run it once as the database administrator against the already-created database with `ADUEN_DATABASE_NAME`, `ADUEN_MIGRATOR_PASSWORD`, `ADUEN_API_PASSWORD`, and `ADUEN_RETENTION_PASSWORD` injected through the operator’s secret facility. Keep the resulting migrator credential short-lived where supported. Managed database services can require translating role ownership and grants to their own supported workflow. `service/api/docker/init-db.sh` is only for the local Compose bootstrap.
+
+Provide a short-lived `DATABASE_URL_MIGRATOR` only to the migration job. Run `npm run migrate` from the API image once before rolling out new replicas. The migrator serializes concurrent runs and rejects changed or unknown migration history. Take and verify a pre-change backup before a schema rollout. Migrations are not automatically reversed; recover with a forward fix or the approved restore procedure.
 
 API replicas use only `DATABASE_URL` for the restricted runtime role. Configure `DATABASE_SSL=true`; the client validates the server certificate. Startup checks the protected tables, role privileges, ownership boundaries, and exact migration ledger. A failed guard must stop rollout rather than trigger a permissive fallback.
 
@@ -45,6 +47,8 @@ Inject these values through the runtime’s secret and configuration facilities.
 | `HOSTED_CASE_RETENTION_DAYS` | Explicit policy-approved whole number from 1 to 3650 |
 
 The issuer does not need to be a specific vendor. Its access tokens must use RS256 or ES256, include `iss`, `sub`, `aud`, `iat`, and `exp`, and be verifiable at the configured JWKS endpoint. Offline refresh is disabled in the client. Account recovery, logout/session revocation, issuer registration, and the production redirect policy still need explicit review.
+
+The migration job additionally needs `DATABASE_URL_MIGRATOR` and `DATABASE_SSL=true`. Scheduled maintenance containers need `DATABASE_URL_MAINTENANCE`, `DATABASE_SSL=true`, `AUDIT_RETENTION_DAYS`, or `HOSTED_CASE_RETENTION_DAYS` according to the command being run. These credentials are separate from the API runtime URL and must not be provided to web clients.
 
 ## Release and operations sequence
 
