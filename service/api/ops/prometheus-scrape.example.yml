@@ -1,0 +1,12 @@
+scrape_configs:
+  - job_name: aduen-api
+    scheme: https
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 5s
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/aduen-metrics-token
+    static_configs:
+      - targets:
+          - aduen-api.internal.example:443 # Replace with the private HTTPS metrics endpoint.
