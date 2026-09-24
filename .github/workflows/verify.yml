@@ -34,6 +34,7 @@ jobs:
           ADUEN_MIGRATOR_PASSWORD: synthetic-role-migrator-password
           ADUEN_API_PASSWORD: synthetic-role-api-password
           ADUEN_RETENTION_PASSWORD: synthetic-role-retention-password
+          ADUEN_BACKUP_PASSWORD: synthetic-role-backup-password
         run: |
           set -euo pipefail
           docker run --detach --rm --name aduen-role-provision-check \
@@ -43,16 +44,21 @@ jobs:
             --publish 127.0.0.1:54330:5432 \
             postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
           trap 'docker rm -f aduen-role-provision-check >/dev/null 2>&1 || true' EXIT
-          for attempt in $(seq 1 30); do
-            if docker exec aduen-role-provision-check pg_isready --username postgres --dbname aduen_role_check; then break; fi
+          ready=false
+          for attempt in $(seq 1 60); do
+            if docker exec aduen-role-provision-check pg_isready --username postgres --dbname aduen_role_check; then
+              sleep 2
+              if docker exec aduen-role-provision-check pg_isready --username postgres --dbname aduen_role_check; then ready=true; break; fi
+            fi
             sleep 1
           done
-          docker exec aduen-role-provision-check pg_isready --username postgres --dbname aduen_role_check
+          test "$ready" = true
           docker exec --interactive \
             --env ADUEN_DATABASE_NAME \
             --env ADUEN_MIGRATOR_PASSWORD \
             --env ADUEN_API_PASSWORD \
             --env ADUEN_RETENTION_PASSWORD \
+            --env ADUEN_BACKUP_PASSWORD \
             aduen-role-provision-check psql --username postgres --dbname aduen_role_check \
             < deploy/postgres-roles.sql
           DATABASE_URL_MIGRATOR=postgres://aduen_migrator:synthetic-role-migrator-password@127.0.0.1:54330/aduen_role_check npm run migrate
@@ -60,6 +66,23 @@ jobs:
           DATABASE_URL_MIGRATOR=postgres://aduen_migrator:synthetic-role-migrator-password@127.0.0.1:54330/aduen_role_check \
           DATABASE_URL_MAINTENANCE=postgres://aduen_retention:synthetic-role-retention-password@127.0.0.1:54330/aduen_role_check \
           DATABASE_URL_TEST_ADMIN=postgres://postgres:synthetic-superuser-password@127.0.0.1:54330/aduen_role_check \
+          DATABASE_URL_BACKUP=postgres://aduen_backup:synthetic-role-backup-password@127.0.0.1:54330/aduen_role_check \
+            npm run test:postgres
+          backup_file=$(mktemp)
+          trap 'rm -f "$backup_file"; docker rm -f aduen-role-provision-check >/dev/null 2>&1 || true' EXIT
+          docker exec --env PGPASSWORD=synthetic-role-backup-password aduen-role-provision-check pg_dump \
+            --host 127.0.0.1 --username aduen_backup --format=custom --no-owner --dbname=aduen_role_check \
+            | BACKUP_ACTIVE_KEY_ID=ci-role-v1 BACKUP_ENCRYPTION_KEYRING='{"ci-role-v1":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}' node dist/backupArchiveCli.js seal \
+            > "$backup_file"
+          docker exec aduen-role-provision-check createdb --username postgres --owner aduen_migrator aduen_role_restore
+          BACKUP_ACTIVE_KEY_ID=ci-role-v1 BACKUP_ENCRYPTION_KEYRING='{"ci-role-v1":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}' BACKUP_SCRATCH_DIR="$RUNNER_TEMP" \
+            node dist/backupArchiveCli.js open < "$backup_file" \
+            | docker exec --interactive aduen-role-provision-check pg_restore --username aduen_migrator --dbname=aduen_role_restore --format=custom --exit-on-error --no-owner
+          DATABASE_URL=postgres://aduen_api:synthetic-role-api-password@127.0.0.1:54330/aduen_role_restore \
+          DATABASE_URL_MIGRATOR=postgres://aduen_migrator:synthetic-role-migrator-password@127.0.0.1:54330/aduen_role_restore \
+          DATABASE_URL_MAINTENANCE=postgres://aduen_retention:synthetic-role-retention-password@127.0.0.1:54330/aduen_role_restore \
+          DATABASE_URL_TEST_ADMIN=postgres://postgres:synthetic-superuser-password@127.0.0.1:54330/aduen_role_restore \
+          DATABASE_URL_BACKUP=postgres://aduen_backup:synthetic-role-backup-password@127.0.0.1:54330/aduen_role_restore \
             npm run test:postgres
       - name: Start PostgreSQL for row policy verification
         run: docker compose --file ../../compose.yaml --env-file ../../.env.example up --detach database
