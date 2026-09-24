@@ -3,6 +3,7 @@ import { after, test } from 'node:test'
 import { Pool } from 'pg'
 import { PgCaseStore } from '../dist/caseStore.js'
 import { createPostgresRateLimitStore } from '../dist/postgresRateLimitStore.js'
+import { pruneExpiredHostedCases } from '../dist/pruneHostedCases.js'
 
 const databaseUrl = process.env.DATABASE_URL
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl, max: 1 }) : null
@@ -97,6 +98,65 @@ test('PostgreSQL retention role can delete expired rate-limit buckets only', { s
   } finally { client.release() }
 })
 
+test('PostgreSQL retention role can expire inactive hosted cases without reading their records', { skip: !pool || !maintenancePool }, async () => {
+  const owner = `case-retention-${crypto.randomUUID()}`
+  const expiredId = crypto.randomUUID()
+  const currentId = crypto.randomUUID()
+  const expiredAt = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+  const currentAt = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+  const apiClient = await pool.connect()
+  try {
+    await apiClient.query('BEGIN')
+    await setSubject(apiClient, owner)
+    await insertRetentionCase(apiClient, owner, expiredId, expiredAt)
+    await insertRetentionCase(apiClient, owner, currentId, currentAt)
+    await apiClient.query('COMMIT')
+  } catch (error) {
+    await apiClient.query('ROLLBACK').catch(() => undefined)
+    throw error
+  } finally { apiClient.release() }
+
+  const maintenanceClient = await maintenancePool.connect()
+  try {
+    await assert.rejects(maintenanceClient.query('SELECT record FROM aduen_cases'), (error) => error.code === '42501')
+    assert.equal((await maintenanceClient.query('SELECT updated_at FROM aduen_cases')).rowCount, 0)
+    await maintenanceClient.query('BEGIN')
+    await setSubject(maintenanceClient, owner)
+    assert.equal((await maintenanceClient.query('SELECT updated_at FROM aduen_cases')).rowCount, 0)
+    assert.equal((await maintenanceClient.query('DELETE FROM aduen_cases')).rowCount, 0)
+    await maintenanceClient.query('ROLLBACK')
+  } catch (error) {
+    await maintenanceClient.query('ROLLBACK').catch(() => undefined)
+    throw error
+  } finally { maintenanceClient.release() }
+
+  const result = await pruneExpiredHostedCases(maintenancePool, 30)
+  assert.equal(result.deletedCount, 1)
+  const afterPruneClient = await maintenancePool.connect()
+  try {
+    await afterPruneClient.query('BEGIN')
+    await afterPruneClient.query("SELECT set_config('aduen.case_cutoff', $1, true)", [result.cutoff])
+    assert.equal((await afterPruneClient.query('SELECT updated_at FROM aduen_cases')).rowCount, 0)
+    await afterPruneClient.query('COMMIT')
+  } catch (error) {
+    await afterPruneClient.query('ROLLBACK').catch(() => undefined)
+    throw error
+  } finally { afterPruneClient.release() }
+
+  const verifyClient = await pool.connect()
+  try {
+    await verifyClient.query('BEGIN')
+    await setSubject(verifyClient, owner)
+    assert.equal((await verifyClient.query('SELECT id FROM aduen_cases WHERE id = $1', [expiredId])).rowCount, 0)
+    assert.equal((await verifyClient.query('SELECT id FROM aduen_cases WHERE id = $1', [currentId])).rowCount, 1)
+    await verifyClient.query('DELETE FROM aduen_cases WHERE id = $1', [currentId])
+    await verifyClient.query('COMMIT')
+  } catch (error) {
+    await verifyClient.query('ROLLBACK').catch(() => undefined)
+    throw error
+  } finally { verifyClient.release() }
+})
+
 function increment(store, key, windowMs) {
   return new Promise((resolve, reject) => store.incr(key, (error, result) => error ? reject(error) : resolve(result), windowMs, 100))
 }
@@ -154,4 +214,13 @@ function makeRecord(id) {
     },
     history: [{ at, actor: 'system', action: 'case_created', status: 'draft' }],
   }
+}
+
+async function insertRetentionCase(client, owner, id, updatedAt) {
+  const at = updatedAt.toISOString()
+  const record = { ...makeRecord(id), createdAt: at, updatedAt: at }
+  await client.query(
+    'INSERT INTO aduen_cases (id, owner_subject, record, created_at, updated_at) VALUES ($1, $2, $3::jsonb, $4, $4)',
+    [id, owner, JSON.stringify(record), updatedAt],
+  )
 }

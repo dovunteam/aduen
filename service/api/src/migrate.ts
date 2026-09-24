@@ -14,7 +14,7 @@ const pool = new Pool({
 })
 
 try {
-  for (const name of ['001_case_records.sql', '002_audit_retention.sql', '003_shared_rate_limits.sql']) {
+  for (const name of ['001_case_records.sql', '002_audit_retention.sql', '003_shared_rate_limits.sql', '004_hosted_case_retention.sql']) {
     const migration = await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8')
     await pool.query(migration)
     console.info(`Aduen database migration ${name.slice(0, 3)} applied.`)

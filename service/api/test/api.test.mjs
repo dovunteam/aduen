@@ -119,7 +119,10 @@ test('production refuses missing database TLS and insecure identity endpoints', 
   assert.throws(() => readConfig({ ...config, NODE_ENV: 'prod' }), /NODE_ENV must/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'https://app.example.test/path' }), /exact HTTP\(S\) origins/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'http://app.example.test' }), /must use HTTPS/u)
-  const secure = { ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', TRUSTED_PROXIES: '10.20.0.0/16,2001:db8::1', RATE_LIMIT_HMAC_KEY: 'synthetic-shared-rate-limit-secret-123456' }
+  const secure = { ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', TRUSTED_PROXIES: '10.20.0.0/16,2001:db8::1', RATE_LIMIT_HMAC_KEY: 'synthetic-shared-rate-limit-secret-123456', HOSTED_CASE_RETENTION_DAYS: '365' }
+  assert.throws(() => readConfig({ ...secure, HOSTED_CASE_RETENTION_DAYS: '' }), /HOSTED_CASE_RETENTION_DAYS must be explicitly selected/u)
+  assert.throws(() => readConfig({ ...secure, HOSTED_CASE_RETENTION_DAYS: '0' }), /whole number from 1 to 3650/u)
+  assert.equal(readConfig({ ...secure, HOSTED_CASE_RETENTION_DAYS: '365' }).hostedCaseRetentionDays, 365)
   assert.throws(() => readConfig({ ...secure, AUTH_MAX_TOKEN_AGE_SECONDS: '59' }), /from 60 to 86400/u)
   assert.throws(() => readConfig({ ...secure, AUTH_MAX_TOKEN_AGE_SECONDS: '1.5' }), /whole number/u)
   assert.equal(readConfig(secure).authMaxTokenAgeSeconds, 3600)
