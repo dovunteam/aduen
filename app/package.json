@@ -7,7 +7,7 @@
     "predev": "node scripts/copy-ocr-assets.mjs",
     "dev": "vite",
     "prebuild": "node scripts/copy-ocr-assets.mjs",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/write-host-headers.mjs",
     "lint": "oxlint",
     "check:encoding": "node scripts/check-no-em-dashes.mjs",
     "check:docs": "node scripts/check-doc-index.mjs",
