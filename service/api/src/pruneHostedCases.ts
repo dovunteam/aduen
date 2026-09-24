@@ -1,4 +1,5 @@
 import { Pool } from 'pg'
+import { assertDatabaseTlsUrl } from './databaseTls.js'
 
 export const MIN_HOSTED_CASE_RETENTION_DAYS = 1
 export const MAX_HOSTED_CASE_RETENTION_DAYS = 3650
@@ -41,6 +42,7 @@ async function run(): Promise<void> {
   if (!['development', 'test', 'production'].includes(nodeEnv)) throw new Error('NODE_ENV must be development, test, or production.')
   if (process.env.DATABASE_SSL !== undefined && !['true', 'false'].includes(process.env.DATABASE_SSL)) throw new Error('DATABASE_SSL must be true or false.')
   if (nodeEnv === 'production' && !databaseSsl) throw new Error('DATABASE_SSL=true is required in production.')
+  assertDatabaseTlsUrl(databaseUrl, databaseSsl)
 
   const pool = new Pool({
     connectionString: databaseUrl,
