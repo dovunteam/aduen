@@ -7,6 +7,7 @@ export type CasePage = { cases: StoredCase[]; nextCursor: string | null }
 export type CaseStore = {
   list(subject: string, limit: number, cursor?: string): Promise<CasePage>
   exportAll(subject: string): Promise<StoredCase[]>
+  streamExportAll?(subject: string): AsyncIterable<StoredCase>
   get(subject: string, id: string): Promise<StoredCase | null>
   create(subject: string, record: CaseRecord): Promise<StoredCase>
   replace(subject: string, id: string, record: CaseRecord, revision: number): Promise<StoredCase | null>
@@ -43,6 +44,42 @@ export class PgCaseStore implements CaseStore {
       )
       return result.rows.map(toStoredCase)
     })
+  }
+
+  streamExportAll(subject: string): AsyncIterable<StoredCase> {
+    const pool = this.pool
+    return (async function* () {
+      const client = await pool.connect()
+      let transactionOpen = false
+      try {
+        await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY')
+        transactionOpen = true
+        await client.query("SELECT set_config('aduen.user_sub', $1, true)", [subject])
+
+        let cursor: { updatedAt: string; id: string } | null = null
+        while (true) {
+          const result: { rows: { record: CaseRecord; revision: number; updated_at_cursor: string; id: string }[] } = cursor
+            ? await client.query<{ record: CaseRecord; revision: number; updated_at_cursor: string; id: string }>(
+              'SELECT record, revision, updated_at::text AS updated_at_cursor, id FROM aduen_cases WHERE (updated_at, id) < ($1::timestamptz, $2::uuid) ORDER BY updated_at DESC, id DESC LIMIT 100',
+              [cursor.updatedAt, cursor.id],
+            )
+            : await client.query<{ record: CaseRecord; revision: number; updated_at_cursor: string; id: string }>(
+              'SELECT record, revision, updated_at::text AS updated_at_cursor, id FROM aduen_cases ORDER BY updated_at DESC, id DESC LIMIT 100',
+            )
+          if (result.rows.length === 0) break
+          for (const row of result.rows) yield toStoredCase(row)
+          const last = result.rows.at(-1)!
+          cursor = { updatedAt: last.updated_at_cursor, id: last.id }
+          if (result.rows.length < 100) break
+        }
+
+        await client.query('COMMIT')
+        transactionOpen = false
+      } finally {
+        if (transactionOpen) await client.query('ROLLBACK').catch(() => undefined)
+        client.release()
+      }
+    })()
   }
 
   async get(subject: string, id: string): Promise<StoredCase | null> {
