@@ -118,6 +118,9 @@ test('production refuses missing database TLS and insecure identity endpoints', 
   assert.throws(() => readConfig(config), /DATABASE_SSL=true is required/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true' }), /must use HTTPS/u)
   assert.throws(() => readConfig({ ...config, NODE_ENV: 'prod' }), /NODE_ENV must/u)
+  assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://user:secret@identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks' }), /without credentials/u)
+  assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/#fragment', AUTH_JWKS_URL: 'https://identity.example.test/jwks' }), /without credentials or a fragment/u)
+  assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://user:secret@identity.example.test/jwks' }), /without credentials/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'https://app.example.test/path' }), /exact HTTP\(S\) origins/u)
   assert.throws(() => readConfig({ ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', CORS_ORIGINS: 'http://app.example.test' }), /must use HTTPS/u)
   const secure = { ...config, DATABASE_SSL: 'true', AUTH_ISSUER: 'https://identity.example.test/', AUTH_JWKS_URL: 'https://identity.example.test/jwks', TRUSTED_PROXIES: '10.20.0.0/16,2001:db8::1', RATE_LIMIT_HMAC_KEY: 'synthetic-shared-rate-limit-secret-123456', HOSTED_CASE_RETENTION_DAYS: '365' }
