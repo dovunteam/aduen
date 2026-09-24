@@ -24,13 +24,13 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
   const app = Fastify({ logger: false, bodyLimit: 128 * 1024, requestTimeout: 30_000, trustProxy: trustedProxies.length ? trustedProxies : false, requestIdHeader: false, genReqId: () => randomUUID() })
   const requestStarted = new WeakMap<object, bigint>()
   const metrics = new ApiMetrics()
+  const sharedRateLimitStore = options.rateLimitStore ? new options.rateLimitStore({ max: 120, timeWindow: 60_000 } as never) : null
   void app.register(cors, { origin: corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Authorization', 'Content-Type', 'If-Match'], exposedHeaders: ['ETag', 'X-Request-Id'], credentials: false, maxAge: 600 })
-  if (options.rateLimitStore) {
-    const sharedStore = new options.rateLimitStore({ max: 120, timeWindow: 60_000 } as never)
+  if (sharedRateLimitStore) {
     app.addHook('onRequest', async (request, reply) => {
       if (request.url === '/health/live' || request.url === '/health/ready') return
       const result = await new Promise<{ current: number; ttl: number }>((resolve, reject) => {
-        sharedStore.incr(request.ip, (error, value) => error ? reject(error) : resolve(value!), 60_000, 120)
+        sharedRateLimitStore.incr(`ip:${request.ip}`, (error, value) => error ? reject(error) : resolve(value!), 60_000, 120)
       }).catch(() => null)
       if (!result) return reply.code(503).send({ error: 'rate_limit_unavailable' })
       if (result.current > 120) return reply.code(429).header('Retry-After', String(Math.max(1, Math.ceil(result.ttl / 1000)))).send({ error: 'rate_limited' })
@@ -77,6 +77,13 @@ export function createApp(store: CaseStore, authenticate: Authenticate, corsOrig
     catch (error) {
       if (error instanceof AuthenticationUnavailable) return reply.code(503).send({ error: 'authentication_unavailable' })
       return reply.code(401).header('WWW-Authenticate', 'Bearer').send({ error: 'unauthorized' })
+    }
+    if (sharedRateLimitStore) {
+      const result = await new Promise<{ current: number; ttl: number }>((resolve, reject) => {
+        sharedRateLimitStore.incr(`subject:${request.userSubject}`, (error, value) => error ? reject(error) : resolve(value!), 60_000, 120)
+      }).catch(() => null)
+      if (!result) return reply.code(503).send({ error: 'rate_limit_unavailable' })
+      if (result.current > 120) return reply.code(429).header('Retry-After', String(Math.max(1, Math.ceil(result.ttl / 1000)))).send({ error: 'rate_limited' })
     }
   })
 
