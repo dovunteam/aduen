@@ -88,6 +88,7 @@ services:
       HOST: 0.0.0.0
       PORT: 8080
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
       DATABASE_SSL: ${DATABASE_SSL:-false}
       AUTH_ISSUER: ${AUTH_ISSUER:?Set AUTH_ISSUER in .env}
       AUTH_JWKS_URL: ${AUTH_JWKS_URL:?Set AUTH_JWKS_URL in .env}
