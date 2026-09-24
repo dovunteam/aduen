@@ -158,6 +158,17 @@ test('identity-provider outages return unavailable instead of rejecting valid us
   } finally {
     await new Promise((resolve, reject) => unavailableServer.close((error) => error ? reject(error) : resolve()))
   }
+
+  const resetServer = createServer((request) => request.socket.destroy())
+  await new Promise((resolve) => resetServer.listen(0, '127.0.0.1', resolve))
+  const resetAddress = resetServer.address()
+  const resetAuth = createAuthenticator({ issuer: 'https://identity.example.test/', jwksUrl: `http://127.0.0.1:${resetAddress.port}/jwks`, audience: 'aduen-api' })
+  try {
+    await assert.rejects(resetAuth(`Bearer ${await signToken()}`), AuthenticationUnavailable)
+    await assert.rejects(resetAuth('Bearer .'), /unauthorized/u)
+  } finally {
+    await new Promise((resolve, reject) => resetServer.close((error) => error ? reject(error) : resolve()))
+  }
 })
 
 test('cases are owner scoped, validated, and updated only with the current revision', async () => {
