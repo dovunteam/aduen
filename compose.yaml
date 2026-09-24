@@ -65,6 +65,8 @@ services:
       AUTH_JWKS_URL: ${AUTH_JWKS_URL:?Set AUTH_JWKS_URL in .env}
       AUTH_AUDIENCE: ${AUTH_AUDIENCE:-aduen-api}
       CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to the exact browser application origins}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      RATE_LIMIT_HMAC_KEY: ${RATE_LIMIT_HMAC_KEY:-}
     ports:
       - 127.0.0.1:${API_PORT:-8080}:8080
     depends_on:

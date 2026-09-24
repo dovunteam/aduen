@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, test } from 'node:test'
 import { Pool } from 'pg'
 import { PgCaseStore } from '../dist/caseStore.js'
+import { createPostgresRateLimitStore } from '../dist/postgresRateLimitStore.js'
 
 const databaseUrl = process.env.DATABASE_URL
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl, max: 1 }) : null
@@ -58,6 +59,45 @@ test('PostgreSQL store scopes CRUD and records minimized mutation events', { ski
   assert.equal(await store.delete(owner, id, 2), true)
   assert.equal(await store.get(owner, id), null)
 })
+
+test('PostgreSQL rate-limit buckets are shared, HMAC-keyed, and pruned after expiry', { skip: !pool }, async () => {
+  const hmacKey = 'integration-test-rate-limit-secret-key-32-bytes-minimum'
+  const StoreA = createPostgresRateLimitStore(pool, hmacKey)
+  const StoreB = createPostgresRateLimitStore(pool, hmacKey)
+  const first = new StoreA({})
+  const second = new StoreB({})
+  const clientKey = `synthetic-ip-${crypto.randomUUID()}`
+  const firstCount = await increment(first, clientKey, 1500)
+  const secondCount = await increment(second, clientKey, 1500)
+  assert.equal(firstCount.current, 1)
+  assert.equal(secondCount.current, 2)
+  assert.ok(firstCount.ttl > 0 && firstCount.ttl <= 1500)
+  const expectedHash = (await import('node:crypto')).createHmac('sha256', hmacKey).update(clientKey).digest('hex')
+  const row = await pool.query('SELECT key_hash, request_count FROM aduen_api_rate_limits WHERE key_hash = $1', [expectedHash])
+  assert.deepEqual(row.rows[0], { key_hash: expectedHash, request_count: 2 })
+  assert.equal((await pool.query('SELECT 1 FROM aduen_api_rate_limits WHERE key_hash = $1', [clientKey])).rowCount, 0)
+
+  await new Promise((resolve) => setTimeout(resolve, 1600))
+  const next = await increment(first, `synthetic-ip-${crypto.randomUUID()}`, 1500)
+  assert.equal(next.current, 1)
+  assert.equal((await pool.query('SELECT 1 FROM aduen_api_rate_limits WHERE key_hash = $1', [expectedHash])).rowCount, 0)
+})
+
+test('PostgreSQL retention role can delete expired rate-limit buckets only', { skip: !pool || !maintenancePool }, async () => {
+  const keyHash = 'a'.repeat(64)
+  await pool.query('INSERT INTO aduen_api_rate_limits (key_hash, window_start, request_count, expires_at) VALUES ($1, now(), 1, now() + interval \'1 hour\') ON CONFLICT DO NOTHING', [keyHash])
+  const client = await maintenancePool.connect()
+  try {
+    await assert.rejects(client.query('SELECT key_hash FROM aduen_api_rate_limits'), (error) => error.code === '42501')
+    assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at > now()')).rowCount, 0)
+    await pool.query('UPDATE aduen_api_rate_limits SET expires_at = now() - interval \'1 second\' WHERE key_hash = $1', [keyHash])
+    assert.equal((await client.query('DELETE FROM aduen_api_rate_limits WHERE expires_at <= now()')).rowCount, 1)
+  } finally { client.release() }
+})
+
+function increment(store, key, windowMs) {
+  return new Promise((resolve, reject) => store.incr(key, (error, result) => error ? reject(error) : resolve(result), windowMs, 100))
+}
 
 test('PostgreSQL retention role can delete expired audit events without reading case data', { skip: !pool || !maintenancePool }, async () => {
   const owner = `retention-test-${crypto.randomUUID()}`
