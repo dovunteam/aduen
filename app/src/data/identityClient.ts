@@ -53,7 +53,12 @@ export function createIdentityClient(settings: IdentitySettings) {
   return {
     async getAccessToken(): Promise<string | null> {
       const user = await manager.getUser()
-      return user && !user.expired && user.access_token ? user.access_token : null
+      if (!user) return null
+      if (user.expired || !user.access_token) {
+        await manager.removeUser()
+        return null
+      }
+      return user.access_token
     },
     beginSignIn(): Promise<void> { return manager.signinRedirect() },
     completeSignIn(): Promise<User> { return manager.signinRedirectCallback() },

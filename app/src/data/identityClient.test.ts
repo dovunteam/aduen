@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createUserManagerSettings, readIdentitySettings } from './identityClient'
+import { UserManager } from 'oidc-client-ts'
+import type { User } from 'oidc-client-ts'
+import { createIdentityClient, createUserManagerSettings, readIdentitySettings } from './identityClient'
 
 const validSettings = {
   authority: 'https://identity.example.test/',
@@ -9,7 +11,7 @@ const validSettings = {
   scope: 'openid aduen-api',
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 describe('OIDC identity client configuration', () => {
   it('leaves identity disabled until every setting is supplied', () => {
@@ -39,5 +41,17 @@ describe('OIDC identity client configuration', () => {
     expect(settings.userStore?.constructor.name).toBe('WebStorageStateStore')
     expect(() => readIdentitySettings({ ...validSettings, scope: 'openid offline_access' }, 'https://aduen.example.test')).toThrow('Offline access is disabled')
     expect(() => readIdentitySettings({ ...validSettings, scope: 'profile' }, 'https://aduen.example.test')).toThrow('contain openid')
+  })
+
+  it('removes expired user tokens from tab storage when requesting an access token', async () => {
+    const values = new Map<string, string>()
+    const sessionStore = { get length() { return values.size }, clear: () => values.clear(), getItem: (key: string) => values.get(key) ?? null, key: (index: number) => [...values.keys()][index] ?? null, removeItem: (key: string) => values.delete(key), setItem: (key: string, value: string) => values.set(key, value) } as Storage
+    vi.stubGlobal('window', { sessionStorage: sessionStore })
+    vi.spyOn(UserManager.prototype, 'getUser').mockResolvedValue({ expired: true, access_token: 'expired-synthetic-token' } as User)
+    const removeUser = vi.spyOn(UserManager.prototype, 'removeUser').mockResolvedValue()
+
+    const identity = createIdentityClient(validSettings)
+    await expect(identity.getAccessToken()).resolves.toBeNull()
+    expect(removeUser).toHaveBeenCalledOnce()
   })
 })
