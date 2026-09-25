@@ -47,4 +47,13 @@ describe('complaint pack PDF localization', () => {
     expect(content).toContain('fakta daripada bukti yang disahkan pengguna')
     expect(content).toContain('Bukti: synthetic-order.txt')
   })
+
+  it('paginates a long merchant request instead of drawing its lines beyond one page', () => {
+    const draft = { ...EMPTY_DRAFT, consumerName: 'Synthetic Consumer', seller: 'Synthetic Store' }
+    const base = approveComplaintPack(createComplaintPack(draft, [], evaluateInitialRoute(draft, [])), new Date('2026-09-22T00:00:00Z'))
+    const body = Array.from({ length: 180 }, (_, index) => `Synthetic case detail ${index + 1}: the merchant has not delivered the listed item.`).join('\n')
+    const pdf = createComplaintPackPdf({ ...base, merchantRequest: { ...base.merchantRequest, body } })
+    expect(pdf.getNumberOfPages()).toBeGreaterThan(4)
+    expect(new TextDecoder('windows-1252').decode(pdf.output('arraybuffer'))).toContain('Synthetic case detail 180')
+  })
 })

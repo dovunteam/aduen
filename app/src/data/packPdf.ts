@@ -30,8 +30,12 @@ export function createComplaintPackPdf(pack: ComplaintPack): jsPDF {
   const line = (text: string, size = 10, bold = false) => {
     pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size)
     const rows = pdf.splitTextToSize(text || (ms ? 'Tidak diberikan' : 'Not provided'), width) as string[]
-    if (y + rows.length * 5 > 278) { pdf.addPage(); y = 20 }
-    pdf.text(rows, left, y); y += rows.length * 5 + 2
+    for (const row of rows) {
+      if (y + 5 > 278) { pdf.addPage(); y = 20 }
+      pdf.text(row, left, y)
+      y += 5
+    }
+    y += 2
   }
   const heading = (text: string) => { y += 4; line(text.toUpperCase(), 11, true); pdf.setDrawColor(190); pdf.line(left, y - 1, 192, y - 1); y += 3 }
 
