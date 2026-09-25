@@ -22,7 +22,7 @@ test('onboarding has no serious automated WCAG violations', async ({ page }) => 
 
 test('urgent guidance has no serious automated WCAG violations', async ({ page }) => {
   await page.goto('/')
-  await page.getByLabel(/I understand Aduen's role/).check()
+  await page.getByLabel(/I have read and understand/).check()
   await page.getByRole('button', { name: 'Begin safety check' }).click()
   await page.getByLabel('A payment or transaction was not authorised by me').check()
   await expect(page.getByRole('alert')).toBeVisible()
@@ -31,7 +31,7 @@ test('urgent guidance has no serious automated WCAG violations', async ({ page }
 
 test('case details have no serious automated WCAG violations', async ({ page }) => {
   await page.goto('/')
-  await page.getByLabel(/I understand Aduen's role/).check()
+  await page.getByLabel(/I have read and understand/).check()
   await page.getByRole('button', { name: 'Begin safety check' }).click()
   await page.getByRole('button', { name: /No urgent issue/ }).click()
   await expect(page.getByRole('heading', { name: 'Describe the purchase.' })).toBeVisible()
@@ -47,7 +47,7 @@ test('privacy controls have no serious automated WCAG violations', async ({ page
 
 test('evidence review, pack approval, and status screens have no serious automated WCAG violations', async ({ page }) => {
   await page.goto('/')
-  await page.getByLabel(/I understand Aduen's role/).check()
+  await page.getByLabel(/I have read and understand/).check()
   await page.getByRole('button', { name: 'Begin safety check' }).click()
   await page.getByRole('button', { name: /No urgent issue/ }).click()
   await page.getByLabel('Your name or chosen case name').fill('Synthetic Accessibility Consumer')

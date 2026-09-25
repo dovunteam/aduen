@@ -203,9 +203,6 @@ jobs:
       - run: npm run build
       - run: npx playwright install chrome
       - run: npm run test:e2e
-      - run: npm run test:e2e:hosted
-        env:
-          ADUEN_HOSTED_E2E: 'true'
       - name: Upload Playwright failure artifacts
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

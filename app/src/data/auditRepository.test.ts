@@ -15,9 +15,8 @@ describe('local audit log', () => {
   it('records ordered sensitive-action events and can clear them', () => {
     const first = recordAuditEvent('case_edited', 'case-1', 'case draft fields changed', new Date('2026-09-21T00:00:00Z'))
     const second = recordAuditEvent('redacted_copy_exported', 'e1', 'PNG copy', new Date('2026-09-21T00:01:00Z'))
-    const third = recordAuditEvent('hosted_case_deleted', 'case-1', 'hosted case record deleted from account', new Date('2026-09-21T00:02:00Z'))
-    const fourth = recordAuditEvent('hosted_case_imported', 'remote-case', 'structured hosted case copied into a new local draft', new Date('2026-09-21T00:03:00Z'))
-    expect(listAuditEvents()).toEqual([first, second, third, fourth])
+    const third = recordAuditEvent('pack_viewed', 'case-1', 'complaint pack opened', new Date('2026-09-21T00:02:00Z'))
+    expect(listAuditEvents()).toEqual([first, second, third])
     clearAuditEvents()
     expect(listAuditEvents()).toEqual([])
   })

@@ -6,7 +6,7 @@ test('migrates an existing Tuntiva case, consent, and language preference to Adu
       consumerName: 'Legacy Consumer', consumerLocation: 'malaysia', seller: 'Legacy Store', sellerLocation: 'malaysia', platform: '', purchaseDate: '2026-09-01', amount: '50', currency: 'MYR', paymentMethod: 'Card', orderReference: '', purpose: 'personal', issue: 'non_delivery', category: 'general_goods', remedy: 'refund', remedyAmount: '50', promisedDate: '', contactHistory: 'none', contactDate: '',
     }
     localStorage.setItem('tuntiva.case-record.v1', JSON.stringify({ id: 'legacy-case', createdAt: '2026-09-01T00:00:00.000Z', updatedAt: '2026-09-01T00:00:00.000Z', status: 'draft', draft, history: [] }))
-    localStorage.setItem('tuntiva.consent.v1', JSON.stringify({ noticeVersion: 'prototype-privacy-and-role-v1', acceptedAt: '2026-09-01T00:00:00.000Z', purpose: 'case-preparation-and-local-storage', withdrawalPath: 'data-controls' }))
+    localStorage.setItem('tuntiva.consent.v1', JSON.stringify({ noticeVersion: 'local-first-privacy-and-role-v2', acceptedAt: '2026-09-01T00:00:00.000Z', purpose: 'case-preparation-and-local-storage', withdrawalPath: 'data-controls' }))
     localStorage.setItem('tuntiva-locale', 'ms')
   })
 

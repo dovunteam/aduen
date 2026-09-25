@@ -1,4 +1,4 @@
-export const NOTICE_VERSION = 'prototype-privacy-and-role-v1'
+export const NOTICE_VERSION = 'local-first-privacy-and-role-v2'
 
 export type ConsentRecord = {
   noticeVersion: string

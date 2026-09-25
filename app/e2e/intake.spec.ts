@@ -12,7 +12,7 @@ async function acceptBoundary(page: import('@playwright/test').Page) {
   await page.goto('/')
   const begin = page.getByRole('button', { name: 'Begin safety check' })
   await expect(begin).toBeDisabled({ timeout: 10_000 })
-  await page.getByLabel(/I understand Aduen's role/).check()
+  await page.getByLabel(/I have read and understand/).check()
   await begin.click()
 }
 

@@ -20,7 +20,7 @@ describe('consent repository', () => {
 
   it('records acceptance in the local activity history', () => {
     const record = acceptConsent()
-    expect(record.noticeVersion).toBe('prototype-privacy-and-role-v1')
+    expect(record.noticeVersion).toBe('local-first-privacy-and-role-v2')
     expect(listAuditEvents()).toMatchObject([{ action: 'consent_accepted', targetId: 'consent' }])
   })
 })
