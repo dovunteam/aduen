@@ -4,18 +4,6 @@ export const MIN_AUDIT_RETENTION_DAYS = 1
 export const MAX_AUDIT_RETENTION_DAYS = 3650
 const DAY_MS = 24 * 60 * 60 * 1000
 const RATE_LIMIT_PRUNE_BATCH_SIZE = 500
-const pruneRateLimitBatchSql = `
-  WITH expired AS (
-    SELECT ctid
-    FROM aduen_api_rate_limits
-    WHERE expires_at <= now()
-    ORDER BY expires_at
-    LIMIT $1
-  )
-  DELETE FROM aduen_api_rate_limits AS stored
-  USING expired
-  WHERE stored.ctid = expired.ctid
-`
 
 export function parseAuditRetentionDays(value: string | undefined): number {
   if (!value || !/^\d+$/u.test(value)) throw new Error('AUDIT_RETENTION_DAYS must be an integer.')
@@ -48,8 +36,8 @@ export async function pruneExpiredAuditEvents(pool: Pick<Pool, 'connect'>, reten
 export async function pruneExpiredRateLimitRows(pool: Pick<Pool, 'query'>): Promise<number> {
   let totalDeleted = 0
   while (true) {
-    const result = await pool.query(pruneRateLimitBatchSql, [RATE_LIMIT_PRUNE_BATCH_SIZE])
-    const deleted = result.rowCount ?? 0
+    const result = await pool.query<{ deleted_count: number }>('SELECT aduen_prune_expired_rate_limit_batch() AS deleted_count')
+    const deleted = result.rows[0]?.deleted_count ?? 0
     totalDeleted += deleted
     if (deleted < RATE_LIMIT_PRUNE_BATCH_SIZE) return totalDeleted
   }
