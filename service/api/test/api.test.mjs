@@ -74,7 +74,7 @@ test('Prometheus metrics require a bearer secret and expose only bounded route l
   assert.equal((await app.inject({ method: 'GET', url: '/metrics' })).statusCode, 404)
 })
 
-test('production limiter keys requests by the client IP from explicitly trusted proxies', async () => {
+test('production limiter keys requests by trusted client IP and authenticated subject', async () => {
   const keys = new Map()
   class SharedTestStore {
     incr(key, callback, timeWindow) {
@@ -92,9 +92,10 @@ test('production limiter keys requests by the client IP from explicitly trusted 
     assert.equal(keys.size, 0)
     const response = await limitedApp.inject({ method: 'GET', url: '/v1/cases', headers: { ...headers, 'x-forwarded-for': '198.51.100.10' } })
     assert.equal(response.statusCode, 200)
-    assert.deepEqual([...keys.keys()], ['198.51.100.10'])
+    assert.deepEqual([...keys.keys()].sort(), ['198.51.100.10', 'subject:rate-limit-test'].sort())
     await limitedApp.inject({ method: 'GET', url: '/v1/cases', headers: { ...headers, 'x-forwarded-for': '198.51.100.11' } })
-    assert.equal(keys.has('198.51.100.11'), true)
+    assert.equal(keys.get('198.51.100.11'), 1)
+    assert.equal(keys.get('subject:rate-limit-test'), 2)
   } finally { await limitedApp.close() }
 })
 

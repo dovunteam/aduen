@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -9,7 +9,13 @@ const emDash = String.fromCodePoint(0x2014)
 const violations = []
 
 for (const file of files) {
-  const content = readFileSync(join(root, file), 'utf8')
+  const path = join(root, file)
+  if (!existsSync(path)) continue
+
+  const bytes = readFileSync(path)
+  if (bytes.includes(0)) continue
+
+  const content = bytes.toString('utf8')
   const lines = content.split(/\r?\n/)
   lines.forEach((line, index) => {
     if (line.includes(emDash)) violations.push(`${file}:${index + 1}`)
