@@ -69,6 +69,10 @@ npm run test:e2e
 
 The repository also includes [`run-aduen.bat`](run-aduen.bat) for Windows. Its `verify` command runs the text and documentation checks, lint, unit tests, build, and Chromium end-to-end tests. The full CI workflow additionally verifies the PostgreSQL API setup and ownership policies with Docker.
 
+## Contributing and security
+
+Contribution guidance is in [CONTRIBUTING.md](CONTRIBUTING.md), and project participation follows the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues privately using the process in [SECURITY.md](SECURITY.md).
+
 ## License
 
-No license file is included. Public visibility does not grant permission to reuse or redistribute the code.
+This repository's original code and documentation are provided under the [MIT License](LICENSE). Third-party dependencies and assets remain subject to their own licenses and notices.
