@@ -38,7 +38,7 @@ exit /b %errorlevel%
 
 :pilot-score
 if "%~2"=="" (
-  echo Usage: run-aduen.bat pilot-score "C:\path\to\anonymised-case-log.csv" [--operator-rate=RM/hour] [--institution-commitment=yes]
+  echo Usage: run-aduen.bat pilot-score "C:\path\to\anonymised-case-log.csv" --operator-rate=RM/hour [--institution-commitment=yes]
   exit /b 1
 )
 npm run score:pilot -- "%~2" %~3 %~4
