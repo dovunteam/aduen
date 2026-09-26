@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+for (const viewport of [{ width: 1440, height: 1000 }, { width: 820, height: 1180 }, { width: 390, height: 844 }]) {
   for (const locale of ['en', 'ms'] as const) {
     test(`core layouts fit ${viewport.width}px in ${locale}`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport)
@@ -16,8 +16,10 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
       await expect(page.getByRole('heading', { name: locale === 'en' ? 'Before you begin' : 'Sebelum anda bermula' })).toBeInViewport()
       await page.getByLabel(locale === 'en' ? /I have read and understand/ : /Saya telah membaca dan memahami/).check()
       await page.getByRole('button', { name: locale === 'en' ? 'Begin safety check' : 'Mulakan semakan keselamatan' }).click()
+      await expect(page.locator('.progress [aria-current="step"]')).toBeInViewport()
       await checkLayout('safety')
       await page.getByRole('button', { name: locale === 'en' ? /No urgent issue/ : /Tiada isu mendesak/ }).click()
+      await expect(page.locator('.progress [aria-current="step"]')).toBeInViewport()
       await checkLayout('case-details')
     })
   }
