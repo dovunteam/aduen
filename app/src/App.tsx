@@ -31,11 +31,13 @@ import { CasePreview } from './components/CasePreview'
 import { SafetySupport } from './components/SafetySupport'
 import { safetyDescriptions } from './safetyMessages'
 import { FeatureIcon } from './components/FeatureIcon'
+import { featureIconNames, type FeatureIconName } from './components/featureIcons'
 import './App.css'
 import './visual.css'
 import './reference.css'
 
 type Step = 'workspace' | 'welcome' | 'triage' | 'case' | 'scope' | 'saved' | 'evidence' | 'extraction' | 'review' | 'pack' | 'status' | 'data'
+const safetyIconNames: readonly FeatureIconName[] = ['payment', 'lock', 'warning', 'shield', 'clock']
 function App() {
   const [locale, setLocale] = useState<Locale>(readLocale)
   const [step, setStep] = useState<Step>(() => readCase() && readConsent() ? 'workspace' : 'welcome')
@@ -194,20 +196,20 @@ function App() {
         <div className="welcome-hero"><div className="hero-copy"><div className="eyebrow"><span />{text.welcome.eyebrow}</div><h1>{renderLines(text.welcome.title)}</h1>
         <p className="lede">{text.welcome.lede}</p><div className="hero-actions"><a className="primary hero-start" href="#before-title">{locale === 'ms' ? 'Susun kes anda' : 'Organise your case'}<span aria-hidden="true">&rarr;</span></a><a className="secondary hero-learn" href="#how-it-works">{locale === 'ms' ? 'Lihat cara Aduen membantu' : 'See how Aduen helps'} <span aria-hidden="true">&rarr;</span></a></div><div className="hero-footnote">{locale === 'ms' ? 'Untuk pembelian pengguna di Malaysia' : 'For consumer purchases in Malaysia'} <span aria-hidden="true">&middot;</span> {locale === 'ms' ? 'Disimpan dalam pelayar anda' : 'Stored in your browser'}</div></div><CasePreview locale={locale} /></div>
         <div className="section-intro" id="how-it-works"><span>{locale === 'ms' ? 'CARA ADUEN MEMBANTU' : 'HOW ADUEN HELPS'}</span></div>
-        <div className="boundary-grid">{text.welcome.cards.map(([title, copy], index) => <article key={title}><div className="feature-card-top"><FeatureIcon index={index} /><span className="card-number">{String(index + 1).padStart(2, '0')}</span></div><h2>{title}</h2><p>{copy}</p></article>)}</div>
+        <div className="boundary-grid">{text.welcome.cards.map(([title, copy], index) => <article key={title}><FeatureIcon name={featureIconNames[index]} /><h2>{title}</h2><p>{copy}</p></article>)}</div>
         <div className="welcome-consent"><aside className="notice" aria-labelledby="before-title"><div><span className="notice-mark">i</span><div><h2 id="before-title">{text.welcome.before}</h2><p>{text.welcome.notice}</p></div></div><label className="check-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>{text.welcome.consent}</span></label></aside>
         <div className="actions">{readCase() ? <button className="primary" disabled={!consent} onClick={() => void runAction(resumeCase)}>{text.welcome.resume} <span>→</span></button> : <button className="primary" disabled={!consent} onClick={() => void runAction(() => { acceptConsent(); setStep('triage') })}>{text.welcome.begin} <span>→</span></button>}<span className="consent-caption">{locale === 'ms' ? 'Semak dahulu. Kongsi apabila bersedia.' : 'Review first. Share when you’re ready.'}</span></div></div>
       </section>}
 
       {step === 'triage' && <section className="page safety-page"><div className="safety-main">
         <div className="eyebrow">{text.triage.eyebrow}</div><h1>{renderLines(text.triage.title)}</h1><p className="lede">{text.triage.lede}</p>
-        <fieldset className="choice-list"><legend className="sr-only">{text.triage.legend}</legend>{text.triage.reasons.map(([value, label], index) => <label className="choice" key={value}><input type="checkbox" aria-label={label} aria-describedby={`safety-${value}`} checked={urgentReasons.includes(value)} onChange={() => toggleUrgent(value)} /><span className="choice-box" aria-hidden="true">✓</span><span className="choice-copy"><strong>{label}</strong><small id={`safety-${value}`}>{safetyDescriptions[locale][index]}</small></span><FeatureIcon index={index + 3} /></label>)}</fieldset>
+        <fieldset className="choice-list"><legend className="sr-only">{text.triage.legend}</legend>{text.triage.reasons.map(([value, label], index) => <label className="choice" key={value}><input type="checkbox" aria-label={label} aria-describedby={`safety-${value}`} checked={urgentReasons.includes(value)} onChange={() => toggleUrgent(value)} /><span className="choice-box" aria-hidden="true">✓</span><span className="choice-copy"><strong>{label}</strong><small id={`safety-${value}`}>{safetyDescriptions[locale][index]}</small></span><FeatureIcon name={safetyIconNames[index]} /></label>)}</fieldset>
         {isUrgent && <div className="urgent-panel" role="alert"><strong>{text.triage.pause}</strong><p>{text.triage.urgent}</p><div className="official-links"><a href="https://www.bnm.gov.my/faqs/scams" target="_blank" rel="noreferrer">{text.triage.bnm}</a><a href="https://nfcc.jpm.gov.my/index.php/en/about-nsrc" target="_blank" rel="noreferrer">{text.triage.nsrc}</a></div><p className="source-note">{text.triage.source}</p></div>}
         <div className="actions split"><button className="secondary" onClick={() => setStep('welcome')}>{text.triage.back}</button>{!isUrgent && <button className="primary" onClick={openCaseDetails}>{text.triage.continue} <span>→</span></button>}</div>
       </div><SafetySupport locale={locale} /></section>}
 
       {step === 'case' && <section className="page form-page">
-        <div className="form-heading"><div className="form-heading-copy"><span className="receipt-decoration" aria-hidden="true"><FeatureIcon index={0} /></span><div className="eyebrow">{caseText.eyebrow}</div><h1>{caseText.title}</h1></div><div className="save-state"><span /> {unsaved ? (locale === 'ms' ? 'Belum disimpan' : 'Not saved') : lastSaved ? caseText.saved + ' ' + lastSaved.toLocaleTimeString(locale === 'ms' ? 'ms-MY' : 'en-MY', { hour: '2-digit', minute: '2-digit' }) : caseText.savedDevice}</div></div>
+        <div className="form-heading"><div className="form-heading-copy"><span className="receipt-decoration" aria-hidden="true"><FeatureIcon name="receipt" /></span><div className="eyebrow">{caseText.eyebrow}</div><h1>{caseText.title}</h1></div><div className="save-state"><span /> {unsaved ? (locale === 'ms' ? 'Belum disimpan' : 'Not saved') : lastSaved ? caseText.saved + ' ' + lastSaved.toLocaleTimeString(locale === 'ms' ? 'ms-MY' : 'en-MY', { hour: '2-digit', minute: '2-digit' }) : caseText.savedDevice}</div></div>
         <p className="lede">{caseText.lede}</p>
         <form ref={caseFormRef} id="case-form" className="case-form" data-section={caseSection} noValidate onSubmit={saveCase}>
           <div className="case-section-progress" role="group" aria-label={locale === 'ms' ? 'Kemajuan borang butiran kes' : 'Case details form progress'}>
@@ -238,7 +240,7 @@ function App() {
   </div>
 }
 
-function SectionTitle({ number, title, copy, tip }: { number: string; title: string; copy: string; tip?: string }) { return <div className="section-title"><span>{number}</span><div><h2>{title}</h2><p>{copy}</p>{tip && <div className="section-tip"><FeatureIcon index={0} /><p>{tip}</p></div>}</div></div> }
+function SectionTitle({ number, title, copy, tip }: { number: string; title: string; copy: string; tip?: string }) { return <div className="section-title"><span>{number}</span><div><h2>{title}</h2><p>{copy}</p>{tip && <div className="section-tip"><FeatureIcon name="receipt" /><p>{tip}</p></div>}</div></div> }
 function renderLines(value: string) { return value.split('\n').map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>) }
 function labelFor(options: ReadonlyArray<readonly [string, string]>, value: string) { return options.find(([key]) => key === value)?.[1] ?? value.replaceAll('_', ' ') }
 export default App

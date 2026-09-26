@@ -26,7 +26,6 @@ h1 { font: 500 clamp(46px, 7vw, 86px)/.98 Inter, Aptos, 'Segoe UI', sans-serif; 
 .lede { color: var(--muted); font-size: clamp(17px, 2vw, 20px); line-height: 1.6; max-width: 720px; margin: 30px 0 0; }
 .boundary-grid { display: grid; grid-template-columns: repeat(3, 1fr); margin: 70px 0 0; border-block: 1px solid var(--line); }
 .boundary-grid article { padding: 34px 30px 38px 0; }.boundary-grid article + article { border-left: 1px solid var(--line); padding-left: 30px; }
-.card-number { color: #74492f; font-size: 11px; letter-spacing: .1em; }
 h2 { font: 600 18px/1.25 Inter, Aptos, 'Segoe UI', sans-serif; margin: 26px 0 11px; letter-spacing: -.02em; }
 .boundary-grid p, .section-title p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 14px; }
 .notice { margin-top: 48px; padding: 28px; background: var(--teal-light); border: 1px solid #c4d8d0; }.notice > div { display: flex; gap: 17px; }.notice h2 { margin: 0 0 7px; }.notice p { margin: 0; color: #48645f; line-height: 1.5; }
