@@ -23,6 +23,12 @@ This directory contains the first interactive Aduen prototype. It currently supp
 
 The app stores structured case data in `localStorage`; evidence originals and metadata use separate IndexedDB stores. Evidence, extracted text, and complaint packs stay on the user's device. The app has no sign-in, account, API, analytics, or upload path for case data. The static site can be hosted without running an Aduen server. Clearing browser data or changing devices can remove access to a case, so users can export a complete copy for backup.
 
+## Deploy to Vercel
+
+The repository-root `vercel.json` configures this Vite app as a static Vercel project. Import the repository into Vercel and keep the project root set to the repository root. Vercel installs from `app/package-lock.json`, runs the app's production build (including copying the on-device OCR engine and language files), and publishes `app/dist`. The configuration also provides the single-page-app fallback, browser security headers, and static asset caching. No environment variables or Aduen API service are required.
+
+The deployment serves only the browser app; the separate `service/api` experiment is not deployed or connected. Case data remains in each user's browser storage, so it is not shared between devices or browser origins. Use synthetic case information while evaluating the prototype.
+
 Development, screenshots, and demonstrations use synthetic case details and files only. Do not enter real consumer case information as test data.
 
 The separate synthetic-data case API in [`service/api`](../service/api/README.md) is not used or bundled by the app. It is an isolated future scaling experiment and requires separate review and deployment work before it could become a product feature. Static hosts that support the `_headers` convention can apply the baseline browser security headers in `public/_headers`.
